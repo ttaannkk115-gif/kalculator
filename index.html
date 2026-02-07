@@ -462,44 +462,74 @@ function renderCatalog(filter = "") {
 function addItem(id) {
     let raw;
     db.forEach(s => s.items.forEach(i => { if(i.id === id) raw = i; }));
-    state.push({ ...raw, qty: 1, k: false, uid: Date.now() });
+    // Добавляем уникальный ID (uid), чтобы можно было добавлять одну и ту же услугу дважды
+    state.push({ ...raw, qty: 1, k: false, uid: Date.now() + Math.random() });
     sync();
 }
 
 function sync() {
     localStorage.setItem('smeta_full_2025', JSON.stringify(state));
     const list = document.getElementById('estimate');
+    let subTotal = 0; // Сумма обычных работ
+    
+    // Сначала считаем сумму всех работ БЕЗ процентов
+    state.forEach(item => {
+        if (item.u !== '%' && item.u !== 'коэф') {
+            const price = item.k ? (item.p * 2.5) : item.p;
+            subTotal += price * item.qty;
+        }
+    });
+
     let total = 0;
     list.innerHTML = state.map((item, i) => {
-        const isKoef = (item.u === 'коэф' || item.u === '%');
-        const price = item.k ? (item.p * 2.5) : item.p;
-        const sum = isKoef ? (price * (state[0]?.p || 0) * item.qty / 100) : (price * item.qty);
-        // Упрощенная логика суммы для наглядности
-        const finalSum = item.u === 'коэф' ? 0 : price * item.qty; 
-        total += finalSum;
+        let currentItemSum = 0;
+        const isSpecial = (item.u === '%' || item.u === 'коэф');
+        const multiplier = item.k ? 2.5 : 1;
+
+        if (item.u === '%') {
+            // Расчет процента от суммы (например, закупка материала)
+            currentItemSum = (subTotal * item.p / 100) * item.qty;
+        } else if (item.id === "33.7") { 
+            // Специфика для демонтажа (50% от стоимости)
+            currentItemSum = (subTotal * 0.5) * item.qty;
+        } else {
+            // Обычный расчет
+            currentItemSum = item.p * item.qty * multiplier;
+        }
+
+        total += currentItemSum;
+
         return `
             <div class="estimate-card">
                 <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:8px;">
                     <span>${item.n}</span>
-                    <span style="color:var(--danger); cursor:pointer" onclick="remove(${i})">✕</span>
+                    <span style="color:var(--danger); cursor:pointer; padding: 5px;" onclick="remove(${i})">✕</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <input type="number" class="qty-inp" value="${item.qty}" onchange="editQty(${i}, this.value)">
-                        ${item.u !== 'коэф' ? `<label style="font-size:10px; background:#e8f0fe; padding:4px; border-radius:4px;"><input type="checkbox" ${item.k?'checked':''} onchange="toggleK(${i})"> x2.5</label>` : ''}
+                        ${!isSpecial ? `
+                            <label style="font-size:10px; background:#e8f0fe; padding:4px; border-radius:4px; cursor:pointer;">
+                                <input type="checkbox" ${item.k ? 'checked' : ''} onchange="toggleK(${i})"> x2.5
+                            </label>
+                        ` : ''}
                     </div>
-                    <div style="font-size:18px; font-weight:900;">${finalSum.toLocaleString()} ₽</div>
+                    <div style="font-size:18px; font-weight:900;">${Math.round(currentItemSum).toLocaleString()} ₽</div>
                 </div>
             </div>`;
     }).join('');
-    document.getElementById('total').innerText = total.toLocaleString();
+
+    document.getElementById('total').innerText = Math.round(total).toLocaleString();
 }
 
 window.editQty = (i, v) => { state[i].qty = parseFloat(v) || 0; sync(); }
 window.toggleK = (i) => { state[i].k = !state[i].k; sync(); }
 window.remove = (i) => { state.splice(i, 1); sync(); }
-window.resetSmeta = () => { if(confirm("Очистить все?")) { state = []; sync(); } }
+window.resetSmeta = () => { if(confirm("Очистить текущую смету?")) { state = []; sync(); } }
+
 document.getElementById('search').addEventListener('input', e => renderCatalog(e.target.value));
+
+// Запуск при загрузке
 renderCatalog();
 sync();
 </script>
