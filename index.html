@@ -59,7 +59,38 @@
 
 <div class="header no-print">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-weight:900; font-size:14px;">КАЛЬКУЛЯТОР 2026</span>
+        <span style="font-weight:900; font-size:14px;">
+            <a href="https://chat.whatsapp.com/E10FzUdV9YLHem5KCVAQtQ" class="shabashka-link" target="_blank" rel="noopener noreferrer">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA">
+    <span>Шабашки</span>
+</a>
+
+<style>
+    .shabashka-link {
+        display: inline-flex; / Контейнер подстраивается под контент /
+        align-items: center;
+        background-color: #25d366;
+        color: white !important;
+        text-decoration: none !important;
+        padding: 8px 16px;
+        border-radius: 12px;
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+        font-size: 18px;
+        transition: background-color 0.3s ease;
+    }
+
+    .shabashka-link:hover {
+        background-color: #1ebea5;
+    }
+
+    .shabashka-link img {
+        width: 28px; / Размер иконки /
+        height: 28px;
+        margin-right: 10px; / Отступ между иконкой и надписью /
+    }
+</style>
+        </span>
         <div style="display:flex;">
             <button class="head-btn" onclick="toggleModal()" title="Добавить свой материал">📦</button>
             <button class="head-btn" onclick="resetSmeta()" style="font-size:10px;">СБРОСИТЬ</button>
