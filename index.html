@@ -11,18 +11,20 @@
         .search-box { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 16px; margin-top: 8px; box-sizing: border-box; outline: none; }
         .container { padding: 10px; max-width: 800px; margin: auto; }
         
-        /* Кнопки в шапке */
         .head-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 10px; border-radius: 6px; font-size: 14px; cursor: pointer; margin-left: 5px; }
         
-        /* Модальное окно */
         #modal-custom { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
         .modal-content { background: white; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
         
         .section-box { background: white; border-radius: 10px; margin-bottom: 8px; border: 1px solid #ddd; overflow: hidden; }
         .section-header { padding: 12px 15px; background: #fff; font-weight: 800; font-size: 13px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; text-transform: uppercase; color: #555; }
         .section-header::after { content: '▼'; font-size: 10px; transition: 0.3s; color: var(--primary); }
+        
+        /* Состояние открытого раздела */
         .section-box.open .section-header { background: #e8f0fe; color: var(--primary); border-bottom: 1px solid #d2e3fc; }
+        .section-box.open .section-header::after { transform: rotate(180deg); }
         .section-box.open .section-content { display: block; }
+        
         .section-content { display: none; padding: 0 15px; }
         
         .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
@@ -475,8 +477,11 @@ function renderCatalog(filter = "") {
     db.forEach(sec => {
         const items = sec.items.filter(i => i.n.toLowerCase().includes(filter.toLowerCase()));
         if (!items.length) return;
+        
         const box = document.createElement('div');
-        box.className = 'section-box open';
+        // Класс 'open' добавляется только если работает фильтр поиска
+        box.className = 'section-box' + (filter ? ' open' : '');
+        
         box.innerHTML = `<div class="section-header" onclick="this.parentElement.classList.toggle('open')">${sec.cat}</div>`;
         const content = document.createElement('div');
         content.className = 'section-content';
