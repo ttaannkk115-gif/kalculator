@@ -85,7 +85,26 @@
         <span style="font-weight:bold;">Калькулятор</span>
         <div>
             <button class="head-btn" onclick="toggleChat(true)" title="Открыть чат">📨</button>
-            <button class="head-btn" onclick="document.getElementById('modal-custom').style.display='flex'">📦 +</button>
+            <button class="head-btn" onclick="document.getElementById('modal-custom').style.display='flex'"><style>
+  .green-plus {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;          /* Размер круга */
+    height: 60px;
+    background-color: #5cb377; /* Тот самый зеленый с фото */
+    color: white;         /* Цвет плюса */
+    border-radius: 50%;    /* Делает круглым */
+    font-family: Arial, sans-serif;
+    font-size: 24px;      /* Размер плюса */
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;    /* Чтобы нельзя было случайно выделить текст */
+  }
+</style>
+
+<div class="green-plus">+</div>
+</button>
             <button class="head-btn" onclick="resetSmeta()">СБРОС</button>
         </div>
     </div>
