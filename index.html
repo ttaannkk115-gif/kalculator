@@ -13,11 +13,13 @@
         .search-box { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 16px; margin-top: 8px; box-sizing: border-box; }
         .container { padding: 15px; max-width: 900px; margin: auto; background: white; min-height: 100vh; }
         
-        /* Стили ЧАТА */
-        #chat-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; flex-direction: column; }
-        #chat-frame { border: none; flex-grow: 1; width: 100%; height: 100%; }
+        /* Окна (Чат и Калькулятор) */
+        #chat-container, #extra-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; flex-direction: column; -webkit-overflow-scrolling: touch; }
+        #extra-container { z-index: 4000; } /* Калькулятор выше всех */
+        
         .chat-header { background: var(--dark); color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
         .close-chat-btn { background: var(--danger); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        iframe { border: none; flex-grow: 1; width: 100%; height: 100%; }
 
         /* Индикатор уведомлений */
         .chat-btn-wrapper { position: relative; display: inline-block; }
@@ -46,8 +48,8 @@
         .footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 1001; }
         .total-amount { font-size: 24px; color: #ffeb3b; font-weight: 900; }
 
-        /* Кнопки каталога */
-        .head-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-left: 5px; }
+        /* Кнопки */
+        .head-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-left: 5px; font-size: 18px; }
         .section-box { border: 1px solid #ddd; margin-bottom: 5px; border-radius: 5px; overflow: hidden; }
         .section-header { padding: 12px; background: #eee; cursor: pointer; font-weight: bold; font-size: 14px; border-bottom: 1px solid #ddd; }
         .section-content { display: none; padding: 5px 10px; background: #fff; }
@@ -58,14 +60,13 @@
         .modal-content { background: white; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; }
 
         @media print {
-            .no-print, #chat-container, .chat-btn-wrapper, .notification-dot { display: none !important; }
+            .no-print, #chat-container, #extra-container, .chat-btn-wrapper, .notification-dot { display: none !important; }
             body { background: white; padding-bottom: 0; }
             .container { box-shadow: none; max-width: 100%; width: 100%; padding: 0; }
             .estimate-table td { font-size: 12px; color: black !important; }
             .qty-inp { border: none !important; }
             .sign-block { display: flex !important; margin-top: 50px; justify-content: space-between; }
             .sign-line { border-top: 1px solid #000; width: 200px; text-align: center; font-size: 12px; padding-top: 5px; }
-            .summary-row { display: block !important; border-top: 1px solid #000; }
             .info-input { border: none; padding: 0; font-weight: bold; }
         }
     </style>
@@ -73,6 +74,14 @@
 <body>
 
 <audio id="chat-sound" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3" preload="auto"></audio>
+
+<div id="extra-container">
+    <div class="chat-header" style="background: #444;">
+        <span>Инженерный калькулятор</span>
+        <button class="close-chat-btn" onclick="toggleExtra(false)">ЗАКРЫТЬ ✕</button>
+    </div>
+    <iframe id="extra-frame" src="about:blank"></iframe>
+</div>
 
 <div id="chat-container">
     <div class="chat-header">
@@ -94,13 +103,14 @@
 
 <div class="header no-print">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-weight:bold;">🔌 Смета Master 2026</span>
+        <span style="font-weight:bold;">2026</span>
         <div>
+            <button class="head-btn" onclick="toggleExtra(true)">🧮</button>
             <div class="chat-btn-wrapper">
                 <button class="head-btn" onclick="toggleChat(true)">📨</button>
                 <span id="chat-dot" class="notification-dot"></span>
             </div>
-            <button class="head-btn" onclick="document.getElementById('modal-custom').style.display='flex'">📦 +</button>
+            <button class="head-btn" onclick="document.getElementById('modal-custom').style.display='flex'">📦+</button>
             <button class="head-btn" onclick="resetSmeta()">СБРОС</button>
         </div>
     </div>
@@ -148,9 +158,9 @@
 </div>
 
 <script>
-// --- КАТАЛОГ РАБОТ ---
 const db = [
     { cat: "1. Технологические отверстия", items: [
+        { cat: "1. Технологические отверстия", items: [
         {id:"1.1", n:"до Ø20мм Дерево", p:15, u:"п/см"}, {id:"1.2", n:"до Ø20мм Газоблок", p:20, u:"п/см"},
         {id:"1.3", n:"до Ø20мм Кирпич", p:25, u:"п/см"}, {id:"1.4", n:"до Ø20мм Бетон", p:35, u:"п/см"},
         {id:"1.5", n:"до Ø20мм Плита", p:40, u:"п/см"}, {id:"1.6", n:"до Ø36мм Дерево", p:20, u:"п/см"},
@@ -530,7 +540,6 @@ const db = [
 
 let state = JSON.parse(localStorage.getItem('smeta_items_2026')) || [];
 
-// --- ЛОГИКА ОТОБРАЖЕНИЯ ---
 function renderCatalog(filter = "") {
     const list = document.getElementById('catalog');
     list.innerHTML = "";
@@ -539,10 +548,7 @@ function renderCatalog(filter = "") {
         if (!items.length) return;
         const box = document.createElement('div');
         box.className = 'section-box';
-        box.innerHTML = `
-            <div class="section-header" onclick="this.nextElementSibling.style.display = (this.nextElementSibling.style.display === 'block' ? 'none' : 'block')">${sec.cat}</div>
-            <div class="section-content"></div>
-        `;
+        box.innerHTML = `<div class="section-header" onclick="toggleSection(this)">${sec.cat}</div><div class="section-content"></div>`;
         const content = box.querySelector('.section-content');
         if(filter) content.style.display = 'block';
         items.forEach(item => {
@@ -554,6 +560,11 @@ function renderCatalog(filter = "") {
         });
         list.appendChild(box);
     });
+}
+
+function toggleSection(el) {
+    const content = el.nextElementSibling;
+    content.style.display = (content.style.display === 'block' ? 'none' : 'block');
 }
 
 function addItem(id) {
@@ -583,17 +594,8 @@ function sync() {
     let total = 0;
     let html = `<table class="estimate-table">
         <thead>
-            <tr>
-                <th class="text-center">№</th>
-                <th>Наименование</th>
-                <th class="text-center">Кол-во</th>
-                <th class="text-center">Ед.</th>
-                <th class="text-right">Цена</th>
-                <th class="text-right">Сумма</th>
-                <th class="no-print"></th>
-            </tr>
-        </thead>
-        <tbody>`;
+            <tr><th class="text-center">№</th><th>Наименование</th><th class="text-center">Кол-во</th><th class="text-center">Ед.</th><th class="text-right">Цена</th><th class="text-right">Сумма</th><th class="no-print"></th></tr>
+        </thead><tbody>`;
 
     state.forEach((item, i) => {
         const currentSum = Math.round(item.p * item.qty * (item.k ? 2.5 : 1));
@@ -602,7 +604,7 @@ function sync() {
             <tr>
                 <td class="text-center">${i + 1}</td>
                 <td>${item.n} ${item.k ? '<br><small style="color:red">Коэф. 2.5</small>' : ''}</td>
-                <td class="text-center"><input type="number" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)"></td>
+                <td class="text-center"><input type="number" inputmode="decimal" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)"></td>
                 <td class="text-center">${item.u}</td>
                 <td class="text-right">${item.p}</td>
                 <td class="text-right"><b>${currentSum.toLocaleString()}</b></td>
@@ -614,14 +616,44 @@ function sync() {
     });
 
     html += `</tbody></table>`;
-    list.innerHTML = state.length ? html : "<p style='color:#999; text-align:center; padding: 20px;'>Смета пуста. Выберите работы из каталога выше.</p>";
-    
+    list.innerHTML = state.length ? html : "<p style='color:#999; text-align:center; padding: 20px;'>Смета пуста.</p>";
     document.getElementById('total').innerText = total.toLocaleString();
     document.getElementById('total-bottom').innerText = total.toLocaleString();
-    document.getElementById('summary-bottom').style.display = state.length ? 'block' : 'none';
 }
 
-// --- СОХРАНЕНИЕ ДАННЫХ ---
+// --- УПРАВЛЕНИЕ ОКНАМИ ---
+function toggleChat(show) {
+    const container = document.getElementById('chat-container');
+    const frame = document.getElementById('chat-frame');
+    if (show) {
+        document.getElementById('chat-dot').style.display = 'none';
+        document.getElementById('chat-sound').play().catch(() => {});
+        container.style.display = 'flex';
+        if (frame.src === "about:blank") frame.src = "https://ttaannkk115-gif.github.io/signa/";
+        history.pushState({ win: 'chat' }, '');
+    } else {
+        container.style.display = 'none';
+    }
+}
+
+function toggleExtra(show) {
+    const container = document.getElementById('extra-container');
+    const frame = document.getElementById('extra-frame');
+    if (show) {
+        container.style.display = 'flex';
+        if (frame.src === "about:blank") frame.src = "https://ttaannkk115-gif.github.io/-/";
+        history.pushState({ win: 'extra' }, '');
+    } else {
+        container.style.display = 'none';
+    }
+}
+
+window.onpopstate = function() {
+    document.getElementById('chat-container').style.display = 'none';
+    document.getElementById('extra-container').style.display = 'none';
+};
+
+// --- ВСПОМОГАТЕЛЬНЫЕ ---
 function saveInfo() {
     const info = {
         client: document.getElementById('client-name').value,
@@ -640,39 +672,16 @@ function loadInfo() {
     }
 }
 
-// --- ЧАТ И ЗВУК ---
-function toggleChat(show) {
-    const container = document.getElementById('chat-container');
-    const frame = document.getElementById('chat-frame');
-    const sound = document.getElementById('chat-sound');
-    const dot = document.getElementById('chat-dot');
-
-    if (show) {
-        dot.style.display = 'none';
-        sound.play().catch(() => {});
-        container.style.display = 'flex';
-        if (frame.src === "about:blank") frame.src = "https://ttaannkk115-gif.github.io/signa/";
-    } else {
-        container.style.display = 'none';
-    }
-}
-
-// --- ФУНКЦИИ УПРАВЛЕНИЯ ---
 window.updateQty = (i, v) => { state[i].qty = parseFloat(v) || 0; sync(); }
 window.toggleK = (i) => { state[i].k = !state[i].k; sync(); }
 window.remove = (i) => { state.splice(i, 1); sync(); }
 window.resetSmeta = () => {
-    if(confirm("Очистить таблицу? ФИО Мастера сохранится.")) {
+    if(confirm("Очистить таблицу?")) {
         state = [];
-        const currentMaster = document.getElementById('master-name').value;
-        document.getElementById('client-name').value = '';
-        document.getElementById('client-address').value = '';
-        saveInfo();
         sync();
     }
 }
 
-// Старт
 loadInfo();
 renderCatalog();
 sync();
