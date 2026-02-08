@@ -3,130 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Прайс Электромонтаж</title>
+    <title>Смета Электромонтаж</title>
     <style>
         :root { --primary: #1a73e8; --success: #2db855; --danger: #e53935; --dark: #202124; --bg: #f1f3f4; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 140px; color: var(--dark); line-height: 1.4; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 140px; color: var(--dark); }
+        
+        /* Интерфейс */
         .header { position: sticky; top: 0; background: var(--primary); color: white; padding: 10px 15px; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .search-box { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 16px; margin-top: 8px; box-sizing: border-box; outline: none; }
-        .container { padding: 10px; max-width: 800px; margin: auto; }
+        .search-box { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 16px; margin-top: 8px; box-sizing: border-box; }
+        .container { padding: 15px; max-width: 900px; margin: auto; background: white; min-height: 100vh; }
         
-        .head-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 10px; border-radius: 6px; font-size: 14px; cursor: pointer; margin-left: 5px; }
+        /* Поля данных заказчика */
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--dark); padding-bottom: 15px; }
+        .info-input { border: 1px solid #ddd; padding: 8px; border-radius: 4px; font-size: 14px; width: 100%; box-sizing: border-box; }
         
-        #modal-custom { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        /* Таблица */
+        .estimate-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .estimate-table th, .estimate-table td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 13px; }
+        .estimate-table th { background: #f0f0f0; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
         
-        .section-box { background: white; border-radius: 10px; margin-bottom: 8px; border: 1px solid #ddd; overflow: hidden; }
-        .section-header { padding: 12px 15px; background: #fff; font-weight: 800; font-size: 13px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; text-transform: uppercase; color: #555; }
-        .section-header::after { content: '▼'; font-size: 10px; transition: 0.3s; color: var(--primary); }
+        /* Кнопки и формы */
+        .head-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-left: 5px; }
+        .qty-inp { width: 50px; border: 1px solid #ddd; padding: 4px; text-align: center; font-weight: bold; }
+        .section-box { border: 1px solid #ddd; margin-bottom: 5px; border-radius: 5px; overflow: hidden; }
+        .section-header { padding: 10px; background: #eee; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .section-content { display: none; padding: 5px 10px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
         
-        .section-box.open .section-header { background: #e8f0fe; color: var(--primary); border-bottom: 1px solid #d2e3fc; }
-        .section-box.open .section-header::after { transform: rotate(180deg); }
-        .section-box.open .section-content { display: block; }
-        
-        .section-content { display: none; padding: 0 15px; }
-        
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
-        .item-name { font-size: 13px; font-weight: 500; flex: 1; padding-right: 10px; }
-        .item-price { font-weight: 800; color: var(--primary); text-align: right; margin-right: 10px; }
-        .btn-add { background: var(--success); color: white; border: none; width: 32px; height: 32px; border-radius: 6px; font-size: 20px; cursor: pointer; }
+        /* Подписи */
+        .sign-block { display: none; margin-top: 40px; justify-content: space-between; }
+        .sign-line { border-top: 1px solid black; width: 200px; margin-top: 40px; text-align: center; font-size: 12px; }
 
-        .custom-input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        
-        .estimate-card { background: white; border-radius: 12px; padding: 12px; margin-bottom: 8px; border-left: 5px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .qty-inp { width: 60px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center; font-weight: bold; }
-        .total-amount { font-size: 22px; color: #ffeb3b; font-weight: 900; }
         .footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 1001; }
-        
-        /* Стили для даты */
-        .estimate-title-block { display: flex; justify-content: space-between; align-items: flex-end; margin: 20px 10px 10px; border-bottom: 2px solid var(--dark); }
-        #estimate-date { font-size: 12px; color: #666; padding-bottom: 4px; font-style: italic; }
+        .total-amount { font-size: 24px; color: #ffeb3b; font-weight: 900; }
 
-        @media print { 
-            .no-print { display: none !important; } 
-            .section-content { display: block !important; } 
-            .footer { position: relative; background: white; color: black; padding: 20px 0; }
-            .total-amount { color: black; }
-            #estimate-date { color: black !important; font-weight: bold; }
+        #modal-custom { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding-bottom: 0; }
+            .container { box-shadow: none; max-width: 100%; width: 100%; padding: 0; }
+            .estimate-table td { font-size: 12px; color: black !important; }
+            .qty-inp { border: none !important; }
+            .sign-block { display: flex !important; }
+            .total-amount { color: black; font-size: 18px; }
+            .info-input { border: none; padding: 0; font-weight: bold; }
         }
     </style>
 </head>
 <body>
 
-<div id="modal-custom" class="no-print" onclick="closeModal(event)">
+<div id="modal-custom" class="no-print" onclick="this.style.display='none'">
     <div class="modal-content" onclick="event.stopPropagation()">
-        <h3 style="margin-top:0">Новый материал</h3>
-        <input type="text" id="custom-name" class="custom-input" placeholder="Название (напр. Кабель 3х2.5)">
-        <div style="display:flex; gap: 10px;">
-            <input type="number" id="custom-price" class="custom-input" placeholder="Цена, ₽">
-            <input type="text" id="custom-unit" class="custom-input" placeholder="ед." style="width: 80px;">
-        </div>
-        <button class="btn-add" style="width:100%; height:45px; font-size:16px; font-weight:bold;" onclick="addCustomItem()">ДОБАВИТЬ В СМЕТУ</button>
-        <button onclick="toggleModal()" style="width:100%; background:none; border:none; color:#888; margin-top:15px; cursor:pointer;">Отмена</button>
+        <h3>Свой материал/работа</h3>
+        <input type="text" id="custom-name" style="width:100%; margin-bottom:10px; padding:10px;" placeholder="Название">
+        <input type="number" id="custom-price" style="width:100%; margin-bottom:10px; padding:10px;" placeholder="Цена">
+        <input type="text" id="custom-unit" style="width:100%; margin-bottom:10px; padding:10px;" placeholder="Ед. (шт/м.п.)" value="шт">
+        <button onclick="addCustomItem()" style="width:100%; padding:10px; background:var(--success); color:white; border:none; border-radius:5px;">ДОБАВИТЬ</button>
     </div>
 </div>
 
 <div class="header no-print">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-weight:900; font-size:14px;">
-            <a href="https://chat.whatsapp.com/E10FzUdV9YLHem5KCVAQtQ" class="shabashka-link" target="_blank" rel="noopener noreferrer">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA">
-    <span>Шабашки</span>
-</a>
-
-<style>
-    .shabashka-link {
-        display: inline-flex; /* Контейнер подстраивается под контент */
-        align-items: center;
-        background-color: #25d366;
-        color: white !important;
-        text-decoration: none !important;
-        padding: 8px 16px;
-        border-radius: 12px;
-        font-family: Arial, sans-serif;
-        font-weight: bold;
-        font-size: 18px;
-        transition: background-color 0.3s ease;
-    }
-
-    .shabashka-link:hover {
-        background-color: #1ebea5;
-    }
-
-    .shabashka-link img {
-        width: 28px; /* Размер иконки */
-        height: 28px;
-        margin-right: 10px; /* Отступ между иконкой и надписью */
-    }
-</style>
-
-            
-        </span>
-        <div style="display:flex;">
-            <button class="head-btn" onclick="toggleModal()" title="Добавить свой материал">📦</button>
-            <button class="head-btn" onclick="resetSmeta()" style="font-size:10px;">СБРОСИТЬ</button>
+        <span style="font-weight:bold;">🔌 Электромонтаж 2026</span>
+        <div>
+            <button class="head-btn" onclick="document.getElementById('modal-custom').style.display='flex'">📦 +</button>
+            <button class="head-btn" onclick="resetSmeta()">СБРОС</button>
         </div>
     </div>
-    <input type="text" id="search" class="search-box" placeholder="Поиск по работам...">
+    <input type="text" id="search" class="search-box" placeholder="Поиск работ...">
 </div>
 
 <div class="container">
-    <div id="catalog" class="no-print"></div>
-    
-    <div class="estimate-title-block">
-        <h3 style="margin: 0;">ДЕТАЛИЗАЦИЯ СМЕТЫ:</h3>
-        <div id="estimate-date"></div>
+    <div id="catalog" class="no-print" style="margin-bottom: 30px;"></div>
+
+    <div class="info-grid">
+        <div>
+            <label style="font-size:10px; color:#666;">ЗАКАЗЧИК:</label>
+            <input type="text" class="info-input" placeholder="ФИО Заказчика">
+            <label style="font-size:10px; color:#666; margin-top:5px; display:block;">ОБЪЕКТ:</label>
+            <input type="text" class="info-input" placeholder="Адрес объекта">
+        </div>
+        <div style="text-align: right;">
+            <label style="font-size:10px; color:#666;">ДАТА:</label>
+            <div id="estimate-date" style="font-weight:bold;"></div>
+            <label style="font-size:10px; color:#666; margin-top:5px; display:block;">ИСПОЛНИТЕЛЬ:</label>
+            <input type="text" class="info-input" style="text-align:right;" placeholder="ФИО Мастера">
+        </div>
     </div>
-    
+
+    <h2 style="text-align:center; text-transform:uppercase; font-size:18px;">Смета на электромонтажные работы</h2>
+
     <div id="estimate"></div>
+
+    <div class="sign-block">
+        <div class="sign-line">Исполнитель (подпись)</div>
+        <div class="sign-line">Заказчик (подпись)</div>
+    </div>
 </div>
 
-<div class="footer">
+<div class="footer no-print">
     <div>
         <div style="font-size:10px; opacity:0.8;">ИТОГО К ОПЛАТЕ:</div>
         <div class="total-amount"><span id="total">0</span> ₽</div>
     </div>
-    <button class="no-print" style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="window.print()">ПЕЧАТЬ</button>
+    <button style="background:#fff; color:#000; border:none; padding:12px 25px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="window.print()">ПЕЧАТЬ (PDF)</button>
 </div>
 
 <script>
@@ -196,19 +180,19 @@ const db = [
         {id:"5.22", n:"Монтаж Гофра, Металлорукав по потолку", p:150, u:"п/м"}
     ]},
     { cat: "6. Монтаж провода", items: [
-        {id:"6.1", n:"Сечение до 4 мм²", p:100, u:"п/м"},
-        {id:"6.2", n:"Сечение до 6 мм²", p:120, u:"п/м"},
-        {id:"6.3", n:"Сечение до 10 мм²", p:150, u:"п/м"},
-        {id:"6.4", n:"Сечение до 16 мм²", p:170, u:"п/м"},
-        {id:"6.5", n:"Сечение до 35 мм²", p:200, u:"п/м"},
-        {id:"6.6", n:"Сечение до 50 мм²", p:220, u:"п/м"},
-        {id:"6.7", n:"Сечение до 120 мм²", p:250, u:"п/м"}
+        {id:"6.1", n:"Сечение до 4 мм²", p:130, u:"п/м"},
+        {id:"6.2", n:"Сечение до 6 мм²", p:160, u:"п/м"},
+        {id:"6.3", n:"Сечение до 10 мм²", p:170, u:"п/м"},
+        {id:"6.4", n:"Сечение до 16 мм²", p:180, u:"п/м"},
+        {id:"6.5", n:"Сечение до 35 мм²", p:320, u:"п/м"},
+        {id:"6.6", n:"Сечение до 50 мм²", p:370, u:"п/м"},
+        {id:"6.7", n:"Сечение до 120 мм²", p:470, u:"п/м"}
     ]},
     { cat: "7. Монтаж провода по потолку", items: [
-        {id:"7.1", n:"Сечение до 4 мм² (Потолок)", p:120, u:"п/м"},
-        {id:"7.2", n:"Сечение до 6 мм² (Потолок)", p:140, u:"п/м"},
-        {id:"7.3", n:"Сечение до 10 мм² (Потолок)", p:170, u:"п/м"},
-        {id:"7.4", n:"Сечение до 16 мм² (Потолок)", p:190, u:"п/м"},
+        {id:"7.1", n:"Сечение до 4 мм² (Потолок)", p:150, u:"п/м"},
+        {id:"7.2", n:"Сечение до 6 мм² (Потолок)", p:180, u:"п/м"},
+        {id:"7.3", n:"Сечение до 10 мм² (Потолок)", p:190, u:"п/м"},
+        {id:"7.4", n:"Сечение до 16 мм² (Потолок)", p:200, u:"п/м"},
         {id:"7.5", n:"Сечение до 35 мм² (Потолок)", p:220, u:"п/м"},
         {id:"7.6", n:"Сечение до 50 мм² (Потолок)", p:240, u:"п/м"},
         {id:"7.7", n:"Сечение до 120 мм² (Потолок)", p:270, u:"п/м"}
@@ -507,14 +491,7 @@ const db = [
     ]},
 ];
 
-let state = JSON.parse(localStorage.getItem('smeta_2025_v1')) || [];
-
-function toggleModal() {
-    const m = document.getElementById('modal-custom');
-    m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
-}
-
-function closeModal(e) { if(e.target.id === 'modal-custom') toggleModal(); }
+let state = JSON.parse(localStorage.getItem('smeta_2026_table')) || [];
 
 function renderCatalog(filter = "") {
     const list = document.getElementById('catalog');
@@ -523,16 +500,16 @@ function renderCatalog(filter = "") {
         const items = sec.items.filter(i => i.n.toLowerCase().includes(filter.toLowerCase()));
         if (!items.length) return;
         const box = document.createElement('div');
-        box.className = 'section-box' + (filter ? ' open' : '');
-        box.innerHTML = `<div class="section-header" onclick="this.parentElement.classList.toggle('open')">${sec.cat}</div>`;
+        box.className = 'section-box';
+        box.innerHTML = `<div class="section-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'">${sec.cat}</div>`;
         const content = document.createElement('div');
         content.className = 'section-content';
+        if(filter) content.style.display = 'block';
         items.forEach(item => {
             content.innerHTML += `
                 <div class="item-row">
-                    <div class="item-name">${item.n} <br><small style="color:#888">ед: ${item.u}</small></div>
-                    <div class="item-price">${item.p} ₽</div>
-                    <button class="btn-add" onclick="addItem('${item.id}')">+</button>
+                    <div style="font-size:13px;">${item.n} <br><small>${item.p}₽ / ${item.u}</small></div>
+                    <button onclick="addItem('${item.id}')" style="background:var(--success); color:white; border:none; padding:5px 10px; border-radius:4px;">+</button>
                 </div>`;
         });
         box.appendChild(content);
@@ -543,62 +520,69 @@ function renderCatalog(filter = "") {
 function addItem(id) {
     let raw;
     db.forEach(s => s.items.forEach(i => { if(i.id === id) raw = i; }));
-    state.push({ ...raw, qty: 1, k: false, uid: Date.now() + Math.random() });
+    state.push({ ...raw, qty: 1, k: false });
     sync();
 }
 
 function addCustomItem() {
     const n = document.getElementById('custom-name').value;
     const p = document.getElementById('custom-price').value;
-    const u = document.getElementById('custom-unit').value || "шт";
-    if (!n || !p) return alert("Заполните поля!");
-    state.push({ id: "c"+Date.now(), n, p: parseFloat(p), u, qty: 1, k: false, uid: Date.now() });
+    const u = document.getElementById('custom-unit').value;
+    if(!n || !p) return;
+    state.push({ id: Date.now(), n, p: parseFloat(p), u, qty: 1, k: false });
     sync();
-    toggleModal();
+    document.getElementById('modal-custom').style.display='none';
 }
 
 function sync() {
-    localStorage.setItem('smeta_2025_v1', JSON.stringify(state));
+    localStorage.setItem('smeta_2026_table', JSON.stringify(state));
     const list = document.getElementById('estimate');
-    const dateDisplay = document.getElementById('estimate-date');
-    
-    // ОБНОВЛЕНИЕ ДАТЫ
-    const now = new Date();
-    dateDisplay.innerText = "Дата: " + now.toLocaleString('ru-RU', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit'
-    });
+    document.getElementById('estimate-date').innerText = new Date().toLocaleDateString('ru-RU');
 
     let total = 0;
-    list.innerHTML = state.map((item, i) => {
-        const currentSum = item.p * item.qty * (item.k ? 2.5 : 1);
+    let html = `<table class="estimate-table">
+        <thead>
+            <tr>
+                <th class="text-center">№</th>
+                <th>Наименование работ</th>
+                <th class="text-center">Кол-во</th>
+                <th class="text-center">Ед.</th>
+                <th class="text-right">Цена</th>
+                <th class="text-right">Сумма</th>
+                <th class="no-print"></th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+    state.forEach((item, i) => {
+        const currentSum = Math.round(item.p * item.qty * (item.k ? 2.5 : 1));
         total += currentSum;
-        return `
-            <div class="estimate-card">
-                <div style="display:flex; justify-content:space-between; font-weight:bold;">
-                    <span>${item.n}</span>
-                    <span class="no-print" style="color:var(--danger); cursor:pointer;" onclick="remove(${i})">✕</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <input type="number" class="qty-inp" value="${item.qty}" onchange="editQty(${i}, this.value)">
-                        <label class="no-print" style="font-size:10px; background:#eee; padding:4px; border-radius:4px;">
-                            <input type="checkbox" ${item.k ? 'checked' : ''} onchange="toggleK(${i})"> x2.5
-                        </label>
-                    </div>
-                    <div style="font-size:18px; font-weight:900;">${Math.round(currentSum).toLocaleString()} ₽</div>
-                </div>
-            </div>`;
-    }).join('');
-    document.getElementById('total').innerText = Math.round(total).toLocaleString();
+        html += `
+            <tr>
+                <td class="text-center">${i + 1}</td>
+                <td>${item.n} ${item.k ? '<small style="color:red">(x2.5 Стеснённость)</small>' : ''}</td>
+                <td class="text-center"><input type="number" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)"></td>
+                <td class="text-center">${item.u}</td>
+                <td class="text-right">${item.p}</td>
+                <td class="text-right"><b>${currentSum.toLocaleString()}</b></td>
+                <td class="no-print text-center">
+                    <input type="checkbox" ${item.k ? 'checked' : ''} onchange="toggleK(${i})" title="Коэф. 2.5">
+                    <span onclick="remove(${i})" style="color:red; cursor:pointer; margin-left:10px;">✕</span>
+                </td>
+            </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    list.innerHTML = state.length ? html : "<p style='color:#999; text-align:center;'>Список работ пуст</p>";
+    document.getElementById('total').innerText = total.toLocaleString();
 }
 
-window.editQty = (i, v) => { state[i].qty = parseFloat(v) || 0; sync(); }
+window.updateQty = (i, v) => { state[i].qty = parseFloat(v) || 0; sync(); }
 window.toggleK = (i) => { state[i].k = !state[i].k; sync(); }
 window.remove = (i) => { state.splice(i, 1); sync(); }
-window.resetSmeta = () => { if(confirm("Очистить смету?")) { state = []; sync(); } }
-
+window.resetSmeta = () => { if(confirm("Очистить всё?")) { state = []; sync(); } }
 document.getElementById('search').addEventListener('input', e => renderCatalog(e.target.value));
+
 renderCatalog();
 sync();
 </script>
