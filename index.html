@@ -13,12 +13,6 @@
         .search-box { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 16px; margin-top: 8px; box-sizing: border-box; }
         .container { padding: 15px; max-width: 900px; margin: auto; background: white; min-height: 100vh; }
         
-        /* Стили ЧАТА */
-        #chat-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; flex-direction: column; }
-        #chat-frame { border: none; flex-grow: 1; width: 100%; height: 100%; }
-        .chat-header { background: var(--dark); color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .close-chat-btn { background: var(--danger); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-
         /* Поля данных заказчика */
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--dark); padding-bottom: 15px; }
         .info-input { border: 1px solid #ddd; padding: 8px; border-radius: 4px; font-size: 14px; width: 100%; box-sizing: border-box; }
@@ -49,7 +43,7 @@
         .modal-content { background: white; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; }
 
         @media print {
-            .no-print, #chat-container { display: none !important; }
+            .no-print { display: none !important; }
             body { background: white; padding-bottom: 0; }
             .container { box-shadow: none; max-width: 100%; width: 100%; padding: 0; }
             .estimate-table td { font-size: 12px; color: black !important; }
@@ -61,14 +55,6 @@
     </style>
 </head>
 <body>
-
-<div id="chat-container">
-    <div class="chat-header">
-        <span>Онлайн чат</span>
-        <button class="close-chat-btn" onclick="toggleChat(false)">ЗАКРЫТЬ ЧАТ ✕</button>
-    </div>
-    <iframe id="chat-frame" src="about:blank"></iframe>
-</div>
 
 <div id="modal-custom" class="no-print" onclick="this.style.display='none'">
     <div class="modal-content" onclick="event.stopPropagation()">
@@ -82,9 +68,8 @@
 
 <div class="header no-print">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-weight:bold;">калькулятор</span>
+        <span style="font-weight:bold;">🔌 Электромонтаж 2026</span>
         <div>
-            <button class="head-btn" onclick="toggleChat(true)" title="Открыть чат">📨</button>
             <button class="head-btn" onclick="document.getElementById('modal-custom').style.display='flex'">📦 +</button>
             <button class="head-btn" onclick="resetSmeta()">СБРОС</button>
         </div>
@@ -129,23 +114,8 @@
 </div>
 
 <script>
-// Функция управления чатом
-function toggleChat(show) {
-    const container = document.getElementById('chat-container');
-    const frame = document.getElementById('chat-frame');
-    if (show) {
-        container.style.display = 'flex';
-        // Загружаем фрейм только при открытии, чтобы не грузить ресурсы зря
-        if (frame.src === "about:blank") {
-            frame.src = "https://ttaannkk115-gif.github.io/signa/";
-        }
-    } else {
-        container.style.display = 'none';
-    }
-}
-
 const db = [
-     { cat: "1. Технологические отверстия", items: [
+    { cat: "1. Технологические отверстия", items: [
         {id:"1.1", n:"до Ø20мм Дерево", p:15, u:"п/см"}, {id:"1.2", n:"до Ø20мм Газоблок", p:20, u:"п/см"},
         {id:"1.3", n:"до Ø20мм Кирпич", p:25, u:"п/см"}, {id:"1.4", n:"до Ø20мм Бетон", p:35, u:"п/см"},
         {id:"1.5", n:"до Ø20мм Плита", p:40, u:"п/см"}, {id:"1.6", n:"до Ø36мм Дерево", p:20, u:"п/см"},
@@ -518,7 +488,6 @@ const db = [
     
     { cat: "33.прочие", items: [
         {id:"33.1", n:"точка", p:500, u:"шт"},
-    ]},
     ]},
 ];
 
