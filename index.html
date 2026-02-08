@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Смета Электромонтаж</title>
+    <title>Смета Электромонтаж 2026</title>
     <style>
         :root { --primary: #1a73e8; --success: #2db855; --danger: #e53935; --dark: #202124; --bg: #f1f3f4; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 140px; color: var(--dark); }
@@ -19,7 +19,18 @@
         .chat-header { background: var(--dark); color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
         .close-chat-btn { background: var(--danger); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
 
-        /* Поля данных заказчика */
+        /* Индикатор уведомлений */
+        .chat-btn-wrapper { position: relative; display: inline-block; }
+        .notification-dot { 
+            position: absolute; top: -2px; right: -2px; 
+            width: 10px; height: 10px; 
+            background: #ff5252; border: 2px solid white; 
+            border-radius: 50%; display: block; 
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        /* Инфо-поля */
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--dark); padding-bottom: 15px; }
         .info-input { border: 1px solid #ddd; padding: 8px; border-radius: 4px; font-size: 14px; width: 100%; box-sizing: border-box; }
         
@@ -30,110 +41,99 @@
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         
-        /* Кнопки и формы */
-        .head-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-left: 5px; }
-        .qty-inp { width: 50px; border: 1px solid #ddd; padding: 4px; text-align: center; font-weight: bold; }
-        .section-box { border: 1px solid #ddd; margin-bottom: 5px; border-radius: 5px; overflow: hidden; }
-        .section-header { padding: 10px; background: #eee; cursor: pointer; font-weight: bold; font-size: 12px; }
-        .section-content { display: none; padding: 5px 10px; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
-        
-        /* Подписи */
-        .sign-block { display: none; margin-top: 40px; justify-content: space-between; }
-        .sign-line { border-top: 1px solid black; width: 200px; margin-top: 40px; text-align: center; font-size: 12px; }
-
+        /* Итоги */
+        .summary-row { margin-top: 15px; text-align: right; font-size: 18px; border-top: 2px solid #333; padding-top: 10px; font-weight: bold; }
         .footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 1001; }
         .total-amount { font-size: 24px; color: #ffeb3b; font-weight: 900; }
+
+        /* Кнопки каталога */
+        .head-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-left: 5px; }
+        .section-box { border: 1px solid #ddd; margin-bottom: 5px; border-radius: 5px; overflow: hidden; }
+        .section-header { padding: 12px; background: #eee; cursor: pointer; font-weight: bold; font-size: 14px; border-bottom: 1px solid #ddd; }
+        .section-content { display: none; padding: 5px 10px; background: #fff; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f9f9f9; }
+        .qty-inp { width: 60px; border: 1px solid #ccc; padding: 5px; text-align: center; font-weight: bold; border-radius: 4px; }
 
         #modal-custom { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
         .modal-content { background: white; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; }
 
         @media print {
-            .no-print, #chat-container { display: none !important; }
+            .no-print, #chat-container, .chat-btn-wrapper, .notification-dot { display: none !important; }
             body { background: white; padding-bottom: 0; }
             .container { box-shadow: none; max-width: 100%; width: 100%; padding: 0; }
             .estimate-table td { font-size: 12px; color: black !important; }
             .qty-inp { border: none !important; }
-            .sign-block { display: flex !important; }
-            .total-amount { color: black; font-size: 18px; }
+            .sign-block { display: flex !important; margin-top: 50px; justify-content: space-between; }
+            .sign-line { border-top: 1px solid #000; width: 200px; text-align: center; font-size: 12px; padding-top: 5px; }
+            .summary-row { display: block !important; border-top: 1px solid #000; }
             .info-input { border: none; padding: 0; font-weight: bold; }
         }
     </style>
 </head>
 <body>
 
+<audio id="chat-sound" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3" preload="auto"></audio>
+
 <div id="chat-container">
     <div class="chat-header">
-        <span>Онлайн чат</span>
-        <button class="close-chat-btn" onclick="toggleChat(false)">ЗАКРЫТЬ ЧАТ ✕</button>
+        <span>Чат поддержки</span>
+        <button class="close-chat-btn" onclick="toggleChat(false)">ЗАКРЫТЬ ✕</button>
     </div>
     <iframe id="chat-frame" src="about:blank"></iframe>
 </div>
 
 <div id="modal-custom" class="no-print" onclick="this.style.display='none'">
     <div class="modal-content" onclick="event.stopPropagation()">
-        <h3>Свой материал/работа</h3>
-        <input type="text" id="custom-name" style="width:100%; margin-bottom:10px; padding:10px;" placeholder="Название">
-        <input type="number" id="custom-price" style="width:100%; margin-bottom:10px; padding:10px;" placeholder="Цена">
-        <input type="text" id="custom-unit" style="width:100%; margin-bottom:10px; padding:10px;" placeholder="Ед. (шт/м.п.)" value="шт">
-        <button onclick="addCustomItem()" style="width:100%; padding:10px; background:var(--success); color:white; border:none; border-radius:5px;">ДОБАВИТЬ</button>
+        <h3>Своя работа / Материал</h3>
+        <input type="text" id="custom-name" style="width:100%; margin-bottom:10px; padding:10px; box-sizing:border-box;" placeholder="Название">
+        <input type="number" id="custom-price" style="width:100%; margin-bottom:10px; padding:10px; box-sizing:border-box;" placeholder="Цена">
+        <input type="text" id="custom-unit" style="width:100%; margin-bottom:10px; padding:10px; box-sizing:border-box;" placeholder="Ед.изм" value="шт">
+        <button onclick="addCustomItem()" style="width:100%; padding:12px; background:var(--success); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">ДОБАВИТЬ В СМЕТУ</button>
     </div>
 </div>
 
 <div class="header no-print">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-weight:bold;">Калькулятор</span>
+        <span style="font-weight:bold;">🔌 Смета Master 2026</span>
         <div>
-            <button class="head-btn" onclick="toggleChat(true)" title="Открыть чат">📨</button>
-            <button class="head-btn" onclick="document.getElementById('modal-custom').style.display='flex'"><style>
-  .green-plus {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;          /* Размер круга */
-    height: 30px;
-    background-color: #5cb377; /* Тот самый зеленый с фото */
-    color: white;         /* Цвет плюса */
-    border-radius: 50%;    /* Делает круглым */
-    font-family: Arial, sans-serif;
-    font-size: 24px;      /* Размер плюса */
-    font-weight: bold;
-    cursor: pointer;
-    user-select: none;    /* Чтобы нельзя было случайно выделить текст */
-  }
-</style>
-
-<div class="green-plus">+</div>
-</button>
+            <div class="chat-btn-wrapper">
+                <button class="head-btn" onclick="toggleChat(true)">📨</button>
+                <span id="chat-dot" class="notification-dot"></span>
+            </div>
+            <button class="head-btn" onclick="document.getElementById('modal-custom').style.display='flex'">📦 +</button>
             <button class="head-btn" onclick="resetSmeta()">СБРОС</button>
         </div>
     </div>
-    <input type="text" id="search" class="search-box" placeholder="Поиск работ...">
+    <input type="text" id="search" class="search-box" placeholder="Поиск работ..." oninput="renderCatalog(this.value)">
 </div>
 
 <div class="container">
-    <div id="catalog" class="no-print" style="margin-bottom: 30px;"></div>
+    <div id="catalog" class="no-print" style="margin-bottom: 25px;"></div>
 
     <div class="info-grid">
         <div>
             <label style="font-size:10px; color:#666;">ЗАКАЗЧИК:</label>
-            <input type="text" class="info-input" placeholder="ФИО Заказчика">
+            <input type="text" id="client-name" class="info-input" placeholder="Введите ФИО" oninput="saveInfo()">
             <label style="font-size:10px; color:#666; margin-top:5px; display:block;">ОБЪЕКТ:</label>
-            <input type="text" class="info-input" placeholder="Адрес объекта">
+            <input type="text" id="client-address" class="info-input" placeholder="Адрес проведения работ" oninput="saveInfo()">
         </div>
         <div style="text-align: right;">
             <label style="font-size:10px; color:#666;">ДАТА:</label>
-            <div id="estimate-date" style="font-weight:bold;"></div>
-            <label style="font-size:10px; color:#666; margin-top:5px; display:block;">ИСПОЛНИТЕЛЬ:</label>
-            <input type="text" class="info-input" style="text-align:right;" placeholder="ФИО Мастера">
+            <div id="estimate-date" style="font-weight:bold; margin-bottom: 5px;"></div>
+            <label style="font-size:10px; color:#666; display:block;">ИСПОЛНИТЕЛЬ:</label>
+            <input type="text" id="master-name" class="info-input" style="text-align:right;" placeholder="ФИО Мастера" oninput="saveInfo()">
         </div>
     </div>
 
-    <h2 style="text-align:center; text-transform:uppercase; font-size:18px;">Смета на электромонтажные работы</h2>
+    <h2 style="text-align:center; text-transform:uppercase; font-size:18px; margin: 20px 0;">Смета на электромонтаж</h2>
 
     <div id="estimate"></div>
 
-    <div class="sign-block">
+    <div id="summary-bottom" class="summary-row">
+        ИТОГО: <span id="total-bottom">0</span> ₽
+    </div>
+
+    <div class="sign-block" style="display: none;">
         <div class="sign-line">Исполнитель (подпись)</div>
         <div class="sign-line">Заказчик (подпись)</div>
     </div>
@@ -144,25 +144,11 @@
         <div style="font-size:10px; opacity:0.8;">ИТОГО К ОПЛАТЕ:</div>
         <div class="total-amount"><span id="total">0</span> ₽</div>
     </div>
-    <button style="background:#fff; color:#000; border:none; padding:12px 25px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="window.print()">ПЕЧАТЬ (PDF)</button>
+    <button style="background:#fff; color:#000; border:none; padding:12px 25px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="window.print()">ПЕЧАТЬ / PDF</button>
 </div>
 
 <script>
-// Функция управления чатом
-function toggleChat(show) {
-    const container = document.getElementById('chat-container');
-    const frame = document.getElementById('chat-frame');
-    if (show) {
-        container.style.display = 'flex';
-        // Загружаем фрейм только при открытии, чтобы не грузить ресурсы зря
-        if (frame.src === "about:blank") {
-            frame.src = "https://ttaannkk115-gif.github.io/signa/";
-        }
-    } else {
-        container.style.display = 'none';
-    }
-}
-
+// --- КАТАЛОГ РАБОТ ---
 const db = [
     { cat: "1. Технологические отверстия", items: [
         {id:"1.1", n:"до Ø20мм Дерево", p:15, u:"п/см"}, {id:"1.2", n:"до Ø20мм Газоблок", p:20, u:"п/см"},
@@ -540,8 +526,9 @@ const db = [
     ]},
 ];
 
-let state = JSON.parse(localStorage.getItem('smeta_2026_table')) || [];
+let state = JSON.parse(localStorage.getItem('smeta_items_2026')) || [];
 
+// --- ЛОГИКА ОТОБРАЖЕНИЯ ---
 function renderCatalog(filter = "") {
     const list = document.getElementById('catalog');
     list.innerHTML = "";
@@ -550,18 +537,19 @@ function renderCatalog(filter = "") {
         if (!items.length) return;
         const box = document.createElement('div');
         box.className = 'section-box';
-        box.innerHTML = `<div class="section-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'">${sec.cat}</div>`;
-        const content = document.createElement('div');
-        content.className = 'section-content';
+        box.innerHTML = `
+            <div class="section-header" onclick="this.nextElementSibling.style.display = (this.nextElementSibling.style.display === 'block' ? 'none' : 'block')">${sec.cat}</div>
+            <div class="section-content"></div>
+        `;
+        const content = box.querySelector('.section-content');
         if(filter) content.style.display = 'block';
         items.forEach(item => {
             content.innerHTML += `
                 <div class="item-row">
                     <div style="font-size:13px;">${item.n} <br><small>${item.p}₽ / ${item.u}</small></div>
-                    <button onclick="addItem('${item.id}')" style="background:var(--success); color:white; border:none; padding:5px 10px; border-radius:4px;">+</button>
+                    <button onclick="addItem('${item.id}')" style="background:var(--success); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">+</button>
                 </div>`;
         });
-        box.appendChild(content);
         list.appendChild(box);
     });
 }
@@ -581,10 +569,12 @@ function addCustomItem() {
     state.push({ id: Date.now(), n, p: parseFloat(p), u, qty: 1, k: false });
     sync();
     document.getElementById('modal-custom').style.display='none';
+    document.getElementById('custom-name').value = '';
+    document.getElementById('custom-price').value = '';
 }
 
 function sync() {
-    localStorage.setItem('smeta_2026_table', JSON.stringify(state));
+    localStorage.setItem('smeta_items_2026', JSON.stringify(state));
     const list = document.getElementById('estimate');
     document.getElementById('estimate-date').innerText = new Date().toLocaleDateString('ru-RU');
 
@@ -593,7 +583,7 @@ function sync() {
         <thead>
             <tr>
                 <th class="text-center">№</th>
-                <th>Наименование работ</th>
+                <th>Наименование</th>
                 <th class="text-center">Кол-во</th>
                 <th class="text-center">Ед.</th>
                 <th class="text-right">Цена</th>
@@ -609,29 +599,79 @@ function sync() {
         html += `
             <tr>
                 <td class="text-center">${i + 1}</td>
-                <td>${item.n} ${item.k ? '<small style="color:red">(x2.5 Стеснённость)</small>' : ''}</td>
+                <td>${item.n} ${item.k ? '<br><small style="color:red">Коэф. 2.5</small>' : ''}</td>
                 <td class="text-center"><input type="number" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)"></td>
                 <td class="text-center">${item.u}</td>
                 <td class="text-right">${item.p}</td>
                 <td class="text-right"><b>${currentSum.toLocaleString()}</b></td>
                 <td class="no-print text-center">
-                    <input type="checkbox" ${item.k ? 'checked' : ''} onchange="toggleK(${i})" title="Коэф. 2.5">
-                    <span onclick="remove(${i})" style="color:red; cursor:pointer; margin-left:10px;">✕</span>
+                    <input type="checkbox" ${item.k ? 'checked' : ''} onchange="toggleK(${i})" title="Коэф 2.5">
+                    <span onclick="remove(${i})" style="color:red; cursor:pointer; margin-left:10px; font-weight:bold;">✕</span>
                 </td>
             </tr>`;
     });
 
     html += `</tbody></table>`;
-    list.innerHTML = state.length ? html : "<p style='color:#999; text-align:center;'>Список работ пуст</p>";
+    list.innerHTML = state.length ? html : "<p style='color:#999; text-align:center; padding: 20px;'>Смета пуста. Выберите работы из каталога выше.</p>";
+    
     document.getElementById('total').innerText = total.toLocaleString();
+    document.getElementById('total-bottom').innerText = total.toLocaleString();
+    document.getElementById('summary-bottom').style.display = state.length ? 'block' : 'none';
 }
 
+// --- СОХРАНЕНИЕ ДАННЫХ ---
+function saveInfo() {
+    const info = {
+        client: document.getElementById('client-name').value,
+        address: document.getElementById('client-address').value,
+        master: document.getElementById('master-name').value
+    };
+    localStorage.setItem('smeta_master_info', JSON.stringify(info));
+}
+
+function loadInfo() {
+    const info = JSON.parse(localStorage.getItem('smeta_master_info'));
+    if (info) {
+        document.getElementById('client-name').value = info.client || '';
+        document.getElementById('client-address').value = info.address || '';
+        document.getElementById('master-name').value = info.master || '';
+    }
+}
+
+// --- ЧАТ И ЗВУК ---
+function toggleChat(show) {
+    const container = document.getElementById('chat-container');
+    const frame = document.getElementById('chat-frame');
+    const sound = document.getElementById('chat-sound');
+    const dot = document.getElementById('chat-dot');
+
+    if (show) {
+        dot.style.display = 'none';
+        sound.play().catch(() => {});
+        container.style.display = 'flex';
+        if (frame.src === "about:blank") frame.src = "https://ttaannkk115-gif.github.io/signa/";
+    } else {
+        container.style.display = 'none';
+    }
+}
+
+// --- ФУНКЦИИ УПРАВЛЕНИЯ ---
 window.updateQty = (i, v) => { state[i].qty = parseFloat(v) || 0; sync(); }
 window.toggleK = (i) => { state[i].k = !state[i].k; sync(); }
 window.remove = (i) => { state.splice(i, 1); sync(); }
-window.resetSmeta = () => { if(confirm("Очистить всё?")) { state = []; sync(); } }
-document.getElementById('search').addEventListener('input', e => renderCatalog(e.target.value));
+window.resetSmeta = () => {
+    if(confirm("Очистить таблицу? ФИО Мастера сохранится.")) {
+        state = [];
+        const currentMaster = document.getElementById('master-name').value;
+        document.getElementById('client-name').value = '';
+        document.getElementById('client-address').value = '';
+        saveInfo();
+        sync();
+    }
+}
 
+// Старт
+loadInfo();
 renderCatalog();
 sync();
 </script>
