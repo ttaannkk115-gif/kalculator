@@ -3,71 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Смета Электромонтаж 2026</title>
+    <title>MasterSmeta 2026</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Смета 2026">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2906/2906231.png">
+    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Смета%20Электромонтаж%22,%22short_name%22:%22Смета%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%231a73e8%22,%22theme_color%22:%22%231a73e8%22,%22icons%22:[{%22src%22:%22https://cdn-icons-png.flaticon.com/512/2906/2906231.png%22,%22sizes%22:%22512x512%22,%22type%22:%22image/png%22}]}">
+
     <style>
         :root { --primary: #1a73e8; --success: #2db855; --danger: #e53935; --dark: #202124; --bg: #f1f3f4; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 140px; color: var(--dark); }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 140px; color: var(--dark); overflow-x: hidden; }
         
         /* Интерфейс */
         .header { position: sticky; top: 0; background: var(--primary); color: white; padding: 10px 15px; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .search-box { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 16px; margin-top: 8px; box-sizing: border-box; }
         .container { padding: 15px; max-width: 900px; margin: auto; background: white; min-height: 100vh; }
         
-        /* Окна (Чат и Калькулятор) */
+        /* Всплывающие окна */
         #chat-container, #extra-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; flex-direction: column; -webkit-overflow-scrolling: touch; }
-        #extra-container { z-index: 4000; } /* Калькулятор выше всех */
-        
+        #extra-container { z-index: 4000; }
         .chat-header { background: var(--dark); color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
         .close-chat-btn { background: var(--danger); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         iframe { border: none; flex-grow: 1; width: 100%; height: 100%; }
 
-        /* Индикатор уведомлений */
+        /* Кнопки и Индикаторы */
         .chat-btn-wrapper { position: relative; display: inline-block; }
-        .notification-dot { 
-            position: absolute; top: -2px; right: -2px; 
-            width: 10px; height: 10px; 
-            background: #ff5252; border: 2px solid white; 
-            border-radius: 50%; display: block; 
-            animation: pulse 2s infinite;
-        }
+        .notification-dot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #ff5252; border: 2px solid white; border-radius: 50%; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        .head-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; margin-left: 5px; font-size: 18px; }
 
-        /* Инфо-поля */
+        /* Таблица и Инфо */
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--dark); padding-bottom: 15px; }
         .info-input { border: 1px solid #ddd; padding: 8px; border-radius: 4px; font-size: 14px; width: 100%; box-sizing: border-box; }
-        
-        /* Таблица */
         .estimate-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .estimate-table th, .estimate-table td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 13px; }
-        .estimate-table th { background: #f0f0f0; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        
-        /* Итоги */
-        .summary-row { margin-top: 15px; text-align: right; font-size: 18px; border-top: 2px solid #333; padding-top: 10px; font-weight: bold; }
+        .qty-inp { width: 65px; border: 1px solid #ccc; padding: 5px; text-align: center; font-weight: bold; }
+
+        /* Футер */
         .footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 1001; }
         .total-amount { font-size: 24px; color: #ffeb3b; font-weight: 900; }
 
-        /* Кнопки */
-        .head-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-left: 5px; font-size: 18px; }
+        /* Каталог */
         .section-box { border: 1px solid #ddd; margin-bottom: 5px; border-radius: 5px; overflow: hidden; }
-        .section-header { padding: 12px; background: #eee; cursor: pointer; font-weight: bold; font-size: 14px; border-bottom: 1px solid #ddd; }
+        .section-header { padding: 12px; background: #eee; cursor: pointer; font-weight: bold; }
         .section-content { display: none; padding: 5px 10px; background: #fff; }
         .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f9f9f9; }
-        .qty-inp { width: 60px; border: 1px solid #ccc; padding: 5px; text-align: center; font-weight: bold; border-radius: 4px; }
-
-        #modal-custom { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; }
 
         @media print {
-            .no-print, #chat-container, #extra-container, .chat-btn-wrapper, .notification-dot { display: none !important; }
+            .no-print { display: none !important; }
             body { background: white; padding-bottom: 0; }
-            .container { box-shadow: none; max-width: 100%; width: 100%; padding: 0; }
-            .estimate-table td { font-size: 12px; color: black !important; }
-            .qty-inp { border: none !important; }
+            .container { width: 100%; padding: 0; }
             .sign-block { display: flex !important; margin-top: 50px; justify-content: space-between; }
             .sign-line { border-top: 1px solid #000; width: 200px; text-align: center; font-size: 12px; padding-top: 5px; }
-            .info-input { border: none; padding: 0; font-weight: bold; }
         }
     </style>
 </head>
@@ -77,7 +65,7 @@
 
 <div id="extra-container">
     <div class="chat-header" style="background: #444;">
-        <span>Инженерный калькулятор</span>
+        <span>Инженерные расчеты 🧮</span>
         <button class="close-chat-btn" onclick="toggleExtra(false)">ЗАКРЫТЬ ✕</button>
     </div>
     <iframe id="extra-frame" src="about:blank"></iframe>
@@ -85,27 +73,17 @@
 
 <div id="chat-container">
     <div class="chat-header">
-        <span>Чат поддержки</span>
+        <span>Поддержка 📨</span>
         <button class="close-chat-btn" onclick="toggleChat(false)">ЗАКРЫТЬ ✕</button>
     </div>
     <iframe id="chat-frame" src="about:blank"></iframe>
 </div>
 
-<div id="modal-custom" class="no-print" onclick="this.style.display='none'">
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <h3>Своя работа / Материал</h3>
-        <input type="text" id="custom-name" style="width:100%; margin-bottom:10px; padding:10px; box-sizing:border-box;" placeholder="Название">
-        <input type="number" id="custom-price" style="width:100%; margin-bottom:10px; padding:10px; box-sizing:border-box;" placeholder="Цена">
-        <input type="text" id="custom-unit" style="width:100%; margin-bottom:10px; padding:10px; box-sizing:border-box;" placeholder="Ед.изм" value="шт">
-        <button onclick="addCustomItem()" style="width:100%; padding:12px; background:var(--success); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">ДОБАВИТЬ В СМЕТУ</button>
-    </div>
-</div>
-
 <div class="header no-print">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-weight:bold;">2026</span>
+        <span style="font-weight:bold;">MasterSmeta 2026</span>
         <div>
-            <button class="head-btn" onclick="toggleExtra(true)">🧮</button>
+            <button class="head-btn" onclick="toggleExtra(true)" title="Расчеты">🧮</button>
             <div class="chat-btn-wrapper">
                 <button class="head-btn" onclick="toggleChat(true)">📨</button>
                 <span id="chat-dot" class="notification-dot"></span>
@@ -118,43 +96,48 @@
 </div>
 
 <div class="container">
-    <div id="catalog" class="no-print" style="margin-bottom: 25px;"></div>
+    <div id="catalog" class="no-print"></div>
 
     <div class="info-grid">
         <div>
-            <label style="font-size:10px; color:#666;">ЗАКАЗЧИК:</label>
-            <input type="text" id="client-name" class="info-input" placeholder="Введите ФИО" oninput="saveInfo()">
-            <label style="font-size:10px; color:#666; margin-top:5px; display:block;">ОБЪЕКТ:</label>
-            <input type="text" id="client-address" class="info-input" placeholder="Адрес проведения работ" oninput="saveInfo()">
+            <label style="font-size:10px;">ЗАКАЗЧИК:</label>
+            <input type="text" id="client-name" class="info-input" placeholder="ФИО" oninput="saveInfo()">
+            <label style="font-size:10px; display:block; margin-top:5px;">ОБЪЕКТ:</label>
+            <input type="text" id="client-address" class="info-input" placeholder="Адрес" oninput="saveInfo()">
         </div>
         <div style="text-align: right;">
-            <label style="font-size:10px; color:#666;">ДАТА:</label>
-            <div id="estimate-date" style="font-weight:bold; margin-bottom: 5px;"></div>
-            <label style="font-size:10px; color:#666; display:block;">ИСПОЛНИТЕЛЬ:</label>
+            <label style="font-size:10px;">ДАТА:</label>
+            <div id="estimate-date" style="font-weight:bold;"></div>
+            <label style="font-size:10px; display:block; margin-top:5px;">МАСТЕР:</label>
             <input type="text" id="master-name" class="info-input" style="text-align:right;" placeholder="ФИО Мастера" oninput="saveInfo()">
         </div>
     </div>
 
-    <h2 style="text-align:center; text-transform:uppercase; font-size:18px; margin: 20px 0;">Смета на электромонтаж</h2>
-
+    <h2 style="text-align:center; text-transform:uppercase; font-size:16px;">Смета на электромонтажные работы</h2>
     <div id="estimate"></div>
-
-    <div id="summary-bottom" class="summary-row">
-        ИТОГО: <span id="total-bottom">0</span> ₽
-    </div>
+    <div id="summary-bottom" class="summary-row" style="text-align:right; font-weight:bold; margin-top:20px; font-size:18px;">ИТОГО: <span id="total-bottom">0</span> ₽</div>
 
     <div class="sign-block" style="display: none;">
-        <div class="sign-line">Исполнитель (подпись)</div>
-        <div class="sign-line">Заказчик (подпись)</div>
+        <div class="sign-line">Исполнитель</div>
+        <div class="sign-line">Заказчик</div>
     </div>
 </div>
 
 <div class="footer no-print">
     <div>
-        <div style="font-size:10px; opacity:0.8;">ИТОГО К ОПЛАТЕ:</div>
+        <div style="font-size:10px;">ИТОГО К ОПЛАТЕ:</div>
         <div class="total-amount"><span id="total">0</span> ₽</div>
     </div>
-    <button style="background:#fff; color:#000; border:none; padding:12px 25px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="window.print()">ПЕЧАТЬ / PDF</button>
+    <button style="background:#fff; color:#000; border:none; padding:12px 20px; border-radius:8px; font-weight:bold;" onclick="window.print()">ПЕЧАТЬ PDF</button>
+</div>
+
+<div id="modal-custom" class="no-print" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:5000; align-items:center; justify-content:center;" onclick="this.style.display='none'">
+    <div class="modal-content" style="background:white; padding:20px; border-radius:15px; width:90%;" onclick="event.stopPropagation()">
+        <h3>Своя позиция</h3>
+        <input type="text" id="custom-name" class="info-input" placeholder="Название" style="margin-bottom:10px;">
+        <input type="number" id="custom-price" class="info-input" placeholder="Цена" style="margin-bottom:10px;">
+        <button onclick="addCustomItem()" style="width:100%; padding:12px; background:var(--success); color:white; border:none; border-radius:8px;">ДОБАВИТЬ</button>
+    </div>
 </div>
 
 <script>
@@ -539,6 +522,25 @@ const db = [
 
 let state = JSON.parse(localStorage.getItem('smeta_items_2026')) || [];
 
+function sync() {
+    localStorage.setItem('smeta_items_2026', JSON.stringify(state));
+    const list = document.getElementById('estimate');
+    document.getElementById('estimate-date').innerText = new Date().toLocaleDateString('ru-RU');
+    let total = 0;
+    let html = `<table class="estimate-table"><thead><tr><th>№</th><th>Наименование</th><th>Кол-во</th><th>Сумма</th><th class="no-print"></th></tr></thead><tbody>`;
+    state.forEach((item, i) => {
+        const sum = Math.round(item.p * item.qty * (item.k ? 2.5 : 1));
+        total += sum;
+        html += `<tr><td>${i+1}</td><td>${item.n}${item.k ? '<br><small style="color:red">Коэф 2.5</small>':''}</td>
+        <td><input type="number" inputmode="decimal" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)"></td>
+        <td>${sum.toLocaleString()}</td><td class="no-print">
+        <input type="checkbox" ${item.k?'checked':''} onchange="toggleK(${i})"> <span onclick="remove(${i})" style="color:red">✕</span></td></tr>`;
+    });
+    list.innerHTML = state.length ? html + `</tbody></table>` : "<p style='text-align:center'>Смета пуста</p>";
+    document.getElementById('total').innerText = total.toLocaleString();
+    document.getElementById('total-bottom').innerText = total.toLocaleString();
+}
+
 function renderCatalog(filter = "") {
     const list = document.getElementById('catalog');
     list.innerHTML = "";
@@ -547,143 +549,80 @@ function renderCatalog(filter = "") {
         if (!items.length) return;
         const box = document.createElement('div');
         box.className = 'section-box';
-        box.innerHTML = `<div class="section-header" onclick="toggleSection(this)">${sec.cat}</div><div class="section-content"></div>`;
+        box.innerHTML = `<div class="section-header" onclick="this.nextElementSibling.style.display=(this.nextElementSibling.style.display==='block'?'none':'block')">${sec.cat}</div><div class="section-content"></div>`;
         const content = box.querySelector('.section-content');
         if(filter) content.style.display = 'block';
         items.forEach(item => {
-            content.innerHTML += `
-                <div class="item-row">
-                    <div style="font-size:13px;">${item.n} <br><small>${item.p}₽ / ${item.u}</small></div>
-                    <button onclick="addItem('${item.id}')" style="background:var(--success); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">+</button>
-                </div>`;
+            content.innerHTML += `<div class="item-row"><div>${item.n}<br><small>${item.p}₽/${item.u}</small></div><button onclick="addItem('${item.id}')" style="background:var(--success); color:white; border:none; padding:8px; border-radius:5px;">+</button></div>`;
         });
         list.appendChild(box);
     });
 }
 
-function toggleSection(el) {
-    const content = el.nextElementSibling;
-    content.style.display = (content.style.display === 'block' ? 'none' : 'block');
-}
-
 function addItem(id) {
-    let raw;
-    db.forEach(s => s.items.forEach(i => { if(i.id === id) raw = i; }));
-    state.push({ ...raw, qty: 1, k: false });
+    db.forEach(s => s.items.forEach(i => { if(i.id === id) state.push({...i, qty:1, k:false}); }));
     sync();
 }
 
 function addCustomItem() {
-    const n = document.getElementById('custom-name').value;
-    const p = document.getElementById('custom-price').value;
-    const u = document.getElementById('custom-unit').value;
-    if(!n || !p) return;
-    state.push({ id: Date.now(), n, p: parseFloat(p), u, qty: 1, k: false });
-    sync();
-    document.getElementById('modal-custom').style.display='none';
-    document.getElementById('custom-name').value = '';
-    document.getElementById('custom-price').value = '';
+    const n = document.getElementById('custom-name').value, p = document.getElementById('custom-price').value;
+    if(n && p) { state.push({id:Date.now(), n, p:parseFloat(p), u:'шт', qty:1, k:false}); sync(); document.getElementById('modal-custom').style.display='none'; }
 }
 
-function sync() {
-    localStorage.setItem('smeta_items_2026', JSON.stringify(state));
-    const list = document.getElementById('estimate');
-    document.getElementById('estimate-date').innerText = new Date().toLocaleDateString('ru-RU');
-
-    let total = 0;
-    let html = `<table class="estimate-table">
-        <thead>
-            <tr><th class="text-center">№</th><th>Наименование</th><th class="text-center">Кол-во</th><th class="text-center">Ед.</th><th class="text-right">Цена</th><th class="text-right">Сумма</th><th class="no-print"></th></tr>
-        </thead><tbody>`;
-
-    state.forEach((item, i) => {
-        const currentSum = Math.round(item.p * item.qty * (item.k ? 2.5 : 1));
-        total += currentSum;
-        html += `
-            <tr>
-                <td class="text-center">${i + 1}</td>
-                <td>${item.n} ${item.k ? '<br><small style="color:red">Коэф. 2.5</small>' : ''}</td>
-                <td class="text-center"><input type="number" inputmode="decimal" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)"></td>
-                <td class="text-center">${item.u}</td>
-                <td class="text-right">${item.p}</td>
-                <td class="text-right"><b>${currentSum.toLocaleString()}</b></td>
-                <td class="no-print text-center">
-                    <input type="checkbox" ${item.k ? 'checked' : ''} onchange="toggleK(${i})" title="Коэф 2.5">
-                    <span onclick="remove(${i})" style="color:red; cursor:pointer; margin-left:10px; font-weight:bold;">✕</span>
-                </td>
-            </tr>`;
-    });
-
-    html += `</tbody></table>`;
-    list.innerHTML = state.length ? html : "<p style='color:#999; text-align:center; padding: 20px;'>Смета пуста.</p>";
-    document.getElementById('total').innerText = total.toLocaleString();
-    document.getElementById('total-bottom').innerText = total.toLocaleString();
-}
-
-// --- УПРАВЛЕНИЕ ОКНАМИ ---
 function toggleChat(show) {
-    const container = document.getElementById('chat-container');
-    const frame = document.getElementById('chat-frame');
-    if (show) {
-        document.getElementById('chat-dot').style.display = 'none';
-        document.getElementById('chat-sound').play().catch(() => {});
-        container.style.display = 'flex';
-        if (frame.src === "about:blank") frame.src = "https://ttaannkk115-gif.github.io/signa/";
-        history.pushState({ win: 'chat' }, '');
-    } else {
-        container.style.display = 'none';
-    }
+    const win = document.getElementById('chat-container');
+    if(show) { 
+        win.style.display = 'flex'; 
+        document.getElementById('chat-frame').src = "https://ttaannkk115-gif.github.io/signa/";
+        history.pushState({w:'c'},''); 
+    } else { win.style.display = 'none'; }
 }
 
 function toggleExtra(show) {
-    const container = document.getElementById('extra-container');
-    const frame = document.getElementById('extra-frame');
-    if (show) {
-        container.style.display = 'flex';
-        if (frame.src === "about:blank") frame.src = "https://ttaannkk115-gif.github.io/-/";
-        history.pushState({ win: 'extra' }, '');
-    } else {
-        container.style.display = 'none';
-    }
+    const win = document.getElementById('extra-container');
+    if(show) { 
+        win.style.display = 'flex'; 
+        document.getElementById('extra-frame').src = "https://ttaannkk115-gif.github.io/-/";
+        history.pushState({w:'e'},''); 
+    } else { win.style.display = 'none'; }
 }
 
-window.onpopstate = function() {
-    document.getElementById('chat-container').style.display = 'none';
-    document.getElementById('extra-container').style.display = 'none';
+window.onpopstate = () => { 
+    document.getElementById('chat-container').style.display = 'none'; 
+    document.getElementById('extra-container').style.display = 'none'; 
 };
 
-// --- ВСПОМОГАТЕЛЬНЫЕ ---
 function saveInfo() {
-    const info = {
+    localStorage.setItem('smeta_master_info', JSON.stringify({
         client: document.getElementById('client-name').value,
         address: document.getElementById('client-address').value,
         master: document.getElementById('master-name').value
-    };
-    localStorage.setItem('smeta_master_info', JSON.stringify(info));
+    }));
 }
 
 function loadInfo() {
     const info = JSON.parse(localStorage.getItem('smeta_master_info'));
-    if (info) {
+    if(info) {
         document.getElementById('client-name').value = info.client || '';
         document.getElementById('client-address').value = info.address || '';
         document.getElementById('master-name').value = info.master || '';
     }
 }
 
-window.updateQty = (i, v) => { state[i].qty = parseFloat(v) || 0; sync(); }
-window.toggleK = (i) => { state[i].k = !state[i].k; sync(); }
-window.remove = (i) => { state.splice(i, 1); sync(); }
-window.resetSmeta = () => {
-    if(confirm("Очистить таблицу?")) {
-        state = [];
-        sync();
-    }
+// Регистрация ОФЛАЙН режима
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        const blob = new Blob([`const C='s-v1';self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll([location.href]))));self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));`], {type:'text/javascript'});
+        navigator.serviceWorker.register(URL.createObjectURL(blob));
+    });
 }
 
-loadInfo();
-renderCatalog();
-sync();
+window.updateQty = (i, v) => { state[i].qty = parseFloat(v)||0; sync(); }
+window.toggleK = (i) => { state[i].k = !state[i].k; sync(); }
+window.remove = (i) => { state.splice(i,1); sync(); }
+window.resetSmeta = () => { if(confirm("Очистить?")) { state = []; sync(); } }
+
+loadInfo(); renderCatalog(); sync();
 </script>
 </body>
 </html>
