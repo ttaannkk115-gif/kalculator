@@ -9,10 +9,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Смета 2026">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2906/2906231.png">
-    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Смета%20Электромонтаж%22,%22short_name%22:%22Смета%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%231a73e8%22,%22theme_color%22:%22%231a73e8%22,%22icons%22:[{%22src%22:%22https://cdn-icons-png.flaticon.com/512/2906/2906231.png%22,%22sizes%22:%22512x512%22,%22type%22:%22image/png%22}]}">
-
+    
     <style>
-        :root { --primary: #1a73e8; --success: #2db855; --danger: #e53935; --dark: #202124; --bg: #f1f3f4; }
+        :root { --primary: #1a73e8; --success: #2db855; --danger: #e53935; --dark: #202124; --bg: #f1f3f4; --admin: #fff3e0; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 140px; color: var(--dark); overflow-x: hidden; }
         
         /* Интерфейс */
@@ -22,27 +21,20 @@
         
         /* Всплывающие окна */
         #chat-container, #extra-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; flex-direction: column; -webkit-overflow-scrolling: touch; }
-        #extra-container { z-index: 4000; }
         .chat-header { background: var(--dark); color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
         .close-chat-btn { background: var(--danger); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         iframe { border: none; flex-grow: 1; width: 100%; height: 100%; }
 
-        /* Кнопки и Индикаторы */
+        /* Кнопки */
+        .head-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; margin-left: 5px; font-size: 18px; }
         .chat-btn-wrapper { position: relative; display: inline-block; }
         .notification-dot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #ff5252; border: 2px solid white; border-radius: 50%; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-        .head-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; margin-left: 5px; font-size: 18px; }
 
-        /* Таблица и Инфо */
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--dark); padding-bottom: 15px; }
-        .info-input { border: 1px solid #ddd; padding: 8px; border-radius: 4px; font-size: 14px; width: 100%; box-sizing: border-box; }
+        /* Таблица */
         .estimate-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .estimate-table th, .estimate-table td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 13px; }
         .qty-inp { width: 65px; border: 1px solid #ccc; padding: 5px; text-align: center; font-weight: bold; }
-
-        /* Футер */
-        .footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 1001; }
-        .total-amount { font-size: 24px; color: #ffeb3b; font-weight: 900; }
 
         /* Каталог */
         .section-box { border: 1px solid #ddd; margin-bottom: 5px; border-radius: 5px; overflow: hidden; }
@@ -50,79 +42,32 @@
         .section-content { display: none; padding: 5px 10px; background: #fff; }
         .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f9f9f9; }
 
-        @media print {
-            .no-print { display: none !important; }
-            body { background: white; padding-bottom: 0; }
-            .container { width: 100%; padding: 0; }
-            .sign-block { display: flex !important; margin-top: 50px; justify-content: space-between; }
-            .sign-line { border-top: 1px solid #000; width: 200px; text-align: center; font-size: 12px; padding-top: 5px; }
-        }
-        /* Кнопка WhatsApp */
-.whatsapp-button {
-    position: fixed;
-    width: 60px;
-    height: 60px;
-    bottom: 95px; /* Высота над футером */
-    right: 20px;
-    background-color: #25d366;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    z-index: 2000;
-    transition: all 0.3s ease;
-    text-decoration: none;
-}
+        /* Админ-панель */
+        #admin-panel { display: none; padding: 15px; background: var(--admin); border: 2px dashed #ff9800; margin: 10px; border-radius: 10px; position: relative; }
 
-.whatsapp-button:active {
-    transform: scale(0.9);
-}
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 1001; }
+        .total-amount { font-size: 24px; color: #ffeb3b; font-weight: 900; }
 
-.whatsapp-button svg {
-    width: 35px;
-    height: 35px;
-    fill: white;
-}
-
-/* Не печатать кнопку в PDF */
-@media print {
-    .whatsapp-button { display: none !important; }
-}
+        @media print { .no-print { display: none !important; } .sign-block { display: flex !important; margin-top: 50px; justify-content: space-between; } }
+        
+        .whatsapp-button { position: fixed; width: 60px; height: 60px; bottom: 95px; right: 20px; background-color: #25d366; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 2000; text-decoration: none; }
     </style>
 </head>
 <body>
-    <a href="https://chat.whatsapp.com/E10FzUdV9YLHem5KCVAQtQ" class="whatsapp-button" target="_blank">
-    <svg viewBox="0 0 24 24">
-        <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.587-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.101-.177.211-.077.383.101.173.449.741.964 1.201.662.591 1.221.774 1.394.86s.289.072.39-.043c.101-.116.433-.506.549-.68.116-.173.231-.144.39-.087.158.058 1.012.477 1.184.563.173.087.289.13.332.202.045.072.045.419-.1.824z"></path>
-    </svg>
+
+<a href="https://chat.whatsapp.com/E10FzUdV9YLHem5KCVAQtQ" class="whatsapp-button no-print" target="_blank">
+    <svg viewBox="0 0 24 24" width="35" height="35" fill="white"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.587-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.101-.177.211-.077.383.101.173.449.741.964 1.201.662.591 1.221.774 1.394.86s.289.072.39-.043c.101-.116.433-.506.549-.68.116-.173.231-.144.39-.087.158.058 1.012.477 1.184.563.173.087.289.13.332.202.045.072.045.419-.1.824z"></path></svg>
 </a>
 
-
-<audio id="chat-sound" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3" preload="auto"></audio>
-
-<div id="extra-container">
-    <div class="chat-header" style="background: #444;">
-        <span>Инженерные расчеты 🧮</span>
-        <button class="close-chat-btn" onclick="toggleExtra(false)">ЗАКРЫТЬ ✕</button>
-    </div>
-    <iframe id="extra-frame" src="about:blank"></iframe>
-</div>
-
-<div id="chat-container">
-    <div class="chat-header">
-        <span>Поддержка 📨</span>
-        <button class="close-chat-btn" onclick="toggleChat(false)">ЗАКРЫТЬ ✕</button>
-    </div>
-    <iframe id="chat-frame" src="about:blank"></iframe>
-</div>
+<div id="extra-container"><div class="chat-header" style="background: #444;"><span>Расчеты 🧮</span><button class="close-chat-btn" onclick="toggleExtra(false)">✕</button></div><iframe id="extra-frame" src="about:blank"></iframe></div>
+<div id="chat-container"><div class="chat-header"><span>Поддержка 📨</span><button class="close-chat-btn" onclick="toggleChat(false)">✕</button></div><iframe id="chat-frame" src="about:blank"></iframe></div>
 
 <div class="header no-print">
     <div style="display:flex; flex-direction:column; line-height: 1;">
-    <span style="font-weight:bold; font-size: 18px;">2026</span>
-    <span id="visit-counter" style="font-size: 10px; opacity: 0.7; font-weight: normal;">ВИЗИТ: 0</span>
-        <div>
-            <button class="head-btn" onclick="toggleExtra(true)" title="Расчеты">🧮</button>
+        <span onclick="adminLogin()" style="font-weight:bold; font-size: 18px; cursor:pointer;">2026</span>
+        <span id="visit-counter" style="font-size: 10px; opacity: 0.7;">ВИЗИТ: 0</span>
+        <div style="margin-top:5px;">
+            <button class="head-btn" onclick="toggleExtra(true)">🧮</button>
             <div class="chat-btn-wrapper">
                 <button class="head-btn" onclick="toggleChat(true)">📨</button>
                 <span id="chat-dot" class="notification-dot"></span>
@@ -134,31 +79,35 @@
     <input type="text" id="search" class="search-box" placeholder="Поиск работ..." oninput="renderCatalog(this.value)">
 </div>
 
+<div id="admin-panel" class="no-print">
+    <button onclick="this.parentElement.style.display='none'" style="position:absolute; right:10px; top:10px; border:none; background:none; font-weight:bold; cursor:pointer;">✕</button>
+    <h3 style="margin:0 0 10px 0;">Добавить в раздел 33</h3>
+    <input type="text" id="new-work-name" style="width:100%; padding:8px; margin-bottom:5px;" placeholder="Название работы">
+    <input type="number" id="new-work-price" style="width:100%; padding:8px; margin-bottom:10px;" placeholder="Цена">
+    <button onclick="addNewWork()" style="width:100%; padding:10px; background:#ff9800; color:white; border:none; border-radius:5px; font-weight:bold;">СОХРАНИТЬ</button>
+</div>
+
 <div class="container">
     <div id="catalog" class="no-print"></div>
 
-    <div class="info-grid">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; border-bottom: 2px solid #222; padding-bottom: 10px;">
         <div>
-            <label style="font-size:10px;">ЗАКАЗЧИК:</label>
-            <input type="text" id="client-name" class="info-input" placeholder="ФИО" oninput="saveInfo()">
-            <label style="font-size:10px; display:block; margin-top:5px;">ОБЪЕКТ:</label>
-            <input type="text" id="client-address" class="info-input" placeholder="Адрес" oninput="saveInfo()">
+            <input type="text" id="client-name" placeholder="Заказчик" style="width:100%; border:1px solid #ddd; padding:5px;" oninput="saveInfo()">
+            <input type="text" id="client-address" placeholder="Адрес объекта" style="width:100%; border:1px solid #ddd; padding:5px; margin-top:5px;" oninput="saveInfo()">
         </div>
         <div style="text-align: right;">
-            <label style="font-size:10px;">ДАТА:</label>
             <div id="estimate-date" style="font-weight:bold;"></div>
-            <label style="font-size:10px; display:block; margin-top:5px;">МАСТЕР:</label>
-            <input type="text" id="master-name" class="info-input" style="text-align:right;" placeholder="ФИО Мастера" oninput="saveInfo()">
+            <input type="text" id="master-name" placeholder="Мастер" style="width:100%; border:1px solid #ddd; padding:5px; margin-top:5px; text-align:right;" oninput="saveInfo()">
         </div>
     </div>
 
     <h2 style="text-align:center; text-transform:uppercase; font-size:16px;">Смета на электромонтажные работы</h2>
     <div id="estimate"></div>
-    <div id="summary-bottom" class="summary-row" style="text-align:right; font-weight:bold; margin-top:20px; font-size:18px;">ИТОГО: <span id="total-bottom">0</span> ₽</div>
+    <div style="text-align:right; font-weight:bold; margin-top:20px; font-size:18px;">ИТОГО: <span id="total-bottom">0</span> ₽</div>
 
-    <div class="sign-block" style="display: none;">
-        <div class="sign-line">Исполнитель</div>
-        <div class="sign-line">Заказчик</div>
+    <div class="sign-block" style="display: none; justify-content: space-between; margin-top: 40px;">
+        <div style="border-top:1px solid #000; width:200px; text-align:center;">Исполнитель</div>
+        <div style="border-top:1px solid #000; width:200px; text-align:center;">Заказчик</div>
     </div>
 </div>
 
@@ -171,15 +120,19 @@
 </div>
 
 <div id="modal-custom" class="no-print" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:5000; align-items:center; justify-content:center;" onclick="this.style.display='none'">
-    <div class="modal-content" style="background:white; padding:20px; border-radius:15px; width:90%;" onclick="event.stopPropagation()">
-        <h3>Своя позиция</h3>
-        <input type="text" id="custom-name" class="info-input" placeholder="Название" style="margin-bottom:10px;">
-        <input type="number" id="custom-price" class="info-input" placeholder="Цена" style="margin-bottom:10px;">
-        <button onclick="addCustomItem()" style="width:100%; padding:12px; background:var(--success); color:white; border:none; border-radius:8px;">ДОБАВИТЬ</button>
+    <div style="background:white; padding:20px; border-radius:15px; width:90%;" onclick="event.stopPropagation()">
+        <h3>Своя позиция (разово)</h3>
+        <input type="text" id="custom-name" style="width:100%; padding:10px; margin-bottom:10px;" placeholder="Название">
+        <input type="number" id="custom-price" style="width:100%; padding:10px; margin-bottom:10px;" placeholder="Цена">
+        <button onclick="addOneTimeItem()" style="width:100%; padding:12px; background:var(--success); color:white; border:none; border-radius:8px;">ДОБАВИТЬ В СМЕТУ</button>
     </div>
 </div>
 
 <script>
+// 1. БАЗА ДАННЫХ И ПЕРЕМЕННЫЕ
+const ADMIN_PASS = "0101";
+let isAdmin = false;
+
 const db = [
     { cat: "1. Технологические отверстия", items: [
         {id:"1.1", n:"до Ø20мм Дерево", p:15, u:"п/см"}, {id:"1.2", n:"до Ø20мм Газоблок", p:20, u:"п/см"},
@@ -560,20 +513,27 @@ const db = [
 ];
 
 let state = JSON.parse(localStorage.getItem('smeta_items_2026')) || [];
+let customDbItems = JSON.parse(localStorage.getItem('custom_db_items')) || [];
 
+// Инициализация базы админа
+const s33 = db.find(s => s.cat === "33.прочие");
+customDbItems.forEach(item => s33.items.push(item));
+
+// 2. ОСНОВНЫЕ ФУНКЦИИ
 function sync() {
     localStorage.setItem('smeta_items_2026', JSON.stringify(state));
     const list = document.getElementById('estimate');
     document.getElementById('estimate-date').innerText = new Date().toLocaleDateString('ru-RU');
     let total = 0;
+    
     let html = `<table class="estimate-table"><thead><tr><th>№</th><th>Наименование</th><th>Кол-во</th><th>Сумма</th><th class="no-print"></th></tr></thead><tbody>`;
     state.forEach((item, i) => {
         const sum = Math.round(item.p * item.qty * (item.k ? 2.5 : 1));
         total += sum;
         html += `<tr><td>${i+1}</td><td>${item.n}${item.k ? '<br><small style="color:red">Коэф 2.5</small>':''}</td>
-        <td><input type="number" inputmode="decimal" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)"></td>
+        <td><input type="number" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)"></td>
         <td>${sum.toLocaleString()}</td><td class="no-print">
-        <input type="checkbox" ${item.k?'checked':''} onchange="toggleK(${i})"> <span onclick="remove(${i})" style="color:red">✕</span></td></tr>`;
+        <input type="checkbox" ${item.k?'checked':''} onchange="toggleK(${i})"> <span onclick="remove(${i})" style="color:red; cursor:pointer;">✕</span></td></tr>`;
     });
     list.innerHTML = state.length ? html + `</tbody></table>` : "<p style='text-align:center'>Смета пуста</p>";
     document.getElementById('total').innerText = total.toLocaleString();
@@ -586,50 +546,83 @@ function renderCatalog(filter = "") {
     db.forEach(sec => {
         const items = sec.items.filter(i => i.n.toLowerCase().includes(filter.toLowerCase()));
         if (!items.length) return;
+        
         const box = document.createElement('div');
         box.className = 'section-box';
-        box.innerHTML = `<div class="section-header" onclick="this.nextElementSibling.style.display=(this.nextElementSibling.style.display==='block'?'none':'block')">${sec.cat}</div><div class="section-content"></div>`;
+        box.innerHTML = `<div class="section-header" onclick="toggleSec(this)">${sec.cat}</div><div class="section-content"></div>`;
         const content = box.querySelector('.section-content');
         if(filter) content.style.display = 'block';
+
         items.forEach(item => {
-            content.innerHTML += `<div class="item-row"><div>${item.n}<br><small>${item.p}₽/${item.u}</small></div><button onclick="addItem('${item.id}')" style="background:var(--success); color:white; border:none; padding:8px; border-radius:5px;">+</button></div>`;
+            const delBtn = (isAdmin && sec.cat.includes("33")) ? `<span onclick="deleteWork('${item.id}')" style="color:red; margin-right:10px; cursor:pointer; font-weight:bold;">✕</span>` : "";
+            content.innerHTML += `<div class="item-row">
+                <div style="display:flex; align-items:center;">${delBtn}<div>${item.n}<br><small>${item.p}₽/${item.u}</small></div></div>
+                <button onclick="addItem('${item.id}')" style="background:var(--success); color:white; border:none; padding:8px; border-radius:5px;">+</button>
+            </div>`;
         });
         list.appendChild(box);
     });
 }
 
+// 3. АДМИН-ФУНКЦИИ
+function adminLogin() {
+    const p = prompt("Введите пароль:");
+    if (p === ADMIN_PASS) {
+        isAdmin = true;
+        document.getElementById('admin-panel').style.display = 'block';
+        renderCatalog();
+        alert("Режим админа включен. Раздел 33 доступен для правки.");
+    }
+}
+
+function addNewWork() {
+    const n = document.getElementById('new-work-name').value;
+    const p = document.getElementById('new-work-price').value;
+    if(!n || !p) return;
+    const newItem = { id: "c"+Date.now(), n, p: parseFloat(p), u: 'шт' };
+    db.find(s => s.cat === "33.прочие").items.push(newItem);
+    customDbItems.push(newItem);
+    localStorage.setItem('custom_db_items', JSON.stringify(customDbItems));
+    renderCatalog();
+    document.getElementById('new-work-name').value = '';
+    document.getElementById('new-work-price').value = '';
+}
+
+function deleteWork(id) {
+    if(!confirm("Удалить из каталога навсегда?")) return;
+    const s33 = db.find(s => s.cat === "33.прочие");
+    s33.items = s33.items.filter(i => i.id !== id);
+    customDbItems = customDbItems.filter(i => i.id !== id);
+    localStorage.setItem('custom_db_items', JSON.stringify(customDbItems));
+    renderCatalog();
+}
+
+// 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 function addItem(id) {
     db.forEach(s => s.items.forEach(i => { if(i.id === id) state.push({...i, qty:1, k:false}); }));
     sync();
 }
 
-function addCustomItem() {
-    const n = document.getElementById('custom-name').value, p = document.getElementById('custom-price').value;
+function addOneTimeItem() {
+    const n = document.getElementById('custom-name').value;
+    const p = document.getElementById('custom-price').value;
     if(n && p) { state.push({id:Date.now(), n, p:parseFloat(p), u:'шт', qty:1, k:false}); sync(); document.getElementById('modal-custom').style.display='none'; }
 }
 
-function toggleChat(show) {
-    const win = document.getElementById('chat-container');
-    if(show) { 
-        win.style.display = 'flex'; 
-        document.getElementById('chat-frame').src = "https://ttaannkk115-gif.github.io/signa/";
-        history.pushState({w:'c'},''); 
-    } else { win.style.display = 'none'; }
-}
+function toggleSec(el) { el.nextElementSibling.style.display = (el.nextElementSibling.style.display === 'block' ? 'none' : 'block'); }
+window.updateQty = (i, v) => { state[i].qty = parseFloat(v)||0; sync(); }
+window.toggleK = (i) => { state[i].k = !state[i].k; sync(); }
+window.remove = (i) => { state.splice(i,1); sync(); }
+window.resetSmeta = () => { if(confirm("Очистить смету?")) { state = []; sync(); } }
 
-function toggleExtra(show) {
-    const win = document.getElementById('extra-container');
-    if(show) { 
-        win.style.display = 'flex'; 
-        document.getElementById('extra-frame').src = "https://ttaannkk115-gif.github.io/-/";
-        history.pushState({w:'e'},''); 
-    } else { win.style.display = 'none'; }
+function toggleChat(show) { 
+    document.getElementById('chat-container').style.display = show ? 'flex' : 'none'; 
+    if(show) document.getElementById('chat-frame').src = "https://ttaannkk115-gif.github.io/signa/";
 }
-
-window.onpopstate = () => { 
-    document.getElementById('chat-container').style.display = 'none'; 
-    document.getElementById('extra-container').style.display = 'none'; 
-};
+function toggleExtra(show) { 
+    document.getElementById('extra-container').style.display = show ? 'flex' : 'none'; 
+    if(show) document.getElementById('extra-frame').src = "https://ttaannkk115-gif.github.io/-/";
+}
 
 function saveInfo() {
     localStorage.setItem('smeta_master_info', JSON.stringify({
@@ -648,45 +641,12 @@ function loadInfo() {
     }
 }
 
-// Регистрация ОФЛАЙН режима
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        const blob = new Blob([`const C='s-v1';self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll([location.href]))));self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));`], {type:'text/javascript'});
-        navigator.serviceWorker.register(URL.createObjectURL(blob));
-    });
-}
-
-window.updateQty = (i, v) => { state[i].qty = parseFloat(v)||0; sync(); }
-window.toggleK = (i) => { state[i].k = !state[i].k; sync(); }
-window.remove = (i) => { state.splice(i,1); sync(); }
-window.resetSmeta = () => { if(confirm("Очистить?")) { state = []; sync(); } }
+// Посещения
+let visits = parseInt(localStorage.getItem('visit_count_2026')) || 0;
+if(!sessionStorage.getItem('active')) { visits++; localStorage.setItem('visit_count_2026', visits); sessionStorage.setItem('active', '1'); }
+document.getElementById('visit-counter').innerText = `ВИЗИТ №${visits}`;
 
 loadInfo(); renderCatalog(); sync();
-// ... ваш старый код (renderCatalog, sync и т.д.)
-
-function updateVisitCounter() {
-    let sessionActive = sessionStorage.getItem('session_active_2026');
-    let totalVisits = parseInt(localStorage.getItem('visit_count_2026')) || 0;
-
-    if (!sessionActive) {
-        totalVisits++;
-        localStorage.setItem('visit_count_2026', totalVisits);
-        sessionStorage.setItem('session_active_2026', 'true');
-    }
-
-    const counterElement = document.getElementById('visit-counter');
-    if (counterElement) {
-        counterElement.innerText = `ВИЗИТ №${totalVisits}`;
-    }
-}
-
-// Вызываем функции при загрузке
-loadInfo(); 
-renderCatalog(); 
-sync();
-updateVisitCounter(); // Добавьте этот вызов здесь
-</script>
-
 </script>
 </body>
 </html>
