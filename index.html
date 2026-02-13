@@ -80,8 +80,9 @@
 </div>
 
 <div class="header no-print">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-weight:bold;">2026</span>
+    <div style="display:flex; flex-direction:column; line-height: 1;">
+    <span style="font-weight:bold; font-size: 18px;">2026</span>
+    <span id="visit-counter" style="font-size: 10px; opacity: 0.7; font-weight: normal;">ВИЗИТ: 0</span>
         <div>
             <button class="head-btn" onclick="toggleExtra(true)" title="Расчеты">🧮</button>
             <div class="chat-btn-wrapper">
@@ -623,6 +624,31 @@ window.remove = (i) => { state.splice(i,1); sync(); }
 window.resetSmeta = () => { if(confirm("Очистить?")) { state = []; sync(); } }
 
 loadInfo(); renderCatalog(); sync();
+// ... ваш старый код (renderCatalog, sync и т.д.)
+
+function updateVisitCounter() {
+    let sessionActive = sessionStorage.getItem('session_active_2026');
+    let totalVisits = parseInt(localStorage.getItem('visit_count_2026')) || 0;
+
+    if (!sessionActive) {
+        totalVisits++;
+        localStorage.setItem('visit_count_2026', totalVisits);
+        sessionStorage.setItem('session_active_2026', 'true');
+    }
+
+    const counterElement = document.getElementById('visit-counter');
+    if (counterElement) {
+        counterElement.innerText = `ВИЗИТ №${totalVisits}`;
+    }
+}
+
+// Вызываем функции при загрузке
+loadInfo(); 
+renderCatalog(); 
+sync();
+updateVisitCounter(); // Добавьте этот вызов здесь
+</script>
+
 </script>
 </body>
 </html>
