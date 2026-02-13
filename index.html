@@ -41,6 +41,9 @@
         .section-header { padding: 12px; background: #eee; cursor: pointer; font-weight: bold; }
         .section-content { display: none; padding: 5px 10px; background: #fff; }
         .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f9f9f9; }
+        
+        .catalog-controls { display: flex; align-items: center; gap: 8px; }
+        .cat-qty { width: 50px; padding: 8px; border: 1px solid #ccc; border-radius: 5px; text-align: center; font-weight: bold; }
 
         /* Админ-панель */
         #admin-panel { display: none; padding: 15px; background: var(--admin); border: 2px dashed #ff9800; margin: 10px; border-radius: 10px; position: relative; }
@@ -129,7 +132,6 @@
 </div>
 
 <script>
-// 1. БАЗА ДАННЫХ И ПЕРЕМЕННЫЕ
 const ADMIN_PASS = "12345";
 let isAdmin = false;
 
@@ -515,11 +517,9 @@ const db = [
 let state = JSON.parse(localStorage.getItem('smeta_items_2026')) || [];
 let customDbItems = JSON.parse(localStorage.getItem('custom_db_items')) || [];
 
-// Инициализация базы админа
 const s33 = db.find(s => s.cat === "33.прочие");
 customDbItems.forEach(item => s33.items.push(item));
 
-// 2. ОСНОВНЫЕ ФУНКЦИИ
 function sync() {
     localStorage.setItem('smeta_items_2026', JSON.stringify(state));
     const list = document.getElementById('estimate');
@@ -533,8 +533,12 @@ function sync() {
         html += `<tr><td>${i+1}</td><td>${item.n}${item.k ? '<br><small style="color:red">Коэф 2.5</small>':''}</td>
         <td><input type="number" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)"></td>
         <td>${sum.toLocaleString()}</td><td class="no-print">
-        <input type="checkbox" ${item.k?'checked':''} onchange="toggleK(${i})"> <span onclick="remove(${i})" style="color:red; cursor:pointer;">✕</span></td></tr>`;
+        <input type="checkbox" ${item.k?'checked':''} onchange="toggleK(${i})"> <span onclick="remove(${i})" style="color:red; cursor:pointer; font-weight:bold; margin-left:10px;">✕</span></td></tr>`;
+        
+        const catInp = document.getElementById(`qty-${item.id}`);
+        if(catInp) catInp.value = item.qty;
     });
+    
     list.innerHTML = state.length ? html + `</tbody></table>` : "<p style='text-align:center'>Смета пуста</p>";
     document.getElementById('total').innerText = total.toLocaleString();
     document.getElementById('total-bottom').innerText = total.toLocaleString();
@@ -554,66 +558,63 @@ function renderCatalog(filter = "") {
         if(filter) content.style.display = 'block';
 
         items.forEach(item => {
-            const delBtn = (isAdmin && sec.cat.includes("33")) ? `<span onclick="deleteWork('${item.id}')" style="color:red; margin-right:10px; cursor:pointer; font-weight:bold;">✕</span>` : "";
+            const inSmeta = state.find(s => s.id === item.id);
+            const val = inSmeta ? inSmeta.qty : 0;
+            const delBtn = (isAdmin && sec.cat.includes("33")) ? `<span onclick="deleteWork('${item.id}')" style="color:red; margin-right:10px; cursor:pointer;">✕</span>` : "";
+            
             content.innerHTML += `<div class="item-row">
-                <div style="display:flex; align-items:center;">${delBtn}<div>${item.n}<br><small>${item.p}₽/${item.u}</small></div></div>
-                <button onclick="addItem('${item.id}')" style="background:var(--success); color:white; border:none; padding:8px; border-radius:5px;">+</button>
+                <div style="flex:1;">${delBtn}${item.n}<br><small>${item.p}₽/${item.u}</small></div>
+                <div class="catalog-controls">
+                    <input type="number" id="qty-${item.id}" class="cat-qty" value="${val}" onchange="manualCatUpdate('${item.id}', this.value)">
+                    <button onclick="addItem('${item.id}')" style="background:var(--success); color:white; border:none; padding:10px 15px; border-radius:5px; font-weight:bold;">+</button>
+                </div>
             </div>`;
         });
         list.appendChild(box);
     });
 }
 
-// 3. АДМИН-ФУНКЦИИ
+function addItem(id) {
+    let item = state.find(i => i.id === id);
+    if(item) { item.qty += 1; } 
+    else { db.forEach(s => s.items.forEach(i => { if(i.id === id) state.push({...i, qty: 1, k: false}); })); }
+    sync();
+}
+
+function manualCatUpdate(id, val) {
+    let num = parseFloat(val) || 0;
+    let item = state.find(i => i.id === id);
+    if(num > 0) {
+        if(item) item.qty = num; 
+        else db.forEach(s => s.items.forEach(i => { if(i.id === id) state.push({...i, qty: num, k: false}); }));
+    } else { state = state.filter(i => i.id !== id); }
+    sync();
+}
+
 function adminLogin() {
-    const p = prompt("Введите пароль:");
-    if (p === ADMIN_PASS) {
-        isAdmin = true;
-        document.getElementById('admin-panel').style.display = 'block';
-        renderCatalog();
-        alert("Режим админа включен. Раздел 33 доступен для правки.");
-    }
+    const p = prompt("Пароль:");
+    if (p === ADMIN_PASS) { isAdmin = true; document.getElementById('admin-panel').style.display = 'block'; renderCatalog(); }
 }
 
 function addNewWork() {
     const n = document.getElementById('new-work-name').value;
-    const p = document.getElementById('new-work-price').value;
-    if(!n || !p) return;
-    const newItem = { id: "c"+Date.now(), n, p: parseFloat(p), u: 'шт' };
+    const p = parseFloat(document.getElementById('new-work-price').value);
+    if(!n || isNaN(p)) return;
+    const newItem = { id: "c"+Date.now(), n, p, u: 'шт' };
     db.find(s => s.cat === "33.прочие").items.push(newItem);
     customDbItems.push(newItem);
     localStorage.setItem('custom_db_items', JSON.stringify(customDbItems));
     renderCatalog();
-    document.getElementById('new-work-name').value = '';
-    document.getElementById('new-work-price').value = '';
 }
 
 function deleteWork(id) {
-    if(!confirm("Удалить из каталога навсегда?")) return;
+    if(!confirm("Удалить?")) return;
     const s33 = db.find(s => s.cat === "33.прочие");
     s33.items = s33.items.filter(i => i.id !== id);
     customDbItems = customDbItems.filter(i => i.id !== id);
     localStorage.setItem('custom_db_items', JSON.stringify(customDbItems));
     renderCatalog();
 }
-
-// 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-function addItem(id) {
-    db.forEach(s => s.items.forEach(i => { if(i.id === id) state.push({...i, qty:1, k:false}); }));
-    sync();
-}
-
-function addOneTimeItem() {
-    const n = document.getElementById('custom-name').value;
-    const p = document.getElementById('custom-price').value;
-    if(n && p) { state.push({id:Date.now(), n, p:parseFloat(p), u:'шт', qty:1, k:false}); sync(); document.getElementById('modal-custom').style.display='none'; }
-}
-
-function toggleSec(el) { el.nextElementSibling.style.display = (el.nextElementSibling.style.display === 'block' ? 'none' : 'block'); }
-window.updateQty = (i, v) => { state[i].qty = parseFloat(v)||0; sync(); }
-window.toggleK = (i) => { state[i].k = !state[i].k; sync(); }
-window.remove = (i) => { state.splice(i,1); sync(); }
-window.resetSmeta = () => { if(confirm("Очистить смету?")) { state = []; sync(); } }
 
 function toggleChat(show) { 
     document.getElementById('chat-container').style.display = show ? 'flex' : 'none'; 
@@ -622,6 +623,18 @@ function toggleChat(show) {
 function toggleExtra(show) { 
     document.getElementById('extra-container').style.display = show ? 'flex' : 'none'; 
     if(show) document.getElementById('extra-frame').src = "https://ttaannkk115-gif.github.io/-/";
+}
+
+function toggleSec(el) { el.nextElementSibling.style.display = (el.nextElementSibling.style.display === 'block' ? 'none' : 'block'); }
+window.updateQty = (i, v) => { state[i].qty = parseFloat(v)||0; sync(); }
+window.toggleK = (i) => { state[i].k = !state[i].k; sync(); }
+window.remove = (i) => { state.splice(i,1); renderCatalog(); sync(); }
+window.resetSmeta = () => { if(confirm("Очистить?")) { state = []; renderCatalog(); sync(); } }
+
+function addOneTimeItem() {
+    const n = document.getElementById('custom-name').value;
+    const p = parseFloat(document.getElementById('custom-price').value);
+    if(n && !isNaN(p)) { state.push({id:Date.now(), n, p, u:'шт', qty:1, k:false}); sync(); document.getElementById('modal-custom').style.display='none'; }
 }
 
 function saveInfo() {
@@ -641,7 +654,6 @@ function loadInfo() {
     }
 }
 
-// Посещения
 let visits = parseInt(localStorage.getItem('visit_count_2026')) || 0;
 if(!sessionStorage.getItem('active')) { visits++; localStorage.setItem('visit_count_2026', visits); sessionStorage.setItem('active', '1'); }
 document.getElementById('visit-counter').innerText = `ВИЗИТ №${visits}`;
