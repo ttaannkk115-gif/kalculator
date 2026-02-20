@@ -84,11 +84,21 @@
 
 <div id="admin-panel" class="no-print">
     <button onclick="this.parentElement.style.display='none'" style="position:absolute; right:10px; top:10px; border:none; background:none; font-weight:bold; cursor:pointer;">✕</button>
-    <h3 style="margin:0 0 10px 0;">Добавить в раздел 33</h3>
-    <input type="text" id="new-work-name" style="width:100%; padding:8px; margin-bottom:5px;" placeholder="Название работы">
-    <input type="number" id="new-work-price" style="width:100%; padding:8px; margin-bottom:10px;" placeholder="Цена">
-    <button onclick="addNewWork()" style="width:100%; padding:10px; background:#ff9800; color:white; border:none; border-radius:5px; font-weight:bold;">СОХРАНИТЬ</button>
+    <h3 id="admin-title" style="margin:0 0 10px 0; font-size: 16px;">Добавление работы</h3>
+    
+    <label style="font-size: 11px; font-weight: bold;">РАЗДЕЛ:</label>
+    <select id="new-work-cat" style="width:100%; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc;"></select>
+    
+    <input type="text" id="new-work-name" style="width:100%; padding:10px; margin-bottom:8px; box-sizing:border-box;" placeholder="Название работы">
+    
+    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+        <input type="number" id="new-work-price" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:5px;" placeholder="Цена">
+        <input type="text" id="new-work-unit" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:5px;" value="шт" placeholder="Ед.изм">
+    </div>
+    
+    <button onclick="addNewWork()" style="width:100%; padding:12px; background:var(--success); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">СОХРАНИТЬ В БАЗУ</button>
 </div>
+
 
 <div class="container">
     <div id="catalog" class="no-print"></div>
@@ -133,7 +143,12 @@
 
 <script>
 const ADMIN_PASS = "12345";
+const ADMIN_PASS_FULL = "0303"; 
 let isAdmin = false;
+let isFullAdmin = false;
+
+// Загрузка всех пользовательских изменений из памяти браузера
+let fullDbChanges = JSON.parse(localStorage.getItem('full_db_changes')) || [];
 
 const db = [
     { cat: "1. Технологические отверстия", items: [
@@ -560,7 +575,7 @@ function renderCatalog(filter = "") {
         items.forEach(item => {
             const inSmeta = state.find(s => s.id === item.id);
             const val = inSmeta ? inSmeta.qty : 0;
-            const delBtn = (isAdmin && sec.cat.includes("33")) ? `<span onclick="deleteWork('${item.id}')" style="color:red; margin-right:10px; cursor:pointer;">✕</span>` : "";
+            const delBtn = (isAdmin && (isFullAdmin || sec.cat.includes("33"))) ? `<span onclick="deleteWork('${item.id}')" style="color:red; margin-right:10px; cursor:pointer; font-weight:bold;">✕</span>` : "";
             
             content.innerHTML += `<div class="item-row">
                 <div style="flex:1;">${delBtn}${item.n}<br><small>${item.p}₽/${item.u}</small></div>
@@ -591,28 +606,66 @@ function manualCatUpdate(id, val) {
     sync();
 }
 
+// Вход в админку
 function adminLogin() {
-    const p = prompt("Пароль:");
-    if (p === ADMIN_PASS) { isAdmin = true; document.getElementById('admin-panel').style.display = 'block'; renderCatalog(); }
+    const p = prompt("Введите пароль администратора:");
+    if (p === ADMIN_PASS || p === ADMIN_PASS_FULL) {
+        isAdmin = true;
+        isFullAdmin = (p === ADMIN_PASS_FULL);
+        
+        document.getElementById('admin-panel').style.display = 'block';
+        document.getElementById('admin-title').innerText = isFullAdmin ? "ПОЛНЫЙ ДОСТУП (Админ 01)" : "ДОБАВИТЬ В РАЗДЕЛ 33";
+        
+        // Настройка выпадающего списка категорий
+        const select = document.getElementById('new-work-cat');
+        select.innerHTML = "";
+        db.forEach(s => {
+            if (isFullAdmin || s.cat.includes("33")) {
+                select.innerHTML += `<option value="${s.cat}">${s.cat}</option>`;
+            }
+        });
+        renderCatalog(); 
+    } else if (p !== null) {
+        alert("Неверный пароль!");
+    }
 }
 
+// Добавление новой работы
 function addNewWork() {
+    const catName = document.getElementById('new-work-cat').value;
     const n = document.getElementById('new-work-name').value;
     const p = parseFloat(document.getElementById('new-work-price').value);
-    if(!n || isNaN(p)) return;
-    const newItem = { id: "c"+Date.now(), n, p, u: 'шт' };
-    db.find(s => s.cat === "33.прочие").items.push(newItem);
-    customDbItems.push(newItem);
-    localStorage.setItem('custom_db_items', JSON.stringify(customDbItems));
-    renderCatalog();
+    const u = document.getElementById('new-work-unit').value || "шт";
+    
+    if(!n || isNaN(p)) { alert("Заполните название и цену!"); return; }
+
+    const newItem = { id: "c" + Date.now(), n, p, u };
+    const section = db.find(s => s.cat === catName);
+    
+    if (section) {
+        section.items.push(newItem);
+        fullDbChanges.push({ catName, item: newItem });
+        localStorage.setItem('full_db_changes', JSON.stringify(fullDbChanges));
+        
+        renderCatalog();
+        document.getElementById('new-work-name').value = "";
+        document.getElementById('new-work-price').value = "";
+        alert("Успешно добавлено в раздел: " + catName);
+    }
 }
 
+// Удаление работы из базы
 function deleteWork(id) {
-    if(!confirm("Удалить?")) return;
-    const s33 = db.find(s => s.cat === "33.прочие");
-    s33.items = s33.items.filter(i => i.id !== id);
-    customDbItems = customDbItems.filter(i => i.id !== id);
-    localStorage.setItem('custom_db_items', JSON.stringify(customDbItems));
+    if(!confirm("Удалить эту работу из каталога навсегда?")) return;
+    
+    db.forEach(section => {
+        const startLen = section.items.length;
+        section.items = section.items.filter(i => i.id !== id);
+        if (section.items.length !== startLen) {
+            fullDbChanges = fullDbChanges.filter(c => c.item.id !== id);
+            localStorage.setItem('full_db_changes', JSON.stringify(fullDbChanges));
+        }
+    });
     renderCatalog();
 }
 
