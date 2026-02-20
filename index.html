@@ -55,6 +55,17 @@
         
         .whatsapp-button { position: fixed; width: 60px; height: 60px; bottom: 95px; right: 20px; background-color: #25d366; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 2000; text-decoration: none; }
     </style>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
+<script>
+  // Конфигурация вашей базы со скриншота
+  const firebaseConfig = {
+    databaseURL: "https://kalculator-8e345-default-rtdb.firebaseio.com/"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+</script>
 </head>
 <body>
 
@@ -142,13 +153,31 @@
 </div>
 
 <script>
-const ADMIN_PASS = "12345";
-const ADMIN_PASS_FULL = "0303"; 
+// 1. Инициализация ID и Firebase
+let userId = localStorage.getItem('user_id_2026') || ('ID-' + Math.floor(1000 + Math.random() * 9000));
+localStorage.setItem('user_id_2026', userId);
+
+let allowedAdmins = []; 
 let isAdmin = false;
 let isFullAdmin = false;
 
-// Загрузка всех пользовательских изменений из памяти браузера
+const ADMIN_PASS = "12345";      // Пароль для мастеров
+const SUPER_PASS = "Gazik0303";       // Ваш главный пароль
+
+// Слушатель базы данных
+database.ref('allowedAdmins').on('value', (snapshot) => {
+    const data = snapshot.val();
+    allowedAdmins = data ? Object.values(data) : [];
+    console.log("Список админов обновлен:", allowedAdmins);
+    if (isAdmin && isFullAdmin) {
+        showAdminPanel();
+    }
+});
+
+// Загрузка изменений базы
 let fullDbChanges = JSON.parse(localStorage.getItem('full_db_changes')) || [];
+
+// ВАША БАЗА ДАННЫХ (db)
 
 const db = [
     { cat: "1. Технологические отверстия", items: [
@@ -529,12 +558,17 @@ const db = [
     ]},
 ];
 
+// Применяем сохраненные изменения в базу
+fullDbChanges.forEach(change => {
+    const section = db.find(s => s.cat === change.catName);
+    if (section && !section.items.find(i => i.id === change.item.id)) {
+        section.items.push(change.item);
+    }
+});
+
 let state = JSON.parse(localStorage.getItem('smeta_items_2026')) || [];
-let customDbItems = JSON.parse(localStorage.getItem('custom_db_items')) || [];
 
-const s33 = db.find(s => s.cat === "33.прочие");
-customDbItems.forEach(item => s33.items.push(item));
-
+// Функции интерфейса
 function sync() {
     localStorage.setItem('smeta_items_2026', JSON.stringify(state));
     const list = document.getElementById('estimate');
@@ -547,7 +581,7 @@ function sync() {
         total += sum;
         html += `<tr><td>${i+1}</td><td>${item.n}${item.k ? '<br><small style="color:red">Коэф 2.5</small>':''}</td>
         <td><input type="number" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)"></td>
-        <td>${sum.toLocaleString()}</td><td class="no-print">
+        <td>${sum.toLocaleString()} ₽</td><td class="no-print">
         <input type="checkbox" ${item.k?'checked':''} onchange="toggleK(${i})"> <span onclick="remove(${i})" style="color:red; cursor:pointer; font-weight:bold; margin-left:10px;">✕</span></td></tr>`;
         
         const catInp = document.getElementById(`qty-${item.id}`);
@@ -578,7 +612,7 @@ function renderCatalog(filter = "") {
             const delBtn = (isAdmin && (isFullAdmin || sec.cat.includes("33"))) ? `<span onclick="deleteWork('${item.id}')" style="color:red; margin-right:10px; cursor:pointer; font-weight:bold;">✕</span>` : "";
             
             content.innerHTML += `<div class="item-row">
-                <div style="flex:1;">${delBtn}${item.n}<br><small>${item.p}₽/${item.u}</small></div>
+                <div style="flex:1;">${delBtn}${item.n}<br><small>${item.p} ₽ / ${item.u}</small></div>
                 <div class="catalog-controls">
                     <input type="number" id="qty-${item.id}" class="cat-qty" value="${val}" onchange="manualCatUpdate('${item.id}', this.value)">
                     <button onclick="addItem('${item.id}')" style="background:var(--success); color:white; border:none; padding:10px 15px; border-radius:5px; font-weight:bold;">+</button>
@@ -590,47 +624,108 @@ function renderCatalog(filter = "") {
 }
 
 function addItem(id) {
-    let item = state.find(i => i.id === id);
-    if(item) { item.qty += 1; } 
-    else { db.forEach(s => s.items.forEach(i => { if(i.id === id) state.push({...i, qty: 1, k: false}); })); }
+    let itemInState = state.find(i => i.id === id);
+    if(itemInState) { 
+        itemInState.qty += 1; 
+    } else { 
+        db.forEach(s => s.items.forEach(i => { 
+            if(i.id === id) state.push({...i, qty: 1, k: false}); 
+        })); 
+    }
     sync();
 }
 
 function manualCatUpdate(id, val) {
     let num = parseFloat(val) || 0;
-    let item = state.find(i => i.id === id);
+    let itemInState = state.find(i => i.id === id);
     if(num > 0) {
-        if(item) item.qty = num; 
+        if(itemInState) itemInState.qty = num; 
         else db.forEach(s => s.items.forEach(i => { if(i.id === id) state.push({...i, qty: num, k: false}); }));
-    } else { state = state.filter(i => i.id !== id); }
+    } else { 
+        state = state.filter(i => i.id !== id); 
+    }
     sync();
 }
 
-// Вход в админку
+// ЛОГИКА АДМИНКИ (ИСПРАВЛЕНО)
 function adminLogin() {
     const p = prompt("Введите пароль администратора:");
-    if (p === ADMIN_PASS || p === ADMIN_PASS_FULL) {
+    if (p === SUPER_PASS) {
         isAdmin = true;
-        isFullAdmin = (p === ADMIN_PASS_FULL);
-        
-        document.getElementById('admin-panel').style.display = 'block';
-        document.getElementById('admin-title').innerText = isFullAdmin ? "ПОЛНЫЙ ДОСТУП (Админ 01)" : "ДОБАВИТЬ В РАЗДЕЛ 33";
-        
-        // Настройка выпадающего списка категорий
-        const select = document.getElementById('new-work-cat');
-        select.innerHTML = "";
-        db.forEach(s => {
-            if (isFullAdmin || s.cat.includes("33")) {
-                select.innerHTML += `<option value="${s.cat}">${s.cat}</option>`;
-            }
-        });
-        renderCatalog(); 
+        isFullAdmin = true;
+        alert("Режим СУПЕРАДМИНА активирован");
+        showAdminPanel();
+    } else if (p === ADMIN_PASS) {
+        if (allowedAdmins.includes(userId)) {
+            isAdmin = true;
+            isFullAdmin = false;
+            alert("Вход выполнен (Админ: " + userId + ")");
+            showAdminPanel();
+        } else {
+            alert("Ваш ID (" + userId + ") не найден в облаке. Попросите Главного добавить вас.");
+        }
     } else if (p !== null) {
         alert("Неверный пароль!");
     }
 }
 
-// Добавление новой работы
+function showAdminPanel() {
+    document.getElementById('admin-panel').style.display = 'block';
+    
+    if (isFullAdmin) {
+        let mgmt = document.getElementById('admin-mgmt') || document.createElement('div');
+        mgmt.id = 'admin-mgmt';
+        if (!document.getElementById('admin-mgmt')) document.getElementById('admin-panel').prepend(mgmt);
+
+        mgmt.innerHTML = `
+            <div style="background: #1a1a1a; color: #ffeb3b; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #ffeb3b;">
+                <h4 style="margin:0 0 10px 0; text-align:center;">УПРАВЛЕНИЕ МАСТЕРАМИ</h4>
+                <div style="display:flex; gap:5px; margin-bottom:15px;">
+                    <input type="text" id="target-id" placeholder="ID Мастера" style="flex:1; padding:10px; border-radius:5px; border:none;">
+                    <button onclick="grantAccess()" style="background:#2db855; color:white; border:none; padding:10px; border-radius:5px; font-weight:bold;">ОК</button>
+                </div>
+                <div id="admins-list">
+                    ${allowedAdmins.map(id => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; background:rgba(255,255,255,0.1); margin-top:5px; border-radius:4px;">
+                            <span style="color:#fff;">${id}</span>
+                            <button onclick="revokeAccess('${id}')" style="background:none; border:none; color:#ff4444; font-size:18px; cursor:pointer;">✕</button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+    }
+
+    const select = document.getElementById('new-work-cat');
+    if (select) {
+        select.innerHTML = "";
+        db.forEach(s => {
+            if (isFullAdmin || s.cat.includes("прочие") || s.cat.includes("33")) {
+                select.innerHTML += `<option value="${s.cat}">${s.cat}</option>`;
+            }
+        });
+    }
+    renderCatalog();
+}
+
+function grantAccess() {
+    const idInput = document.getElementById('target-id');
+    const id = idInput.value.trim();
+    if (id && !allowedAdmins.includes(id)) {
+        database.ref('allowedAdmins').push(id);
+        idInput.value = "";
+    }
+}
+
+function revokeAccess(idToRemove) {
+    if (confirm("Удалить доступ для " + idToRemove + "?")) {
+        database.ref('allowedAdmins').once('value', (snapshot) => {
+            snapshot.forEach((child) => {
+                if (child.val() === idToRemove) child.ref.remove();
+            });
+        });
+    }
+}
+
 function addNewWork() {
     const catName = document.getElementById('new-work-cat').value;
     const n = document.getElementById('new-work-name').value;
@@ -646,29 +741,22 @@ function addNewWork() {
         section.items.push(newItem);
         fullDbChanges.push({ catName, item: newItem });
         localStorage.setItem('full_db_changes', JSON.stringify(fullDbChanges));
-        
         renderCatalog();
-        document.getElementById('new-work-name').value = "";
-        document.getElementById('new-work-price').value = "";
-        alert("Успешно добавлено в раздел: " + catName);
+        alert("Добавлено!");
     }
 }
 
-// Удаление работы из базы
 function deleteWork(id) {
-    if(!confirm("Удалить эту работу из каталога навсегда?")) return;
-    
+    if(!confirm("Удалить работу?")) return;
     db.forEach(section => {
-        const startLen = section.items.length;
         section.items = section.items.filter(i => i.id !== id);
-        if (section.items.length !== startLen) {
-            fullDbChanges = fullDbChanges.filter(c => c.item.id !== id);
-            localStorage.setItem('full_db_changes', JSON.stringify(fullDbChanges));
-        }
     });
+    fullDbChanges = fullDbChanges.filter(c => c.item.id !== id);
+    localStorage.setItem('full_db_changes', JSON.stringify(fullDbChanges));
     renderCatalog();
 }
 
+// Доп. функции
 function toggleChat(show) { 
     document.getElementById('chat-container').style.display = show ? 'flex' : 'none'; 
     if(show) document.getElementById('chat-frame').src = "https://ttaannkk115-gif.github.io/signa/";
@@ -677,7 +765,6 @@ function toggleExtra(show) {
     document.getElementById('extra-container').style.display = show ? 'flex' : 'none'; 
     if(show) document.getElementById('extra-frame').src = "https://ttaannkk115-gif.github.io/-/";
 }
-
 function toggleSec(el) { el.nextElementSibling.style.display = (el.nextElementSibling.style.display === 'block' ? 'none' : 'block'); }
 window.updateQty = (i, v) => { state[i].qty = parseFloat(v)||0; sync(); }
 window.toggleK = (i) => { state[i].k = !state[i].k; sync(); }
