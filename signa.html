@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WhatsApp Clone Ultimate</title>
+    <style>
+        :root {
+            --primary: #00a884;
+            --bg: #f0f2f5;
+            --chat-bg: #efe7de;
+            --my-msg: #dcf8c6;
+            --others-msg: #ffffff;
+            --ticks-blue: #53bdeb;
+            --ticks-gray: #8696a0;
+            --notify: #25d366;
+            --admin-gold: #f39c12;
+        }
+
+        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, sans-serif; overflow: hidden; background: var(--bg); }
+        #app-container { display: flex; width: 200%; height: 100%; transition: transform 0.3s ease; }
+        body.in-chat #app-container { transform: translateX(-50%); }
+
+        /* Sidebar */
+        #contact-screen { width: 50%; height: 100%; background: white; display: flex; flex-direction: column; }
+        .header { padding: 15px; border-bottom: 1px solid #ddd; background: #f0f2f5; }
+        .user-info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .admin-login-btn { color: var(--primary); cursor: pointer; font-size: 13px; font-weight: bold; text-decoration: underline; }
+        
+        #userList { flex: 1; overflow-y: auto; list-style: none; padding: 0; margin: 0; }
+        #userList li { padding: 12px 15px; border-bottom: 1px solid #f5f5f5; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        #userList li:hover { background: #f9f9f9; }
+        
+        .unread-badge { background: var(--notify); color: white; font-size: 11px; font-weight: bold; min-width: 18px; height: 18px; border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 2px; margin-left: 5px; }
+
+        /* Chat Area */
+        #chat-screen { width: 50%; height: 100%; background: var(--chat-bg); display: flex; flex-direction: column; position: relative; }
+        #messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
+        .chat-header { background: #f0f2f5; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ddd; }
+        
+        /* Messages */
+        .msg { max-width: 85%; padding: 8px 10px 5px 10px; border-radius: 8px; font-size: 14.5px; box-shadow: 0 1px 1px rgba(0,0,0,0.15); display: flex; flex-direction: column; position: relative; user-select: none; }
+        .msg.my { align-self: flex-end; background: var(--my-msg); border-top-right-radius: 0; }
+        .msg.others { align-self: flex-start; background: var(--others-msg); border-top-left-radius: 0; }
+        .msg.editable { cursor: pointer; }
+        .msg.editable:active { opacity: 0.7; }
+        
+        .msg-sender-link { color: var(--primary); font-weight: bold; font-size: 12px; cursor: pointer; margin-bottom: 3px; }
+        .msg-footer { align-self: flex-end; font-size: 10px; color: #667781; margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+        .edited-label { font-size: 9px; font-style: italic; color: #8696a0; }
+        .ticks { font-size: 14px; font-weight: bold; line-height: 1; }
+        
+        .input-panel { background: #f0f2f5; padding: 8px 12px; display: flex; gap: 8px; align-items: center; }
+        .input-panel input { flex: 1; border: none; padding: 10px 15px; border-radius: 20px; outline: none; }
+        .icon-btn { border: none; background: none; cursor: pointer; font-size: 22px; color: #54656f; }
+
+        @media (min-width: 768px) { #app-container { width: 100%; transform: none !important; } #contact-screen { width: 350px; border-right: 1px solid #ddd; } #chat-screen { width: calc(100% - 350px); } }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="contact-screen">
+        <div class="header">
+            <div class="user-info-row">
+                <div id="myIdDisplay" style="font-size: 14px; color: #54656f;"></div>
+                <div class="admin-login-btn" onclick="tryAdminLogin()">вход</div>
+            </div>
+            <input type="text" id="searchInput" placeholder="Поиск пользователя..." style="width:100%; padding:10px; border-radius:20px; border:1px solid #ddd; outline:none;" onkeypress="if(event.key === 'Enter') searchUser()">
+        </div>
+        <ul id="userList"></ul>
+    </div>
+
+    <div id="chat-screen">
+        <div class="chat-header">
+            <button onclick="closeChat()" style="background:none; border:none; font-size:20px; color:var(--primary); cursor:pointer;">❮</button>
+            <div id="chatTitle" style="font-weight:600;"></div>
+            <button id="adminDelBtn" style="background:none; border:none; font-size:18px; display:none;" onclick="clearCurrentChat()">🗑️</button>
+        </div>
+        <div id="messages"></div>
+        <div class="input-panel">
+            <label class="icon-btn">📎<input type="file" id="fInp" style="display:none" onchange="sendFile(this)"></label>
+            <input type="text" id="msgInput" placeholder="Введите сообщение" onkeypress="if(event.key === 'Enter') sendMessage()">
+            <button onclick="sendMessage()" class="icon-btn" style="color:var(--primary)">➤</button>
+        </div>
+    </div>
+</div>
+
+<audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3" preload="auto"></audio>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, push, set, onValue, onDisconnect, serverTimestamp, update, get, child, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAbulx85P1UVmdN7WeP1v4yZOxAxLT4-5E",
+        authDomain: "chat-25292.firebaseapp.com",
+        databaseURL: "https://chat-25292-default-rtdb.firebaseio.com",
+        projectId: "chat-25292",
+        storageBucket: "chat-25292.appspot.com",
+        messagingSenderId: "982262580373",
+        appId: "1:982262580373:web:d411a8b651de02afcd879c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const ADMIN_PASS = '6739218';
+    let isAdmin = false;
+    let myName = localStorage.getItem('chat_user') || prompt("Ваше имя:") || "Гость";
+    localStorage.setItem('chat_user', myName);
+
+    let recentUsers = JSON.parse(localStorage.getItem('recent_chats') || "[]");
+    let unreadCounts = {};
+    let unreadGlobalCount = 0;
+    let currentChatId = null, isGlobal = false;
+    let lastGlobalSeenTs = parseInt(localStorage.getItem('last_global_ts') || "0");
+
+    const playSound = () => document.getElementById('notifSound').play().catch(()=>{});
+
+    function updateHeader() {
+        const display = document.getElementById('myIdDisplay');
+        display.innerHTML = isAdmin ? `<b style="color:var(--admin-gold)">Админ: ${myName}</b>` : `Вы: ${myName}`;
+        document.getElementById('adminDelBtn').style.display = isAdmin ? 'block' : 'none';
+    }
+    updateHeader();
+
+    window.tryAdminLogin = () => {
+        const pass = prompt("Введите пароль администратора:");
+        if (pass === ADMIN_PASS) {
+            isAdmin = true;
+            updateHeader();
+            alert("Права администратора получены!");
+            updateList();
+        } else alert("Неверный пароль!");
+    };
+
+    // Слушатель статусов и списка
+    set(ref(db, 'status/' + myName), { online: true });
+    onDisconnect(ref(db, 'status/' + myName)).set({ online: false });
+
+    // Слушатель личных сообщений
+    onValue(ref(db, 'private_messages'), (snap) => {
+        const data = snap.val();
+        let newTotal = 0;
+        unreadCounts = {};
+        for (let cId in data) {
+            if (cId.includes(myName)) {
+                const other = cId.replace(myName, "").replace("_", "");
+                let count = 0;
+                for (let mId in data[cId]) {
+                    const m = data[cId][mId];
+                    if (m.sender !== myName && m.status !== 'read') count++;
+                }
+                if (count > 0) {
+                    unreadCounts[other] = count;
+                    if (!recentUsers.includes(other)) recentUsers.unshift(other);
+                    newTotal += count;
+                }
+            }
+        }
+        if (newTotal > 0) playSound();
+        updateList();
+    });
+
+    // Слушатель общего чата (счетчик)
+    onValue(ref(db, 'global_messages'), (snap) => {
+        let count = 0;
+        snap.forEach(m => {
+            const msg = m.val();
+            if (msg.ts > lastGlobalSeenTs && msg.sender !== myName) count++;
+        });
+        unreadGlobalCount = count;
+        if (count > 0 && !isGlobal) playSound();
+        updateList();
+    });
+
+    function updateList() { get(ref(db, 'status')).then(s => renderList(s.val())); }
+
+    function renderList(st) {
+        const list = document.getElementById('userList');
+        list.innerHTML = "";
+        
+        // Рендер Общего чата
+        const globLi = document.createElement('li');
+        globLi.style.background = "#f0f7f4";
+        globLi.onclick = () => openChat('GLOBAL_CHAT', true);
+        globLi.innerHTML = `<div><b>📢 Общий чат</b></div> 
+            ${unreadGlobalCount > 0 ? `<div class="unread-badge">${unreadGlobalCount}</div>` : ''}`;
+        list.appendChild(globLi);
+
+        let displayList = isAdmin ? Object.keys(st || {}) : recentUsers;
+        displayList.forEach(u => {
+            if (u === myName) return;
+            const isOnline = st && st[u]?.online;
+            const li = document.createElement('li');
+            const action = isAdmin 
+                ? `<div style="color:red; font-weight:bold; padding:5px" onclick="deleteUser('${u}')">🗑️</div>`
+                : `<div style="color:#ccc" onclick="removeRecent('${u}')">×</div>`;
+
+            li.innerHTML = `<div onclick="openChat('${u}', false)" style="flex:1">
+                <b>${u}</b><br><small style="color:${isOnline?'green':'#999'}">${isOnline?'● в сети':'оффлайн'}</small>
+            </div>
+            ${unreadCounts[u] > 0 ? `<div class="unread-badge">${unreadCounts[u]}</div>` : action}`;
+            list.appendChild(li);
+        });
+    }
+
+    window.deleteUser = async (u) => {
+        event.stopPropagation();
+        if (confirm(`Удалить пользователя ${u} из базы?`)) {
+            await remove(ref(db, 'status/' + u));
+            updateList();
+        }
+    };
+
+    window.removeRecent = (u) => {
+        event.stopPropagation();
+        recentUsers = recentUsers.filter(x => x!==u);
+        localStorage.setItem('recent_chats', JSON.stringify(recentUsers));
+        updateList();
+    };
+
+    window.openChat = (target, global) => {
+        isGlobal = global;
+        if (isGlobal) {
+            lastGlobalSeenTs = Date.now();
+            localStorage.setItem('last_global_ts', lastGlobalSeenTs);
+            unreadGlobalCount = 0;
+        }
+        if(!isGlobal && !recentUsers.includes(target)) recentUsers.unshift(target);
+        
+        currentChatId = isGlobal ? 'GLOBAL_CHAT' : [myName, target].sort().join("_");
+        document.getElementById('chatTitle').innerText = isGlobal ? "📢 Общий чат" : target;
+        document.body.classList.add('in-chat');
+
+        const path = isGlobal ? 'global_messages' : 'private_messages/' + currentChatId;
+        onValue(ref(db, path), (snap) => {
+            const box = document.getElementById('messages');
+            box.innerHTML = "";
+            snap.forEach(m => {
+                const d = m.val();
+                const mId = m.key;
+                if (!isGlobal && d.sender !== myName && d.status !== 'read') update(ref(db, path + '/' + mId), { status: 'read' });
+                
+                const canEdit = (d.sender === myName || isAdmin) && !d.file;
+                const div = document.createElement('div');
+                div.className = `msg ${d.sender === myName ? 'my' : 'others'} ${canEdit?'editable':''}`;
+                if (canEdit) div.ondblclick = () => editMsg(mId, d.text);
+
+                let ticks = (d.sender === myName && !isGlobal) ? `<span class="ticks" style="color:${d.status === 'read' ? 'var(--ticks-blue)' : 'var(--ticks-gray)'}">${d.status === 'read' || d.status === 'delivered' ? '✓✓' : '✓'}</span>` : "";
+                let sender = isGlobal && d.sender !== myName ? `<div class="msg-sender-link" onclick="openChat('${d.sender}', false)">${d.sender}</div>` : "";
+                let content = d.file ? `<img src="${d.file}" style="max-width:200px">` : `<span>${d.text}</span>`;
+                
+                div.innerHTML = `${sender}${content}<div class="msg-footer">${d.isEdited?'<span class="edited-label">изм.</span>':''} ${new Date(d.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} ${ticks}</div>`;
+                box.appendChild(div);
+            });
+            box.scrollTop = box.scrollHeight;
+        });
+    };
+
+    window.editMsg = async (id, old) => {
+        const n = prompt("Изменить сообщение:", old);
+        if (n && n !== old) {
+            const path = (isGlobal ? 'global_messages' : 'private_messages/' + currentChatId) + '/' + id;
+            await update(ref(db, path), { text: n, isEdited: true });
+        }
+    };
+
+    window.clearCurrentChat = async () => {
+        if (!isAdmin || !confirm("Очистить всю историю этого чата?")) return;
+        const path = isGlobal ? 'global_messages' : 'private_messages/' + currentChatId;
+        await remove(ref(db, path));
+    };
+
+    window.sendMessage = () => {
+        const inp = document.getElementById('msgInput');
+        if (!inp.value.trim()) return;
+        push(ref(db, isGlobal ? 'global_messages' : 'private_messages/' + currentChatId), {
+            sender: myName, text: inp.value, status: 'sent', ts: serverTimestamp()
+        });
+        inp.value = "";
+    };
+
+    window.sendFile = (inp) => {
+        const file = inp.files[0];
+        if (file && file.size <= 1048576) {
+            const r = new FileReader();
+            r.readAsDataURL(file);
+            r.onload = () => push(ref(db, isGlobal ? 'global_messages' : 'private_messages/' + currentChatId), {
+                sender: myName, file: r.result, status: 'sent', ts: serverTimestamp()
+            });
+        } else alert("Макс 1МБ");
+    };
+
+    window.searchUser = async () => {
+        const q = document.getElementById('searchInput').value.trim();
+        const s = await get(child(ref(db), `status/${q}`));
+        if (s.exists()) openChat(q, false); else alert("Пользователь не найден");
+    };
+
+    window.closeChat = () => {
+        document.body.classList.remove('in-chat');
+        isGlobal = false;
+    };
+</script>
+</body>
+</html>
