@@ -652,17 +652,17 @@ function adminLogin() {
     const p = prompt("Введите пароль администратора:");
     if (p === SUPER_PASS) {
         isAdmin = true;
-        isFullAdmin = true;
+        isFullAdmin = true; 
         alert("Режим СУПЕРАДМИНА активирован");
         showAdminPanel();
     } else if (p === ADMIN_PASS) {
         if (allowedAdmins.includes(userId)) {
             isAdmin = true;
-            isFullAdmin = false;
-            alert("Вход выполнен (Админ: " + userId + ")");
+            isFullAdmin = false; 
+            alert("Вход выполнен! Доступ ко всем разделам открыт.");
             showAdminPanel();
         } else {
-            alert("Ваш ID (" + userId + ") не найден в облаке. Попросите Главного добавить вас.");
+            alert("Ваш ID (" + userId + ") не найден в облаке. Обратитесь к главному.");
         }
     } else if (p !== null) {
         alert("Неверный пароль!");
@@ -670,13 +670,16 @@ function adminLogin() {
 }
 
 function showAdminPanel() {
-    document.getElementById('admin-panel').style.display = 'block';
+    const panel = document.getElementById('admin-panel');
+    panel.style.display = 'block';
     
+    let mgmt = document.getElementById('admin-mgmt');
     if (isFullAdmin) {
-        let mgmt = document.getElementById('admin-mgmt') || document.createElement('div');
-        mgmt.id = 'admin-mgmt';
-        if (!document.getElementById('admin-mgmt')) document.getElementById('admin-panel').prepend(mgmt);
-
+        if (!mgmt) {
+            mgmt = document.createElement('div');
+            mgmt.id = 'admin-mgmt';
+            panel.prepend(mgmt);
+        }
         mgmt.innerHTML = `
             <div style="background: #1a1a1a; color: #ffeb3b; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #ffeb3b;">
                 <h4 style="margin:0 0 10px 0; text-align:center;">УПРАВЛЕНИЕ МАСТЕРАМИ</h4>
@@ -693,15 +696,15 @@ function showAdminPanel() {
                     `).join('')}
                 </div>
             </div>`;
+    } else if (mgmt) {
+        mgmt.remove();
     }
 
     const select = document.getElementById('new-work-cat');
     if (select) {
         select.innerHTML = "";
         db.forEach(s => {
-            if (isFullAdmin || s.cat.includes("прочие") || s.cat.includes("33")) {
-                select.innerHTML += `<option value="${s.cat}">${s.cat}</option>`;
-            }
+            select.innerHTML += `<option value="${s.cat}">${s.cat}</option>`;
         });
     }
     renderCatalog();
@@ -742,7 +745,7 @@ function addNewWork() {
         fullDbChanges.push({ catName, item: newItem });
         localStorage.setItem('full_db_changes', JSON.stringify(fullDbChanges));
         renderCatalog();
-        alert("Добавлено!");
+        alert("Работа добавлена локально!");
     }
 }
 
@@ -756,7 +759,6 @@ function deleteWork(id) {
     renderCatalog();
 }
 
-// Доп. функции
 function toggleChat(show) { 
     document.getElementById('chat-container').style.display = show ? 'flex' : 'none'; 
     if(show) document.getElementById('chat-frame').src = "https://ttaannkk115-gif.github.io/signa/";
@@ -794,21 +796,15 @@ function loadInfo() {
     }
 }
 
-// Ссылка на общую переменную посещений в базе
 const visitRef = database.ref('global_visit_count');
 
 function updateVisitCounter() {
-    // Проверяем, заходил ли пользователь в этой сессии
     if (!sessionStorage.getItem('counted_visit')) {
-        // Транзакция: безопасно увеличиваем число на 1 для всех
         visitRef.transaction((currentValue) => {
             return (currentValue || 0) + 1;
         });
-        // Помечаем, что в этой сессии мы уже посчитали человека
         sessionStorage.setItem('counted_visit', 'true');
     }
-
-    // Слушаем изменения счетчика в реальном времени
     visitRef.on('value', (snapshot) => {
         const count = snapshot.val() || 0;
         const counterEl = document.getElementById('visit-counter');
@@ -817,7 +813,7 @@ function updateVisitCounter() {
         }
     });
 }
-loadInfo(); renderCatalog(); sync();
+loadInfo(); renderCatalog(); sync(); updateVisitCounter();
 </script>
 </body>
 </html>
