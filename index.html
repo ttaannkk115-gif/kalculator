@@ -794,10 +794,29 @@ function loadInfo() {
     }
 }
 
-let visits = parseInt(localStorage.getItem('visit_count_2026')) || 0;
-if(!sessionStorage.getItem('active')) { visits++; localStorage.setItem('visit_count_2026', visits); sessionStorage.setItem('active', '1'); }
-document.getElementById('visit-counter').innerText = `ВИЗИТ №${visits}`;
+// Ссылка на общую переменную посещений в базе
+const visitRef = database.ref('global_visit_count');
 
+function updateVisitCounter() {
+    // Проверяем, заходил ли пользователь в этой сессии
+    if (!sessionStorage.getItem('counted_visit')) {
+        // Транзакция: безопасно увеличиваем число на 1 для всех
+        visitRef.transaction((currentValue) => {
+            return (currentValue || 0) + 1;
+        });
+        // Помечаем, что в этой сессии мы уже посчитали человека
+        sessionStorage.setItem('counted_visit', 'true');
+    }
+
+    // Слушаем изменения счетчика в реальном времени
+    visitRef.on('value', (snapshot) => {
+        const count = snapshot.val() || 0;
+        const counterEl = document.getElementById('visit-counter');
+        if (counterEl) {
+            counterEl.innerText = `ВСЕГО ПОСЕТИТЕЛЕЙ: ${count}`;
+        }
+    });
+}
 loadInfo(); renderCatalog(); sync();
 </script>
 </body>
