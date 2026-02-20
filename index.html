@@ -611,10 +611,15 @@ function renderCatalog(filter = "") {
         items.forEach(item => {
             const inSmeta = state.find(s => s.id === item.id);
             const val = inSmeta ? inSmeta.qty : 0;
-            const delBtn = (isAdmin && (isFullAdmin || sec.cat.includes("33"))) ? `<span onclick="deleteWork('${item.id}')" style="color:red; margin-right:10px; cursor:pointer; font-weight:bold;">✕</span>` : "";
+            
+            // Теперь крестик виден любому админу (и 12345, и Gazik0303)
+            const delBtn = isAdmin ? `<span onclick="deleteWork('${item.id}')" style="color:red; margin-right:10px; cursor:pointer; font-weight:bold; font-size:18px;">✕</span>` : "";
             
             content.innerHTML += `<div class="item-row">
-                <div style="flex:1;">${delBtn}${item.n}<br><small>${item.p} ₽ / ${item.u}</small></div>
+                <div style="flex:1; display:flex; align-items:center;">
+                    ${delBtn}
+                    <div>${item.n}<br><small>${item.p} ₽ / ${item.u}</small></div>
+                </div>
                 <div class="catalog-controls">
                     <input type="number" id="qty-${item.id}" class="cat-qty" value="${val}" onchange="manualCatUpdate('${item.id}', this.value)">
                     <button onclick="addItem('${item.id}')" style="background:var(--success); color:white; border:none; padding:10px 15px; border-radius:5px; font-weight:bold;">+</button>
@@ -623,6 +628,22 @@ function renderCatalog(filter = "") {
         });
         list.appendChild(box);
     });
+}
+
+function deleteWork(id) {
+    if(!isAdmin) return; // Если не админ, кнопка не сработает
+    
+    if(!confirm("Удалить эту работу из базы?")) return;
+    
+    db.forEach(section => {
+        section.items = section.items.filter(i => i.id !== id);
+    });
+    
+    fullDbChanges = fullDbChanges.filter(c => c.item.id !== id);
+    localStorage.setItem('full_db_changes', JSON.stringify(fullDbChanges));
+    
+    renderCatalog();
+    sync(); // Обновляем смету на случай, если работа была там
 }
 
 function addItem(id) {
@@ -751,15 +772,6 @@ function addNewWork() {
     }
 }
 
-function deleteWork(id) {
-    if(!confirm("Удалить работу?")) return;
-    db.forEach(section => {
-        section.items = section.items.filter(i => i.id !== id);
-    });
-    fullDbChanges = fullDbChanges.filter(c => c.item.id !== id);
-    localStorage.setItem('full_db_changes', JSON.stringify(fullDbChanges));
-    renderCatalog();
-}
 
 function toggleChat(show) { 
     document.getElementById('chat-container').style.display = show ? 'flex' : 'none'; 
