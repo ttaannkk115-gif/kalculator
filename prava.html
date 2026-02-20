@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Доступ к Админке</title>
+    <style>
+        :root {
+            --primary-color: #25D366;
+            --secondary-color: #128C7E;
+            --danger-color: #d32f2f;
+            --bg-color: #f0f2f5;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background: white;
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+            border-radius: 28px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 22px;
+            margin-bottom: 25px;
+            color: #1c1e21;
+        }
+
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .step {
+            display: flex;
+            background: #f7f8fa;
+            padding: 16px;
+            border-radius: 18px;
+            border: 1px solid #eaeef2;
+            align-items: flex-start;
+        }
+
+        .step-num {
+            background: #1c1e21;
+            color: white;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 13px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .step-text {
+            font-size: 15px;
+            line-height: 1.5;
+            color: #4b4b4b;
+        }
+
+        /* 4-й пункт: Опасность */
+        .step-alert {
+            background: #fff5f5;
+            border-color: #ffcdd2;
+        }
+
+        .step-alert .step-num {
+            background: var(--danger-color);
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: white;
+            padding: 16px;
+            border-radius: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            transition: transform 0.2s, filter 0.2s;
+            font-size: 16px;
+        }
+
+        .btn-wa { background-color: var(--primary-color); }
+        .btn-group { background-color: var(--secondary-color); }
+
+        .btn:active { transform: scale(0.97); }
+        .btn:hover { filter: brightness(1.05); }
+
+        b { color: #000; }
+        .red { color: var(--danger-color); font-weight: 800; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🛡️ Права Администратора</h2>
+
+    <div class="steps">
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">Перейди в программу, <b>скопируй свой ID</b> и отправь его на WhatsApp, указав <b>своё имя</b>.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">Сохрани номер: <br><b>Газимухаммад электрик</b></div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">Обязательно подпишись на нашу группу в WhatsApp.</div>
+        </div>
+
+        <div class="step step-alert">
+            <div class="step-num">4</div>
+            <div class="step-text">
+                <span class="red">Внимание!</span> Если не выполнить все 3 вышеуказанных пункта, ваши права администратора будут <b>аннулированы</b>.
+            </div>
+        </div>
+    </div>
+
+    <a href="https://wa.me/79640040355" class="btn btn-wa">Отправить данные в WhatsApp</a>
+    <a href="https://chat.whatsapp.com/E10FzUdV9YLHem5KCVAQtQ" class="btn btn-group">Вступить в группу</a>
+</div>
+
+</body>
+</html>
