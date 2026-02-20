@@ -154,9 +154,11 @@
 
 <script>
 // 1. Инициализация ID и Firebase
-let userId = localStorage.getItem('user_id_2026') || ('ID-' + Math.floor(1000 + Math.random() * 9000));
-localStorage.setItem('user_id_2026', userId);
-
+let userId = localStorage.getItem('user_id_2026'); 
+if (!userId) {
+    userId = 'ID-' + Math.floor(1000 + Math.random() * 9000);
+    localStorage.setItem('user_id_2026', userId);
+}
 let allowedAdmins = []; 
 let isAdmin = false;
 let isFullAdmin = false;
