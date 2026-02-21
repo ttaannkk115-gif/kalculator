@@ -151,6 +151,25 @@
         <button onclick="addOneTimeItem()" style="width:100%; padding:12px; background:var(--success); color:white; border:none; border-radius:8px;">ДОБАВИТЬ В СМЕТУ</button>
     </div>
 </div>
+<div id="custom-alert" class="no-print" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; align-items:center; justify-content:center;">
+    <div style="background:#fff; width:300px; border-radius:15px; overflow:hidden; box-shadow:0 5px 25px rgba(0,0,0,0.5); font-family:sans-serif;">
+        <div style="padding:25px 20px; text-align:center; color:#202124; font-size:16px; border-bottom:1px solid #eee;">
+            Ваш ID (<span id="alert-id-val" style="font-weight:bold;"></span>) не найден в облаке. <br>
+            <span onclick="openPrava()" style="color:#1a73e8; font-weight:bold; text-decoration:underline; cursor:pointer; display:inline-block; margin-top:12px;">Обратитесь к главному</span>
+        </div>
+        <div style="display:flex;">
+            <button onclick="document.getElementById('custom-alert').style.display='none'" style="width:100%; padding:15px; border:none; background:none; color:#1a73e8; font-size:16px; font-weight:bold; cursor:pointer;">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<div id="prava-container" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:11000; flex-direction:column;">
+    <div style="background:#202124; color:white; padding:12px; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-weight:bold; margin-left:10px;">Доступ и права</span>
+        <button onclick="document.getElementById('prava-container').style.display='none'" style="background:#e53935; color:white; border:none; padding:8px 15px; border-radius:5px; font-weight:bold; cursor:pointer;">✕ ЗАКРЫТЬ</button>
+    </div>
+    <iframe id="prava-frame" src="about:blank" style="border:none; flex-grow:1; width:100%; height:100%;"></iframe>
+</div>
 
 <script>
 // 1. Инициализация ID и Firebase
@@ -685,10 +704,12 @@ function adminLogin() {
         if (allowedAdmins.includes(userId)) {
             isAdmin = true;
             isFullAdmin = false; 
-            alert("Вход выполнен! Доступ ко всем разделам открыт.");
+            alert("Вход выполнен!");
             showAdminPanel();
         } else {
-            alert("Ваш ID (" + userId + ") не найден в облаке. Обратитесь к главному.");
+            // Вместо стандартного alert открываем наше окно
+            document.getElementById('alert-id-val').innerText = userId;
+            document.getElementById('custom-alert').style.display = 'flex';
         }
     } else if (p !== null) {
         alert("Неверный пароль!");
@@ -831,6 +852,13 @@ function updateVisitCounter() {
     });
 }
 loadInfo(); renderCatalog(); sync(); updateVisitCounter();
+function openPrava() {
+    // Закрываем уведомление и открываем полноэкранное окно с правами
+    document.getElementById('custom-alert').style.display = 'none';
+    document.getElementById('prava-container').style.display = 'flex';
+    document.getElementById('prava-frame').src = "prava.html";
+}
+
 </script>
 </body>
 </html>
