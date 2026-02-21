@@ -10,6 +10,7 @@
             --secondary-color: #128C7E;
             --danger-color: #d32f2f;
             --bg-color: #f0f2f5;
+            --accent-blue: #007AFF;
         }
 
         body {
@@ -45,16 +46,22 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 10px;
         }
 
         .step {
             display: flex;
+            flex-direction: column;
             background: #f7f8fa;
             padding: 16px;
             border-radius: 18px;
             border: 1px solid #eaeef2;
+        }
+
+        .step-header {
+            display: flex;
             align-items: flex-start;
+            margin-bottom: 10px;
         }
 
         .step-num {
@@ -78,38 +85,49 @@
             color: #4b4b4b;
         }
 
-        /* 4-й пункт: Опасность */
+        .inner-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: white;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 5px;
+            text-align: center;
+            border: none;
+            transition: transform 0.1s;
+            box-sizing: border-box;
+        }
+
+        .btn-blue { background: var(--accent-blue); }
+        .btn-wa { background-color: var(--primary-color); }
+        .btn-group { background-color: var(--secondary-color); }
+
+        .inner-btn:active { transform: scale(0.98); }
+
         .step-alert {
             background: #fff5f5;
             border-color: #ffcdd2;
+            margin-top: 10px;
         }
 
         .step-alert .step-num {
             background: var(--danger-color);
         }
 
-        .btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            color: white;
-            padding: 16px;
-            border-radius: 16px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            transition: transform 0.2s, filter 0.2s;
-            font-size: 16px;
-        }
-
-        .btn-wa { background-color: var(--primary-color); }
-        .btn-group { background-color: var(--secondary-color); }
-
-        .btn:active { transform: scale(0.97); }
-        .btn:hover { filter: brightness(1.05); }
-
         b { color: #000; }
         .red { color: var(--danger-color); font-weight: 800; }
+        .id-display {
+            background: #eee;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -119,31 +137,64 @@
 
     <div class="steps">
         <div class="step">
-            <div class="step-num">1</div>
-            <div class="step-text">Перейди в программу, <b>скопируй свой ID</b> и отправь его на WhatsApp, указав <b>своё имя</b>.</div>
+            <div class="step-header">
+                <div class="step-num">1</div>
+                <div class="step-text">Сначала сохрани мой контакт в телефон: <br><b>Газимухаммад электрик</b></div>
+            </div>
+            <button onclick="saveContact()" class="inner-btn btn-blue">💾 Сохранить контакт</button>
         </div>
 
         <div class="step">
-            <div class="step-num">2</div>
-            <div class="step-text">Сохрани номер: <br><b>Газимухаммад электрик</b></div>
+            <div class="step-header">
+                <div class="step-num">2</div>
+                <div class="step-text">Твой ID: <b class="id-display" id="myID">ID-778899</b>. Отправь его мне для активации.</div>
+            </div>
+            <button onclick="sendID()" class="inner-btn btn-wa">📩 Отправить ID в WhatsApp</button>
         </div>
 
         <div class="step">
-            <div class="step-num">3</div>
-            <div class="step-text">Обязательно подпишись на нашу группу в WhatsApp.</div>
+            <div class="step-header">
+                <div class="step-num">3</div>
+                <div class="step-text">Обязательно вступи в нашу рабочую группу WhatsApp.</div>
+            </div>
+            <a href="https://chat.whatsapp.com/E10FzUdV9YLHem5KCVAQtQ" target="_blank" rel="noopener" class="inner-btn btn-group">👥 Вступить в группу</a>
         </div>
 
         <div class="step step-alert">
-            <div class="step-num">4</div>
-            <div class="step-text">
-                <span class="red">Внимание!</span> Если не выполнить все 3 вышеуказанных пункта, ваши права администратора будут <b>аннулированы</b>.
+            <div class="step-header">
+                <div class="step-num">!</div>
+                <div class="step-text">
+                    <span class="red">Внимание!</span> Без выполнения всех 3-х шагов доступ будет <b>аннулирован</b>.
+                </div>
             </div>
         </div>
     </div>
-
-    <a href="https://wa.me/79640040355" class="btn btn-wa">Отправить данные в WhatsApp</a>
-    <a href="https://chat.whatsapp.com/E10FzUdV9YLHem5KCVAQtQ" class="btn btn-group">Вступить в группу</a>
 </div>
+
+<script>
+function saveContact() {
+    const vcard = "BEGIN:VCARD\nVERSION:3.0\nFN:Газимухаммад электрик\nTEL;TYPE=CELL:+79640040355\nEND:VCARD";
+    const blob = new Blob([vcard], { type: "text/vcard" });
+    const url = window.URL.createObjectURL(blob);
+    const newLink = document.createElement('a');
+    newLink.href = url;
+    newLink.setAttribute('download', 'Газимухаммад_электрик.vcf');
+    document.body.appendChild(newLink);
+    newLink.click();
+    document.body.removeChild(newLink);
+}
+
+function sendID() {
+    const idValue = document.getElementById('myID').innerText;
+    const phoneNumber = "79640040355";
+    const message = encodeURIComponent("Привет! Мой ID: " + idValue + ". Прошу выдать права администратора.");
+    const whatsappURL = "https://wa.me/" + phoneNumber + "?text=" + message;
+    
+    navigator.clipboard.writeText(idValue).then(() => {
+        window.open(whatsappURL, '_blank');
+    });
+}
+</script>
 
 </body>
 </html>
