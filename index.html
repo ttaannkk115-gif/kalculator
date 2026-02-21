@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VOLT MASTER Panel</title>
+    <style>
+        :root {
+            --main-gold: #ffc107;
+            --chat-blue: #2196f3;
+            --break-green: #4caf50;
+            --dark-bg: #0f0f0f;
+            --card-bg: rgba(255, 255, 255, 0.07);
+            --text-main: #ffffff;
+            --text-dim: #999999;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 100%);
+            overflow: hidden;
+        }
+
+        .app-container {
+            width: 90%;
+            max-width: 380px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: scale(0.95); } 
+            to { opacity: 1; transform: scale(1); } 
+        }
+
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h1 { font-size: 26px; font-weight: 800; margin: 0; letter-spacing: 1px; }
+        .header span { color: var(--main-gold); }
+
+        .status-badge {
+            display: inline-block;
+            background: rgba(255, 193, 7, 0.1);
+            color: var(--main-gold);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            margin-top: 8px;
+            border: 1px solid rgba(255, 193, 7, 0.2);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Сетка меню */
+        .menu-grid { display: grid; gap: 12px; }
+
+        .menu-item {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--main-gold);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .menu-item:active { transform: scale(0.97); }
+
+        .icon-box {
+            width: 48px; height: 48px; border-radius: 14px;
+            display: flex; justify-content: center; align-items: center;
+            margin-right: 16px; flex-shrink: 0;
+        }
+
+        .icon-price { background: rgba(255, 193, 7, 0.15); color: var(--main-gold); }
+        .icon-calc { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
+        .icon-chat { background: rgba(33, 150, 243, 0.15); color: var(--chat-blue); }
+        .icon-break { background: rgba(76, 175, 80, 0.15); color: var(--break-green); }
+
+        .info h3 { margin: 0; font-size: 17px; font-weight: 600; }
+
+        /* Система Оверлея */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--dark-bg);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            animation: slideUp 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideUp { 
+            from { transform: translateY(100%); } 
+            to { transform: translateY(0); } 
+        }
+
+        .overlay-header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #161616;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #overlay-title { 
+            font-weight: 600; 
+            color: var(--main-gold); 
+            font-size: 14px; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+        }
+
+        .close-btn {
+            background: rgba(255,255,255,0.05);
+            border: none;
+            color: #ff4444;
+            font-size: 28px;
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: var(--transition);
+        }
+
+        .close-btn:hover { background: rgba(255,68,68,0.2); transform: rotate(90deg); }
+
+        .overlay-body { flex-grow: 1; overflow: hidden; position: relative; }
+        #app-frame { width: 100%; height: 100%; border: none; background: #fff; }
+
+        .footer { 
+            text-align: center; 
+            margin-top: 30px; 
+            font-size: 10px; 
+            color: #444; 
+            letter-spacing: 2px; 
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <h1>VOLT<span>MASTER</span></h1>
+        <div id="status" class="status-badge">System Active • 00:00</div>
+    </div>
+
+    <div class="menu-grid">
+        <div class="menu-item" onclick="openApp('Прайс-лист', 'prais.html')">
+            <div class="icon-box icon-price">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            </div>
+            <div class="info"><h3>Прайс-лист</h3></div>
+        </div>
+
+        <div class="menu-item" onclick="openApp('Расчеты', 'izmerenie.html')">
+            <div class="icon-box icon-calc">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <div class="info"><h3>Расчеты</h3></div>
+        </div>
+
+        <div class="menu-item" onclick="openApp('Чат-помощник', 'signa.html')">
+            <div class="icon-box icon-chat">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div class="info"><h3>Чат-помощник</h3></div>
+        </div>
+
+        <div class="menu-item" onclick="openApp('Перекур', 'igri.html')">
+            <div class="icon-box icon-break">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><path d="M6 1v3M10 1v3M14 1v3"/></svg>
+            </div>
+            <div class="info"><h3>Перекур</h3></div>
+        </div>
+    </div>
+
+    <div class="footer">Auto-save to browser memory enabled</div>
+</div>
+
+<div id="app-overlay" class="overlay">
+    <div class="overlay-header">
+        <span id="overlay-title">Загрузка...</span>
+        <button class="close-btn" onclick="closeApp()">&times;</button>
+    </div>
+    <div class="overlay-body">
+        <iframe id="app-frame" src=""></iframe>
+    </div>
+</div>
+
+<script>
+    function openApp(name, url) {
+        // Легкая вибрация при клике
+        if (navigator.vibrate) navigator.vibrate(20);
+
+        // Сохранение в память браузера
+        const now = new Date().toLocaleString('ru-RU');
+        localStorage.setItem('volt_last_app', name);
+        localStorage.setItem('volt_last_access', now);
+
+        const overlay = document.getElementById('app-overlay');
+        const frame = document.getElementById('app-frame');
+        const title = document.getElementById('overlay-title');
+
+        title.innerText = name;
+        frame.src = url;
+        overlay.style.display = 'flex';
+        
+        console.log(`[VOLT MASTER]: Открыто окно "${name}"`);
+    }
+
+    function closeApp() {
+        const overlay = document.getElementById('app-overlay');
+        const frame = document.getElementById('app-frame');
+        
+        overlay.style.display = 'none';
+        frame.src = ''; // Очистка iframe для экономии ресурсов
+    }
+
+    function updateClock() {
+        const status = document.getElementById('status');
+        const now = new Date();
+        const h = now.getHours().toString().padStart(2, '0');
+        const m = now.getMinutes().toString().padStart(2, '0');
+        status.innerText = `System Active • ${h}:${m}`;
+    }
+
+    // Запуск часов
+    setInterval(updateClock, 1000);
+    updateClock();
+</script>
+
+</body>
+</html>
