@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Пятнашки Мастер</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --tile-bg: #1e293b;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --win-bg: rgba(30, 41, 59, 0.95);
+        }
+
+        body {
+            font-family: system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .top-bar {
+            width: 90vw;
+            max-width: 380px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .stats {
+            grid-column: 2;
+            display: flex;
+            gap: 15px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            background: rgba(255,255,255,0.07);
+            padding: 8px 20px;
+            border-radius: 20px;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .refresh-btn {
+            grid-column: 3;
+            justify-self: end;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text);
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        #game-board {
+            width: 90vw;
+            max-width: 380px;
+            height: 90vw;
+            max-height: 380px;
+            background: #020617;
+            position: relative;
+            border-radius: 16px;
+            padding: 8px;
+            box-sizing: border-box;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .tile {
+            position: absolute;
+            width: calc((100% - 46px) / 4);
+            height: calc((100% - 46px) / 4);
+            background: var(--tile-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.7rem;
+            font-weight: 800;
+            border-radius: 10px;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        #win-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(8px);
+        }
+
+        .modal-content {
+            background: var(--win-bg);
+            padding: 30px;
+            border-radius: 24px;
+            text-align: center;
+            border: 1px solid var(--accent);
+            width: 80%;
+            max-width: 300px;
+            animation: modalIn 0.4s forwards;
+        }
+
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+        .modal-btn {
+            background: var(--accent);
+            color: #0f172a;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-weight: bold;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        #timer { color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div></div> 
+        <div class="stats">
+            <div>Ходы: <span id="moves">0</span></div>
+            <div id="timer">00:00</div>
+        </div>
+        <div class="refresh-btn" onclick="shuffleGame()">🔄</div>
+    </div>
+
+    <div id="game-board"></div>
+
+    <div id="win-modal">
+        <div class="modal-content">
+            <h2>Победа!</h2>
+            <p id="win-text"></p>
+            <button class="modal-btn" onclick="closeModal()">Закрыть</button>
+        </div>
+    </div>
+
+    <script>
+        let tiles = []; 
+        let moves = 0;
+        let seconds = 0;
+        let timerInterval = null;
+        let gameActive = false;
+
+        const board = document.getElementById('game-board');
+        const movesEl = document.getElementById('moves');
+        const timerEl = document.getElementById('timer');
+        const winModal = document.getElementById('win-modal');
+
+        function move(value) {
+            const idx = tiles.indexOf(value);
+            const emptyIdx = tiles.indexOf(null);
+            const row = Math.floor(idx / 4), col = idx % 4;
+            const eRow = Math.floor(emptyIdx / 4), eCol = emptyIdx % 4;
+
+            if (row === eRow || col === eCol) {
+                const rowStep = row === eRow ? 0 : (row < eRow ? 1 : -1);
+                const colStep = col === eCol ? 0 : (col < eCol ? 1 : -1);
+                let curr = emptyIdx;
+
+                while (curr !== idx) {
+                    const next = curr - (rowStep * 4 + colStep);
+                    tiles[curr] = tiles[next];
+                    curr = next;
+                }
+                tiles[idx] = null;
+                
+                if (!gameActive) startTimer();
+                gameActive = true;
+                moves++;
+                movesEl.textContent = moves;
+                updatePositions();
+                checkWin();
+            }
+        }
+
+        function updatePositions() {
+            const gap = 10;
+            const pad = 8;
+            const size = (board.clientWidth - 16 - (3 * gap)) / 4;
+
+            tiles.forEach((val, i) => {
+                if (val !== null) {
+                    let div = document.getElementById(`t-${val}`);
+                    if (!div) {
+                        div = document.createElement('div');
+                        div.className = 'tile';
+                        div.id = `t-${val}`;
+                        div.textContent = val;
+                        div.onclick = () => move(val);
+                        div.ontouchstart = (e) => { e.preventDefault(); move(val); };
+                        board.appendChild(div);
+                    }
+                    const r = Math.floor(i / 4), c = i % 4;
+                    div.style.transform = `translate(${c * (size + gap) + pad}px, ${r * (size + gap) + pad}px)`;
+                }
+            });
+        }
+
+        function checkWin() {
+            const isWin = tiles.slice(0, 15).every((v, i) => v === i + 1);
+            if (isWin && gameActive) {
+                stopTimer();
+                gameActive = false;
+                document.getElementById('win-text').innerHTML = `Мастер, игра пройдена!<br>Ходов: ${moves}<br>Время: ${timerEl.textContent}`;
+                winModal.style.display = 'flex';
+                // Сохраняем последний результат победы
+                localStorage.setItem('fifteen_master_last_score', JSON.stringify({moves, seconds}));
+            }
+        }
+
+        function closeModal() { winModal.style.display = 'none'; initCollected(); }
+
+        function shuffleGame() {
+            closeModal();
+            stopTimer();
+            seconds = 0; moves = 0;
+            timerEl.textContent = "00:00";
+            movesEl.textContent = "0";
+            // Очищаем сохраненный счет при ручном сбросе
+            localStorage.removeItem('fifteen_master_last_score');
+            
+            tiles = [...Array(15).keys()].map(x => x + 1).concat(null);
+            for (let i = 0; i < 300; i++) {
+                const emptyIdx = tiles.indexOf(null);
+                const adj = [];
+                if (emptyIdx % 4 > 0) adj.push(emptyIdx - 1);
+                if (emptyIdx % 4 < 3) adj.push(emptyIdx + 1);
+                if (emptyIdx > 3) adj.push(emptyIdx - 4);
+                if (emptyIdx < 12) adj.push(emptyIdx + 4);
+                const rand = adj[Math.floor(Math.random() * adj.length)];
+                [tiles[emptyIdx], tiles[rand]] = [tiles[rand], tiles[emptyIdx]];
+            }
+            gameActive = false;
+            updatePositions();
+        }
+
+        function initCollected() {
+            tiles = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, null];
+            board.innerHTML = '';
+            updatePositions();
+        }
+
+        function startTimer() { 
+            if(!timerInterval) timerInterval = setInterval(() => {
+                seconds++;
+                updateTimerDisplay();
+            }, 1000); 
+        }
+
+        function updateTimerDisplay() {
+            const m = Math.floor(seconds/60).toString().padStart(2,'0');
+            const s = (seconds%60).toString().padStart(2,'0');
+            timerEl.textContent = `${m}:${s}`;
+        }
+
+        function stopTimer() { clearInterval(timerInterval); timerInterval = null; }
+
+        // ЗАГРУЗКА ПРИ ОБНОВЛЕНИИ СТРАНИЦЫ
+        window.onload = () => {
+            // Пятнашки ВСЕГДА собраны при загрузке
+            initCollected();
+            
+            // Но счетчик подтягиваем из последней игры
+            const lastScore = localStorage.getItem('fifteen_master_last_score');
+            if (lastScore) {
+                const data = JSON.parse(lastScore);
+                moves = data.moves;
+                seconds = data.seconds;
+                movesEl.textContent = moves;
+                updateTimerDisplay();
+            }
+        };
+    </script>
+</body>
+</html>
