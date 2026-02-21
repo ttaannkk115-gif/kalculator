@@ -695,6 +695,7 @@ function manualCatUpdate(id, val) {
 // ЛОГИКА АДМИНКИ (ИСПРАВЛЕНО)
 function adminLogin() {
     const p = prompt("Введите пароль администратора:");
+    
     if (p === SUPER_PASS) {
         isAdmin = true;
         isFullAdmin = true; 
@@ -707,12 +708,15 @@ function adminLogin() {
             alert("Вход выполнен!");
             showAdminPanel();
         } else {
-            // Вместо стандартного alert открываем наше окно
+            // Если пароль верный, но ID нет в списке разрешенных
             document.getElementById('alert-id-val').innerText = userId;
             document.getElementById('custom-alert').style.display = 'flex';
         }
     } else if (p !== null) {
-        alert("Неверный пароль!");
+        // НОВОЕ: Если пароль введен неверно, показываем то же окно
+        // Мы можем немного изменить текст в окне динамически, если хотим
+        document.getElementById('alert-id-val').innerText = userId;
+        document.getElementById('custom-alert').style.display = 'flex';
     }
 }
 
