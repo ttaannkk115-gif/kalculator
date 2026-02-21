@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ElectroMaster: Ultimate Edition</title>
+    <style>
+        :root {
+            --neon-blue: #00d2ff;
+            --neon-green: #39ff14;
+            --neon-red: #ff0055;
+            --neon-gold: #ffcc00;
+            --dark-bg: #080a12;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--dark-bg);
+            background-image: linear-gradient(rgba(0, 210, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(0, 210, 255, 0.03) 1px, transparent 1px);
+            background-size: 25px 25px;
+            color: white;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Эффект Глюка при ошибке */
+        .glitch-effect {
+            animation: glitch 0.2s cubic-bezier(.25,.46,.45,.94) both 2;
+        }
+        @keyframes glitch {
+            0% { transform: translate(0); text-shadow: 2px 0 var(--neon-red); }
+            20% { transform: translate(-3px, 3px); }
+            40% { transform: translate(-3px, -3px); text-shadow: -2px 0 var(--neon-blue); }
+            60% { transform: translate(3px, 3px); }
+            80% { transform: translate(3px, -3px); }
+            100% { transform: translate(0); }
+        }
+
+        #game-card {
+            width: 92%;
+            max-width: 440px;
+            background: rgba(16, 20, 35, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            border-radius: 24px;
+            padding: 25px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .mode-btn {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid #2d3748;
+            color: white;
+            padding: 18px;
+            margin-bottom: 12px;
+            border-radius: 16px;
+            cursor: pointer;
+            text-align: left;
+            transition: 0.2s;
+        }
+        .mode-btn:hover { border-color: var(--neon-blue); background: rgba(0,210,255,0.1); }
+        .mode-btn b { color: var(--neon-blue); font-size: 1.1rem; display: block; }
+
+        .timer-bar { width: 100%; height: 5px; background: #1a202c; border-radius: 10px; margin: 20px 0; overflow: hidden; }
+        #timer-fill { height: 100%; width: 100%; background: var(--neon-blue); transition: width 0.1s linear; }
+
+        .ans-btn {
+            width: 100%;
+            background: #1a202c;
+            border: 1px solid #2d3748;
+            color: #cbd5e0;
+            padding: 16px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            text-align: left;
+            transition: 0.2s;
+        }
+
+        .correct { background: var(--neon-green) !important; color: #000 !important; border-color: white !important; font-weight: bold; }
+        .wrong { background: var(--neon-red) !important; color: white !important; border-color: white !important; }
+
+        #screen-quiz, #screen-expl, #screen-res { display: none; }
+        .expl-text { background: rgba(255,204,0,0.1); border-left: 4px solid var(--neon-gold); padding: 15px; margin: 15px 0; font-size: 0.9rem; }
+    </style>
+</head>
+<body id="b">
+
+<div id="game-card">
+    <div id="screen-menu">
+        <h1 style="text-align:center; color:var(--neon-blue); letter-spacing:2px;">ELECTRO MASTER</h1>
+        <button class="mode-btn" onclick="start('basic')"><b>👶 Новичок</b><span>Базовые цвета, вольты и розетки</span></button>
+        <button class="mode-btn" onclick="start('pro')"><b>⚡ Профи</b><span>ПУЭ, расчеты сечений, ПРА</span></button>
+        <button class="mode-btn" onclick="start('safety')"><b>🛡️ Безопасность</b><span>СИЗ, спасение, заземление</span></button>
+    </div>
+
+    <div id="screen-quiz">
+        <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--neon-blue)">
+            <span id="label-cat">РЕЖИМ</span>
+            <span>ОЧКИ: <span id="val-score">0</span></span>
+        </div>
+        <div class="timer-bar"><div id="timer-fill"></div></div>
+        <h2 id="q-text" style="min-height: 60px; font-size: 1.1rem;">...</h2>
+        <div id="ans-box"></div>
+    </div>
+
+    <div id="screen-expl">
+        <h2 style="color:var(--neon-red)">КЗ В СИСТЕМЕ!</h2>
+        <div class="expl-text" id="expl-cont"></div>
+        <button onclick="showRes(false)" style="width:100%; padding:15px; background:var(--neon-blue); border:none; border-radius:12px; font-weight:bold; cursor:pointer">ПОНЯТНО</button>
+    </div>
+
+    <div id="screen-res">
+        <h2 id="res-status" style="text-align:center;">ИТОГ</h2>
+        <div style="font-size:3.5rem; color:var(--neon-blue); text-align:center; margin:20px 0;" id="res-val">0</div>
+        <button onclick="location.reload()" style="width:100%; padding:15px; background:var(--neon-green); border:none; border-radius:12px; font-weight:bold; cursor:pointer">В МЕНЮ</button>
+    </div>
+</div>
+
+<script>
+    const db = {
+        basic: [
+            { q: "Какого цвета обычно фазный провод в кабеле 3х2.5?", a: ["Синий", "Белый или Коричневый", "Желто-зеленый"], c: "Белый или Коричневый", e: "Синий — это всегда ноль, желто-зеленый — земля. Фаза обычно коричневая, черная или белая." },
+            { q: "Сколько Вольт в обычной домашней розетке (РФ)?", a: ["110В", "220-230В", "380В"], c: "220-230В", e: "Стандарт однофазной сети в России — 230 вольт." },
+            { q: "Что будет, если соединить плюс и минус аккумулятора напрямую?", a: ["Ничего", "Короткое замыкание", "Зарядится быстрее"], c: "Короткое замыкание", e: "Прямое соединение без нагрузки вызывает КЗ, сильный нагрев и возможный взрыв." },
+            { q: "Как называется прибор для измерения напряжения?", a: ["Амперметр", "Вольтметр", "Омметр"], c: "Вольтметр", e: "Напряжение измеряют вольтметром." },
+            { q: "Можно ли вытаскивать вилку из розетки за шнур?", a: ["Да", "Нет", "Если шнур толстый"], c: "Нет", e: "Это может привести к обрыву жил внутри или вырыванию розетки из стены." }
+        ],
+        pro: [
+            { q: "Максимальное число розеток на автомат 16А (рекомендуемое)?", a: ["5", "8-10", "Не ограничено"], c: "8-10", e: "Обычно рекомендуется не более 8-10 точек на одну линию 2.5мм² под защитой 16А." },
+            { q: "Что означает характеристика 'B' на автоматическом выключателе?", a: ["Для больших токов", "Для цепей без пусковых токов", "Для мощных двигателей"], c: "Для цепей без пусковых токов", e: "Автоматы типа 'B' срабатывают быстрее при перегрузках, идеальны для защиты длинных линий освещения." },
+            { q: "Минимальное сечение медного заземляющего проводника в щитке?", a: ["1.5 мм²", "2.5 мм²", "6.0 мм²"], c: "6.0 мм²", e: "Для надежной защиты магистраль заземления должна иметь сечение не менее 6мм²." }
+        ],
+        safety: [
+            { q: "Безопасное расстояние до упавшего провода 10кВ на земле?", a: ["2 метра", "8 метров", "1 метр"], c: "8 метров", e: "Радиус растекания тока — 8 метров. Выходить нужно гусиным шагом." },
+            { q: "Какой огнетушитель подходит для тушения электрощитов?", a: ["Пенный", "Углекислотный (ОУ)", "Водный"], c: "Углекислотный (ОУ)", e: "Пенные и водные проводят ток. Только углекислотные или порошковые (до 1000В)." }
+        ]
+    };
+
+    let session = [], idx = 0, score = 0, timer;
+
+    function start(m) {
+        idx = 0; score = 0;
+        document.getElementById('val-score').innerText = score;
+        document.getElementById('screen-menu').style.display = 'none';
+        document.getElementById('screen-quiz').style.display = 'block';
+        document.getElementById('label-cat').innerText = m.toUpperCase();
+        
+        // Перемешиваем сами вопросы
+        session = [...db[m]].sort(() => Math.random() - 0.5);
+        render();
+    }
+
+    function render() {
+        if(idx >= session.length) return showRes(true);
+        
+        const data = session[idx];
+        document.getElementById('q-text').innerText = data.q;
+        const box = document.getElementById('ans-box');
+        box.innerHTML = '';
+
+        // Перемешиваем варианты ответов
+        const shuffledAnswers = [...data.a].sort(() => Math.random() - 0.5);
+
+        let time = 100;
+        clearInterval(timer);
+        timer = setInterval(() => {
+            time -= 0.6; // Скорость таймера
+            document.getElementById('timer-fill').style.width = time + "%";
+            if(time <= 0) { 
+                clearInterval(timer); 
+                fail("ВРЕМЯ ВЫШЛО! Скорость важна в аварийных ситуациях."); 
+            }
+        }, 100);
+
+        shuffledAnswers.forEach((ans) => {
+            const btn = document.createElement('button');
+            btn.className = 'ans-btn';
+            btn.innerText = ans;
+            btn.onclick = () => {
+                clearInterval(timer);
+                if(ans === data.c) {
+                    btn.classList.add('correct');
+                    score += 100;
+                    document.getElementById('val-score').innerText = score;
+                    setTimeout(() => { idx++; render(); }, 600);
+                } else {
+                    btn.classList.add('wrong');
+                    document.getElementById('b').classList.add('glitch-effect');
+                    setTimeout(() => {
+                        document.getElementById('b').classList.remove('glitch-effect');
+                        fail(data.e);
+                    }, 300);
+                }
+            };
+            box.appendChild(btn);
+        });
+    }
+
+    function fail(msg) {
+        document.getElementById('screen-quiz').style.display = 'none';
+        document.getElementById('screen-expl').style.display = 'block';
+        document.getElementById('expl-cont').innerText = msg;
+    }
+
+    function showRes(win) {
+        document.getElementById('screen-quiz').style.display = 'none';
+        document.getElementById('screen-expl').style.display = 'none';
+        document.getElementById('screen-res').style.display = 'block';
+        document.getElementById('res-val').innerText = score;
+        document.getElementById('res-status').innerText = win ? "ОБЪЕКТ СДАН!" : "АВАРИЙНЫЙ ВЫЕЗД!";
+    }
+</script>
+</body>
+</html>
