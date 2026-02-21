@@ -13,6 +13,7 @@
             --main-gold: #ffc107;
             --chat-blue: #2196f3;
             --break-green: #4caf50;
+            --note-purple: #9c27b0;
             --dark-bg: #0f0f0f;
             --card-bg: rgba(255, 255, 255, 0.07);
             --text-main: #ffffff;
@@ -49,7 +50,6 @@
         .header h1 { font-size: 26px; font-weight: 800; margin: 0; letter-spacing: 1px; }
         .header span { color: var(--main-gold); }
 
-        /* Обновленный статус-бейдж под ID и Счетчик */
         .status-badge {
             display: inline-flex;
             align-items: center;
@@ -109,12 +109,12 @@
 
         .icon-price { background: rgba(255, 193, 7, 0.15); color: var(--main-gold); }
         .icon-calc { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
+        .icon-note { background: rgba(156, 39, 176, 0.15); color: var(--note-purple); }
         .icon-chat { background: rgba(33, 150, 243, 0.15); color: var(--chat-blue); }
         .icon-break { background: rgba(76, 175, 80, 0.15); color: var(--break-green); }
 
         .info h3 { margin: 0; font-size: 17px; font-weight: 600; }
 
-        /* Оверлей */
         .overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -185,6 +185,13 @@
             <div class="info"><h3>Расчеты</h3></div>
         </div>
 
+        <div class="menu-item" onclick="openApp('Заметки', 'zametki.html')">
+            <div class="icon-box icon-note">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <div class="info"><h3>Заметки</h3></div>
+        </div>
+
         <div class="menu-item" onclick="openApp('Чат-помощник', 'signa.html')">
             <div class="icon-box icon-chat">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -214,7 +221,7 @@
 </div>
 
 <script>
-    // 1. Конфигурация Firebase
+    // 1. Firebase Config
     const firebaseConfig = {
         databaseURL: "https://kalculator-8e345-default-rtdb.firebaseio.com/"
     };
@@ -223,15 +230,24 @@
     }
     const database = firebase.database();
 
-    // 2. Функция инициализации статуса (ID + Счетчик)
+    // 2. Автосохранение состояния (LocalStorage)
+    const VOLT_SAVE_KEY = 'volt_master_autosave_2026';
+
+    function saveCodeState() {
+        const state = {
+            last_seen: new Date().toISOString(),
+            user_id: localStorage.getItem('user_id_2026') || 'Master',
+            current_app: localStorage.getItem('volt_last_app') || 'None'
+        };
+        localStorage.setItem(VOLT_SAVE_KEY, JSON.stringify(state));
+    }
+
+    // 3. Живой статус
     function initLiveStatus() {
         const statusEl = document.getElementById('status');
         const visitRef = database.ref('global_visit_count');
+        const userId = localStorage.getItem('user_id_2026') || "MASTER";
 
-        // Получаем ID из localStorage (который создает prais.html)
-        const userId = localStorage.getItem('user_id_2026') || "NEW USER";
-
-        // Подписываемся на живые обновления из Firebase
         visitRef.on('value', (snapshot) => {
             const count = snapshot.val() || 0;
             statusEl.innerHTML = `
@@ -241,9 +257,10 @@
                 <span style="color: #fff">LIVE: ${count}</span>
             `;
         });
+        saveCodeState();
     }
 
-    // 3. Управление окнами
+    // 4. Логика окон
     function openApp(name, url) {
         if (navigator.vibrate) navigator.vibrate(20);
         
@@ -251,26 +268,24 @@
         const frame = document.getElementById('app-frame');
         const title = document.getElementById('overlay-title');
 
-        // Сохраняем последнее действие
         localStorage.setItem('volt_last_app', name);
         localStorage.setItem('volt_last_access', new Date().toLocaleString('ru-RU'));
 
         title.innerText = name;
         frame.src = url;
         overlay.style.display = 'flex';
+        saveCodeState();
     }
 
     function closeApp() {
-        const overlay = document.getElementById('app-overlay');
-        const frame = document.getElementById('app-frame');
-        overlay.style.display = 'none';
-        frame.src = 'about:blank';
-        // Перезапускаем статус на случай, если в прайсе сменился ID
+        document.getElementById('app-overlay').style.display = 'none';
+        document.getElementById('app-frame').src = 'about:blank';
         initLiveStatus();
     }
 
-    // Запуск при старте
     document.addEventListener('DOMContentLoaded', initLiveStatus);
+    window.addEventListener('beforeunload', saveCodeState);
+    setInterval(saveCodeState, 60000);
 </script>
 
 </body>
