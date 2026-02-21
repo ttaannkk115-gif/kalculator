@@ -156,27 +156,28 @@
 </div>
 
 <script>
-    // Получаем ID из родительского окна (index.html)
-    let myId = "Не найден";
+    let myId = "ID-0000";
     
+    // Функция получения ID из файла index.html
     function updateID() {
         try {
-            // Пробуем взять переменную userId напрямую из родителя
+            // Пытаемся взять переменную userId из родительского окна
             if (window.parent && window.parent.userId) {
                 myId = window.parent.userId;
             } 
-            // Если не вышло, пробуем вытащить текст из элемента шапки родителя
-            else if (window.parent && window.parent.document.getElementById('user-display-id')) {
-                myId = window.parent.document.getElementById('user-display-id').innerText.replace('ID: ', '');
+            // Запасной вариант: берем из localStorage, который общий для обоих файлов
+            else {
+                const localId = localStorage.getItem('user_id_2026');
+                if (localId) myId = localId;
             }
         } catch (e) {
-            console.log("Доступ к родителю ограничен, используем локальный ID");
-            myId = localStorage.getItem('user_id_2026') || "ID-ERROR";
+            const localId = localStorage.getItem('user_id_2026');
+            if (localId) myId = localId;
         }
         document.getElementById('display-id').innerText = myId;
     }
 
-    // Запускаем поиск ID при загрузке
+    // Обновляем ID при загрузке страницы
     window.onload = updateID;
 
     function saveContact() {
@@ -191,9 +192,10 @@
 
     function sendID() {
         const phone = "79640040355";
-        const text = encodeURIComponent("Привет! Мой ID: " + myId + ". Добавь меня в список админов для Сметы 2026.");
+        // Текст сообщения с приветствием Ас-саляму алейкум
+        const text = encodeURIComponent("Ас-саляму алейкум. Мой ID: " + myId + ". Добавь меня в список админов для Сметы 2026.");
         
-        // Копируем в буфер (полезная фича)
+        // Копируем ID в буфер на случай, если пользователь захочет вставить его сам
         navigator.clipboard.writeText(myId);
         
         // Открываем WhatsApp
