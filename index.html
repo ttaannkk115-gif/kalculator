@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>VOLT MASTER Panel</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
     <style>
         :root {
             --main-gold: #ffc107;
@@ -45,19 +49,38 @@
         .header h1 { font-size: 26px; font-weight: 800; margin: 0; letter-spacing: 1px; }
         .header span { color: var(--main-gold); }
 
+        /* Обновленный статус-бейдж под ID и Счетчик */
         .status-badge {
-            display: inline-block;
-            background: rgba(255, 193, 7, 0.1);
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 193, 7, 0.08);
             color: var(--main-gold);
-            padding: 4px 12px;
+            padding: 6px 16px;
             border-radius: 20px;
             font-size: 11px;
             margin-top: 8px;
             border: 1px solid rgba(255, 193, 7, 0.2);
-            font-variant-numeric: tabular-nums;
+            font-family: 'Courier New', monospace;
+            min-width: 220px;
+            justify-content: center;
+            gap: 10px;
         }
 
-        /* Сетка меню */
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--main-gold);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--main-gold);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
         .menu-grid { display: grid; gap: 12px; }
 
         .menu-item {
@@ -78,8 +101,6 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
 
-        .menu-item:active { transform: scale(0.97); }
-
         .icon-box {
             width: 48px; height: 48px; border-radius: 14px;
             display: flex; justify-content: center; align-items: center;
@@ -93,7 +114,7 @@
 
         .info h3 { margin: 0; font-size: 17px; font-weight: 600; }
 
-        /* Система Оверлея */
+        /* Оверлей */
         .overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -102,6 +123,7 @@
             display: none;
             flex-direction: column;
             animation: slideUp 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
         }
 
         @keyframes slideUp { 
@@ -118,13 +140,7 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        #overlay-title { 
-            font-weight: 600; 
-            color: var(--main-gold); 
-            font-size: 14px; 
-            text-transform: uppercase; 
-            letter-spacing: 1px;
-        }
+        #overlay-title { font-weight: 600; color: var(--main-gold); text-transform: uppercase; letter-spacing: 1px; }
 
         .close-btn {
             background: rgba(255,255,255,0.05);
@@ -134,23 +150,13 @@
             width: 40px; height: 40px;
             border-radius: 50%;
             cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
             transition: var(--transition);
         }
 
-        .close-btn:hover { background: rgba(255,68,68,0.2); transform: rotate(90deg); }
-
-        .overlay-body { flex-grow: 1; overflow: hidden; position: relative; }
+        .overlay-body { flex-grow: 1; overflow: hidden; }
         #app-frame { width: 100%; height: 100%; border: none; background: #fff; }
 
-        .footer { 
-            text-align: center; 
-            margin-top: 30px; 
-            font-size: 10px; 
-            color: #444; 
-            letter-spacing: 2px; 
-            text-transform: uppercase;
-        }
+        .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #444; letter-spacing: 2px; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -158,7 +164,10 @@
 <div class="app-container">
     <div class="header">
         <h1>VOLT<span>MASTER</span></h1>
-        <div id="status" class="status-badge">System Active • 00:00</div>
+        <div id="status" class="status-badge">
+            <div class="status-dot"></div>
+            <span>CONNECTING...</span>
+        </div>
     </div>
 
     <div class="menu-grid">
@@ -191,7 +200,7 @@
         </div>
     </div>
 
-    <div class="footer">Auto-save to browser memory enabled</div>
+    <div class="footer">Cloud Sync & Auto-save Active</div>
 </div>
 
 <div id="app-overlay" class="overlay">
@@ -205,45 +214,63 @@
 </div>
 
 <script>
+    // 1. Конфигурация Firebase
+    const firebaseConfig = {
+        databaseURL: "https://kalculator-8e345-default-rtdb.firebaseio.com/"
+    };
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const database = firebase.database();
+
+    // 2. Функция инициализации статуса (ID + Счетчик)
+    function initLiveStatus() {
+        const statusEl = document.getElementById('status');
+        const visitRef = database.ref('global_visit_count');
+
+        // Получаем ID из localStorage (который создает prais.html)
+        const userId = localStorage.getItem('user_id_2026') || "NEW USER";
+
+        // Подписываемся на живые обновления из Firebase
+        visitRef.on('value', (snapshot) => {
+            const count = snapshot.val() || 0;
+            statusEl.innerHTML = `
+                <div class="status-dot"></div>
+                <span style="color: var(--main-gold)">${userId}</span>
+                <span style="opacity: 0.3">|</span>
+                <span style="color: #fff">LIVE: ${count}</span>
+            `;
+        });
+    }
+
+    // 3. Управление окнами
     function openApp(name, url) {
-        // Легкая вибрация при клике
         if (navigator.vibrate) navigator.vibrate(20);
-
-        // Сохранение в память браузера
-        const now = new Date().toLocaleString('ru-RU');
-        localStorage.setItem('volt_last_app', name);
-        localStorage.setItem('volt_last_access', now);
-
+        
         const overlay = document.getElementById('app-overlay');
         const frame = document.getElementById('app-frame');
         const title = document.getElementById('overlay-title');
 
+        // Сохраняем последнее действие
+        localStorage.setItem('volt_last_app', name);
+        localStorage.setItem('volt_last_access', new Date().toLocaleString('ru-RU'));
+
         title.innerText = name;
         frame.src = url;
         overlay.style.display = 'flex';
-        
-        console.log(`[VOLT MASTER]: Открыто окно "${name}"`);
     }
 
     function closeApp() {
         const overlay = document.getElementById('app-overlay');
         const frame = document.getElementById('app-frame');
-        
         overlay.style.display = 'none';
-        frame.src = ''; // Очистка iframe для экономии ресурсов
+        frame.src = 'about:blank';
+        // Перезапускаем статус на случай, если в прайсе сменился ID
+        initLiveStatus();
     }
 
-    function updateClock() {
-        const status = document.getElementById('status');
-        const now = new Date();
-        const h = now.getHours().toString().padStart(2, '0');
-        const m = now.getMinutes().toString().padStart(2, '0');
-        status.innerText = `System Active • ${h}:${m}`;
-    }
-
-    // Запуск часов
-    setInterval(updateClock, 1000);
-    updateClock();
+    // Запуск при старте
+    document.addEventListener('DOMContentLoaded', initLiveStatus);
 </script>
 
 </body>
