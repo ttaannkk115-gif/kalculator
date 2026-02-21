@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Доступ и Права</title>
+    <title>Доступ и Права — Смета 2026</title>
     <style>
         :root {
             --primary-color: #25D366;
@@ -11,6 +11,8 @@
             --danger-color: #d32f2f;
             --bg-color: #f0f2f5;
             --accent-blue: #007AFF;
+            --text-main: #1c1e21;
+            --text-secondary: #5f6368;
         }
 
         body {
@@ -30,56 +32,74 @@
             width: 100%;
             max-width: 400px;
             padding: 25px;
-            border-radius: 24px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 28px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
             box-sizing: border-box;
         }
 
         h2 {
             text-align: center;
-            font-size: 20px;
-            margin-bottom: 20px;
-            color: #1c1e21;
+            font-size: 22px;
+            margin-bottom: 25px;
+            color: var(--text-main);
+            font-weight: 700;
         }
 
         .steps {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 15px;
         }
 
         .step {
-            background: #f7f8fa;
-            padding: 14px;
-            border-radius: 16px;
-            border: 1px solid #eaeef2;
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 20px;
+            border: 1px solid #edf0f2;
         }
 
         .step-header {
             display: flex;
             align-items: flex-start;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .step-num {
-            background: #1c1e21;
+            background: var(--text-main);
             color: white;
-            width: 24px;
-            height: 24px;
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 10px;
-            font-size: 12px;
+            margin-right: 12px;
+            font-size: 13px;
             font-weight: bold;
             flex-shrink: 0;
         }
 
         .step-text {
             font-size: 14px;
-            line-height: 1.4;
-            color: #4b4b4b;
+            line-height: 1.5;
+            color: #444;
+        }
+
+        /* Поле ввода имени */
+        .name-input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1.5px solid #ddd;
+            border-radius: 12px;
+            font-size: 14px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .name-input:focus {
+            border-color: var(--accent-blue);
         }
 
         .inner-btn {
@@ -88,34 +108,54 @@
             justify-content: center;
             text-decoration: none;
             color: white;
-            padding: 12px;
-            border-radius: 12px;
-            font-size: 14px;
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             width: 100%;
-            margin-top: 5px;
+            margin-top: 8px;
             border: none;
-            transition: transform 0.1s;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
+
+        .inner-btn:hover {
+            filter: brightness(1.05);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
+        }
+
+        .inner-btn:active { transform: scale(0.97); }
 
         .btn-blue { background: var(--accent-blue); }
         .btn-wa { background-color: var(--primary-color); }
         .btn-group { background-color: var(--secondary-color); }
-
-        .inner-btn:active { transform: scale(0.98); }
 
         .id-badge {
             background: #e1f5fe;
             color: #0277bd;
             padding: 2px 8px;
             border-radius: 6px;
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
             font-weight: bold;
             font-size: 15px;
         }
 
-        .red { color: var(--danger-color); font-weight: bold; }
+        .warning-footer {
+            font-size: 12.5px;
+            text-align: center;
+            color: var(--text-secondary);
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff8f8;
+            border-radius: 16px;
+            line-height: 1.5;
+            border: 1px solid #ffebeb;
+        }
+
+        .warning-footer b { color: var(--text-main); }
+        .red-text { color: var(--danger-color); display: block; margin-top: 6px; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -127,7 +167,7 @@
         <div class="step">
             <div class="step-header">
                 <div class="step-num">1</div>
-                <div class="step-text">Сохраните мой контакт, чтобы WhatsApp разрешил отправку ссылки:</div>
+                <div class="step-text">Сохраните контакт для активации WhatsApp:</div>
             </div>
             <button onclick="saveContact()" class="inner-btn btn-blue">💾 Сохранить Газимухаммад</button>
         </div>
@@ -135,22 +175,24 @@
         <div class="step">
             <div class="step-header">
                 <div class="step-num">2</div>
-                <div class="step-text">Ваш ID: <span class="id-badge" id="display-id">Загрузка...</span>. Отправьте его мне для внесения в базу.</div>
+                <div class="step-text">Ваш ID: <span class="id-badge" id="display-id">...</span>. Введите ваше имя и отправьте запрос:</div>
             </div>
-            <button onclick="sendID()" class="inner-btn btn-wa">📩 Отправить ID мастеру</button>
+            <input type="text" id="user-name" class="name-input" placeholder="Введите ваше имя и фамилию">
+            <button onclick="sendID()" class="inner-btn btn-wa">📩 Отправить данные Мастеру</button>
         </div>
 
         <div class="step">
             <div class="step-header">
                 <div class="step-num">3</div>
-                <div class="step-text">Вступите в рабочую группу для обмена опытом:</div>
+                <div class="step-text">Вступите в общую группу специалистов:</div>
             </div>
             <a href="https://chat.whatsapp.com/E10FzUdV9YLHem5KCVAQtQ" target="_blank" class="inner-btn btn-group">👥 Вступить в группу</a>
         </div>
 
-        <div style="font-size: 11px; text-align: center; color: #888; margin-top: 10px;">
-            После проверки Мастер выдаст вам права.<br>
-            <span class="red">Внимание:</span> без регистрации доступ закроется.
+        <div class="warning-footer">
+            💡 <b>Пожалуйста, обратите внимание:</b><br>
+            Для стабильной работы системы и подтверждения прав администратора необходимо выполнить <b>все три этапа</b> регистрации.
+            <span class="red-text">При частичном выполнении доступ к сервису будет автоматически ограничен.</span>
         </div>
     </div>
 </div>
@@ -158,26 +200,18 @@
 <script>
     let myId = "ID-0000";
     
-    // Функция получения ID из файла index.html
     function updateID() {
         try {
-            // Пытаемся взять переменную userId из родительского окна
+            const localId = localStorage.getItem('user_id_2026');
             if (window.parent && window.parent.userId) {
                 myId = window.parent.userId;
-            } 
-            // Запасной вариант: берем из localStorage, который общий для обоих файлов
-            else {
-                const localId = localStorage.getItem('user_id_2026');
-                if (localId) myId = localId;
+            } else if (localId) {
+                myId = localId;
             }
-        } catch (e) {
-            const localId = localStorage.getItem('user_id_2026');
-            if (localId) myId = localId;
-        }
+        } catch (e) { console.error(e); }
         document.getElementById('display-id').innerText = myId;
     }
 
-    // Обновляем ID при загрузке страницы
     window.onload = updateID;
 
     function saveContact() {
@@ -191,14 +225,23 @@
     }
 
     function sendID() {
+        const nameField = document.getElementById('user-name');
+        const userName = nameField.value.trim();
         const phone = "79640040355";
-        // Текст сообщения с приветствием Ас-саляму алейкум
-        const text = encodeURIComponent("Ас-саляму алейкум. Мой ID: " + myId + ". Добавь меня в список админов для Сметы 2026.");
+
+        if (!userName) {
+            alert("Пожалуйста, введите ваше имя перед отправкой.");
+            nameField.focus();
+            return;
+        }
+
+        const message = `Ас-саляму алейкум. Меня зовут ${userName}. Мой ID: ${myId}. Прошу внести меня в список админов «Смета 2026».`;
+        const text = encodeURIComponent(message);
         
-        // Копируем ID в буфер на случай, если пользователь захочет вставить его сам
-        navigator.clipboard.writeText(myId);
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(myId);
+        }
         
-        // Открываем WhatsApp
         window.open("https://wa.me/" + phone + "?text=" + text, '_blank');
     }
 </script>
