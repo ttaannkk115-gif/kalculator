@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>VoltMaster Games</title>
     <style>
         :root {
@@ -13,7 +13,7 @@
             --sub-text: #666666;
             --accent-blue: #007aff;
             --hover-bg: #252525;
-            --flappy-green: #38c172; /* Новый цвет для Flappy Bird */
+            --flappy-green: #38c172;
         }
 
         body {
@@ -27,6 +27,8 @@
             min-height: 100vh;
             padding: 20px;
             overflow-x: hidden;
+            /* Запрет скролла всей страницы при активной игре */
+            touch-action: manipulation;
         }
 
         /* Шапка */
@@ -76,6 +78,7 @@
             transition: transform 0.1s ease, background-color 0.2s, border-color 0.2s;
             cursor: pointer;
             border: 1px solid transparent;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .menu-item:hover {
@@ -96,10 +99,10 @@
             margin-right: 20px;
         }
 
-        .icon-1 { background: rgba(212, 175, 55, 0.15); color: #d4af37; } /* Золотой (Вопросы) */
-        .icon-2 { background: rgba(255, 140, 0, 0.15); color: #ff8c00; } /* Оранжевый (Пятнашки) */
-        .icon-3 { background: rgba(0, 122, 255, 0.15); color: #007aff; } /* Синий (Память) */
-        .icon-4 { background: rgba(56, 193, 114, 0.15); color: var(--flappy-green); } /* Зеленый (Flappy Bird) */
+        .icon-1 { background: rgba(212, 175, 55, 0.15); color: #d4af37; }
+        .icon-2 { background: rgba(255, 140, 0, 0.15); color: #ff8c00; }
+        .icon-3 { background: rgba(0, 122, 255, 0.15); color: #007aff; }
+        .icon-4 { background: rgba(56, 193, 114, 0.15); color: var(--flappy-green); }
 
         .item-text { font-size: 18px; font-weight: 600; }
 
@@ -107,20 +110,24 @@
         #game-overlay {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             background: #000;
             z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #game-overlay.active {
+            display: block;
+            opacity: 1;
         }
 
         #game-frame {
             width: 100%;
             height: 100%;
             border: none;
-            /* Для Flappy Bird, если она требует определенного соотношения сторон, можно настроить */
-            /* object-fit: contain; */ 
+            display: block;
         }
 
         .close-btn {
@@ -129,7 +136,7 @@
             right: 20px;
             width: 44px;
             height: 44px;
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.2);
             color: white;
             border-radius: 50%;
             display: flex;
@@ -138,12 +145,12 @@
             font-size: 28px;
             cursor: pointer;
             z-index: 1001;
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             transition: background 0.2s;
         }
 
-        .close-btn:hover { background: rgba(255, 0, 0, 0.4); }
+        .close-btn:hover { background: rgba(255, 50, 50, 0.8); }
 
         .footer-info {
             margin-top: auto;
@@ -186,12 +193,12 @@
     </div>
 
     <div class="footer-info">
-        Memory auto-save active • VoltMaster OS v1.0
+        Memory auto-save active • VoltMaster OS v1.1
     </div>
 
     <div id="game-overlay">
         <div class="close-btn" onclick="closeGame()">&times;</div>
-        <iframe id="game-frame" src=""></iframe>
+        <iframe id="game-frame" src="" allow="autoplay"></iframe>
     </div>
 
     <script>
@@ -205,16 +212,27 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Функции управления игрой
+        // Улучшенные функции управления игрой
         function openGame(url) {
             const overlay = document.getElementById('game-overlay');
             const frame = document.getElementById('game-frame');
             
             frame.src = url;
             overlay.style.display = 'block';
+            
+            // Плавное проявление
+            setTimeout(() => overlay.classList.add('active'), 10);
             document.body.style.overflow = 'hidden'; 
 
-            // Сохранение последнего выбора в память браузера
+            // Автоматический фокус на фрейм после загрузки, чтобы работала клавиатура
+            frame.onload = function() {
+                frame.contentWindow.focus();
+                // Для мобильных устройств имитируем клик, если игра требует активации
+                frame.contentWindow.addEventListener('click', () => {
+                    frame.contentWindow.focus();
+                });
+            };
+
             localStorage.setItem('voltMaster_lastSession', url);
         }
 
@@ -222,25 +240,26 @@
             const overlay = document.getElementById('game-overlay');
             const frame = document.getElementById('game-frame');
             
-            overlay.style.display = 'none';
-            frame.src = ''; 
-            document.body.style.overflow = 'auto';
+            overlay.classList.remove('active');
+            
+            // Ждем окончания анимации (300мс) перед полным скрытием
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                frame.src = ''; 
+                document.body.style.overflow = 'auto';
+            }, 300);
         }
 
-        // Закрытие на клавишу ESC для удобства
+        // Закрытие на клавишу ESC
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeGame();
         });
 
-        // Проверка последней сессии при загрузке страницы (как было предложено ранее)
+        // Проверка сохраненной сессии
         window.addEventListener('DOMContentLoaded', () => {
             const lastGame = localStorage.getItem('voltMaster_lastSession');
             if (lastGame) {
-                console.log("Найдена сохраненная сессия:", lastGame);
-                // Здесь можно либо автоматически открыть игру, 
-                // либо просто вывести уведомление в консоль.
-                // Пример: если хотите автоматически открывать последнюю игру при загрузке:
-                // openGame(lastGame);
+                console.log("Welcome back, Master. Last session:", lastGame);
             }
         });
     </script>
