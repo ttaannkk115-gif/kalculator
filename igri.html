@@ -91,7 +91,6 @@
             margin-right: 20px;
         }
 
-        /* Цвета иконок */
         .icon-gold { background: rgba(212, 175, 55, 0.15); color: var(--text-gold); }
         .icon-orange { background: rgba(255, 140, 0, 0.15); color: var(--accent-orange); }
         .icon-blue { background: rgba(0, 191, 255, 0.15); color: var(--accent-blue); }
@@ -99,7 +98,7 @@
 
         .item-text { font-size: 18px; font-weight: 600; }
 
-        /* Оверлей (экран игры) */
+        /* Оверлей */
         #game-overlay {
             display: none;
             position: fixed;
@@ -119,7 +118,7 @@
 
         .close-btn {
             position: absolute;
-            top: env(safe-area-inset-top, 20px); /* Учет челки на iPhone */
+            top: env(safe-area-inset-top, 20px);
             right: 20px;
             width: 45px;
             height: 45px;
@@ -181,65 +180,71 @@
     </div>
 
     <div id="game-overlay">
-        <div class="close-btn" onclick="closeGame()">&times;</div>
-        <iframe id="game-frame" src=""></iframe>
+        <div class="close-btn" onclick="handleCloseClick()">&times;</div>
+        <iframe id="game-frame" src="" allowfullscreen></iframe>
     </div>
 
     <script>
-        // 1. ЧАСЫ
+        const STORAGE_KEY_GAME = 'volt_last_game';
+        const STORAGE_KEY_OPEN = 'volt_is_open';
+        const overlay = document.getElementById('game-overlay');
+        const frame = document.getElementById('game-frame');
+
+        // 1. Обновление времени
         function updateClock() {
             const now = new Date();
             const time = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-            const clockElement = document.getElementById('clock');
-            if (clockElement) clockElement.innerText = `System Active • ${time}`;
+            document.getElementById('clock').innerText = `System Active • ${time}`;
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        // 2. ЛОГИКА ОВЕРЛЕЯ
+        // 2. Открытие игры
         function openGame(url, isRestore = false) {
-            const overlay = document.getElementById('game-overlay');
-            const frame = document.getElementById('game-frame');
-            
             frame.src = url;
             overlay.style.display = 'block';
             document.body.style.overflow = 'hidden';
 
-            // Сохранение в память браузера
-            localStorage.setItem('volt_last_game', url);
-            localStorage.setItem('volt_is_open', 'true');
+            localStorage.setItem(STORAGE_KEY_GAME, url);
+            localStorage.setItem(STORAGE_KEY_OPEN, 'true');
 
-            // История браузера (чтобы кнопка "Назад" закрывала игру, а не сайт)
             if (!isRestore) {
                 history.pushState({ gameOpen: true }, "");
             }
         }
 
-        function closeGame() {
-            const overlay = document.getElementById('game-overlay');
-            const frame = document.getElementById('game-frame');
-            
+        // 3. Обработка клика по крестику
+        function handleCloseClick() {
+            if (history.state && history.state.gameOpen) {
+                history.back(); // Это само вызовет uiClose через onpopstate
+            } else {
+                uiClose();
+            }
+        }
+
+        // 4. Очистка интерфейса
+        function uiClose() {
             overlay.style.display = 'none';
             frame.src = ''; 
             document.body.style.overflow = 'auto';
-
-            // Очистка памяти о текущей сессии
-            localStorage.removeItem('volt_is_open');
-            localStorage.removeItem('volt_last_game');
+            localStorage.removeItem(STORAGE_KEY_OPEN);
+            localStorage.removeItem(STORAGE_KEY_GAME);
         }
 
-        // 3. ОБРАБОТКА КНОПКИ "НАЗАД"
+        // 5. Синхронизация с кнопкой "Назад" браузера
         window.onpopstate = function(event) {
-            closeGame();
+            uiClose();
         };
 
-        // 4. АВТОВОССТАНОВЛЕНИЕ (Memory)
+        // 6. Автовосстановление при загрузке (Memory)
         window.onload = function() {
-            const wasOpen = localStorage.getItem('volt_is_open');
-            const lastGame = localStorage.getItem('volt_last_game');
+            const wasOpen = localStorage.getItem(STORAGE_KEY_OPEN);
+            const lastGame = localStorage.getItem(STORAGE_KEY_GAME);
             
             if (wasOpen === 'true' && lastGame) {
                 openGame(lastGame, true);
+                // Подменяем состояние, чтобы кнопка назад работала сразу
+                history.replaceState({ gameOpen: true }, "");
             }
         };
     </script>
