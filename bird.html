@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Neon Bird: Score System</title>
+    <title>Neon Bird: VoltMaster Edition</title>
     <style>
         body {
             margin: 0;
@@ -15,27 +15,29 @@
             overflow: hidden;
             color: white;
             font-family: 'Arial', sans-serif;
+            /* Важно для мобильных: запрещаем системные жесты */
             touch-action: none;
+            -webkit-user-select: none;
         }
         #gameCanvas {
             border: 2px solid #00f2ff;
             background: #050505;
             max-width: 100vw;
             display: block;
+            cursor: pointer;
         }
         #score-display { 
             position: absolute; top: 20px; width: 100%;
             text-align: center; font-size: 3.5rem; margin: 0; 
             text-shadow: 0 0 15px #00f2ff; pointer-events: none; z-index: 5;
         }
-        /* Экран окончания игры */
         #game-over-screen {
             position: absolute;
-            display: none; /* Скрыт по умолчанию */
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.9);
             border: 3px solid #ff0055;
             border-radius: 20px;
             padding: 30px;
@@ -104,6 +106,7 @@
             gameOverEl.style.display = "none";
             isGameOver = false;
             gameActive = true;
+            window.focus(); // Захват фокуса при старте
         }
 
         function drawPipe(x, y, width, height, isTop) {
@@ -138,11 +141,20 @@
             ctx.restore();
         }
 
+        function drawStartHint() {
+            if (!gameActive && !isGameOver) {
+                ctx.fillStyle = "rgba(0, 242, 255, 0.8)";
+                ctx.font = "bold 20px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText("НАЖМИ, ЧТОБЫ НАЧАТЬ", w / 2, h / 2 + 60);
+            }
+        }
+
         function loop() {
             ctx.clearRect(0, 0, w, h);
             frame++;
 
-            // Фон
+            // Фон (сетка)
             ctx.strokeStyle = "#151515";
             for(let i=0; i<w+40; i+=40) {
                 ctx.beginPath(); ctx.moveTo(i - (frame % 40), 0); ctx.lineTo(i - (frame % 40), h); ctx.stroke();
@@ -178,6 +190,7 @@
             }
 
             drawBird();
+            drawStartHint();
             requestAnimationFrame(loop);
         }
 
@@ -196,20 +209,26 @@
         }
 
         const handleAction = (e) => {
+            // Принудительно передаем фокус в окно игры
+            window.focus();
+            
             if (e.type === 'touchstart') e.preventDefault();
             
             if (!gameActive && !isGameOver) {
                 startNewGame();
             } else if (isGameOver) {
-                // Если игра окончена, первый клик просто сбрасывает состояние
                 startNewGame();
             } else {
                 bird.v = bird.j;
             }
         };
 
+        // Слушатели событий
         window.addEventListener("mousedown", handleAction);
         window.addEventListener("touchstart", handleAction, {passive: false});
+        window.addEventListener("keydown", (e) => {
+            if (e.code === "Space") handleAction(e);
+        });
 
         loop();
     </script>
