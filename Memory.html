@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Memory Game Master</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --card-back: #16213e;
+            --card-front: #0f3460;
+            --accent: #e94560;
+            --text: #ffffff;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .stats {
+            margin: 20px 0;
+            display: flex;
+            gap: 20px;
+            font-size: 1.2rem;
+        }
+
+        #game-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            width: 90vw;
+            max-width: 400px;
+        }
+
+        .card {
+            aspect-ratio: 1/1;
+            background-color: var(--card-back);
+            border: 2px solid var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: transform 0.3s;
+            transform-style: preserve-3d;
+            position: relative;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+            background-color: var(--card-front);
+        }
+
+        .card.matched {
+            background-color: #2ecc71;
+            border-color: #2ecc71;
+            visibility: hidden;
+            transition: 0.5s;
+        }
+
+        .content {
+            display: none;
+            pointer-events: none;
+        }
+
+        .card.flipped .content {
+            display: block;
+            transform: rotateY(180deg);
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 25px;
+            background: var(--accent);
+            border: none;
+            color: white;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="stats">
+        <div>Ходы: <span id="moves">0</span></div>
+        <div>Рекорд: <span id="best">--</span></div>
+    </div>
+
+    <div id="game-grid"></div>
+
+    <button onclick="startGame()">Начать заново</button>
+
+    <script>
+        const symbols = ['🔥', '⭐', '🍀', '💎', '🍎', '👻', '🌀', '🚀'];
+        let cards = [...symbols, ...symbols];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        let canClick = true;
+
+        const grid = document.getElementById('game-grid');
+        const movesEl = document.getElementById('moves');
+        const bestEl = document.getElementById('best');
+
+        function loadBestScore() {
+            const best = localStorage.getItem('memoryBestScore');
+            bestEl.textContent = best ? best : '--';
+        }
+
+        function saveBestScore() {
+            const currentBest = localStorage.getItem('memoryBestScore');
+            if (!currentBest || moves < currentBest) {
+                localStorage.setItem('memoryBestScore', moves);
+                loadBestScore();
+            }
+        }
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function createCard(symbol) {
+            const card = document.createElement('div');
+            card.classList.add('card');
+            card.innerHTML = `<div class="content">${symbol}</div>`;
+            card.addEventListener('click', () => flipCard(card, symbol));
+            card.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                flipCard(card, symbol);
+            });
+            return card;
+        }
+
+        function flipCard(card, symbol) {
+            if (!canClick || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+            card.classList.add('flipped');
+            flippedCards.push({ card, symbol });
+
+            if (flippedCards.length === 2) {
+                moves++;
+                movesEl.textContent = moves;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            canClick = false;
+            const [c1, c2] = flippedCards;
+
+            if (c1.symbol === c2.symbol) {
+                setTimeout(() => {
+                    c1.card.classList.add('matched');
+                    c2.card.classList.add('matched');
+                    matchedPairs++;
+                    flippedCards = [];
+                    canClick = true;
+                    if (matchedPairs === symbols.length) {
+                        saveBestScore();
+                        alert('Победа! Ходов: ' + moves);
+                    }
+                }, 500);
+            } else {
+                setTimeout(() => {
+                    c1.card.classList.remove('flipped');
+                    c2.card.classList.remove('flipped');
+                    flippedCards = [];
+                    canClick = true;
+                }, 1000);
+            }
+        }
+
+        function startGame() {
+            grid.innerHTML = '';
+            moves = 0;
+            matchedPairs = 0;
+            flippedCards = [];
+            movesEl.textContent = moves;
+            canClick = true;
+            shuffle(cards).forEach(s => grid.appendChild(createCard(s)));
+            loadBestScore();
+        }
+
+        startGame();
+    </script>
+</body>
+</html>
