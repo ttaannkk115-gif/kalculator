@@ -28,7 +28,6 @@
             overflow-x: hidden;
         }
 
-        /* Шапка */
         .header {
             text-align: center;
             margin-top: 40px;
@@ -55,7 +54,6 @@
             display: inline-block;
         }
 
-        /* Список игр */
         .menu-container {
             width: 100%;
             max-width: 400px;
@@ -94,11 +92,9 @@
         .icon-gold { background: rgba(212, 175, 55, 0.15); color: var(--text-gold); }
         .icon-orange { background: rgba(255, 140, 0, 0.15); color: var(--accent-orange); }
         .icon-blue { background: rgba(0, 191, 255, 0.15); color: var(--accent-blue); }
-        .icon-yellow { background: rgba(255, 215, 0, 0.15); color: #ffd700; }
 
         .item-text { font-size: 18px; font-weight: 600; }
 
-        /* Оверлей */
         #game-overlay {
             display: none;
             position: fixed;
@@ -114,6 +110,8 @@
             width: 100%;
             height: 100%;
             border: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         .close-btn {
@@ -168,20 +166,15 @@
             <div class="icon-box icon-blue">🎴</div>
             <div class="item-text">Игра Memory</div>
         </div>
-
-        <div class="menu-item" onclick="openGame('Flappy.html')">
-            <div class="icon-box icon-yellow">🐦</div>
-            <div class="item-text">Flappy Bird</div>
-        </div>
     </div>
 
     <div class="footer-info">
-        Memory auto-save active • v1.2
+        Memory auto-save active • v1.3
     </div>
 
     <div id="game-overlay">
         <div class="close-btn" onclick="handleCloseClick()">&times;</div>
-        <iframe id="game-frame" src="" allowfullscreen></iframe>
+        <iframe id="game-frame" src=""></iframe>
     </div>
 
     <script>
@@ -190,7 +183,6 @@
         const overlay = document.getElementById('game-overlay');
         const frame = document.getElementById('game-frame');
 
-        // 1. Обновление времени
         function updateClock() {
             const now = new Date();
             const time = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -199,8 +191,8 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // 2. Открытие игры
         function openGame(url, isRestore = false) {
+            frame.style.opacity = '0';
             frame.src = url;
             overlay.style.display = 'block';
             document.body.style.overflow = 'hidden';
@@ -208,21 +200,21 @@
             localStorage.setItem(STORAGE_KEY_GAME, url);
             localStorage.setItem(STORAGE_KEY_OPEN, 'true');
 
+            frame.onload = () => { frame.style.opacity = '1'; };
+
             if (!isRestore) {
                 history.pushState({ gameOpen: true }, "");
             }
         }
 
-        // 3. Обработка клика по крестику
         function handleCloseClick() {
             if (history.state && history.state.gameOpen) {
-                history.back(); // Это само вызовет uiClose через onpopstate
+                history.back();
             } else {
                 uiClose();
             }
         }
 
-        // 4. Очистка интерфейса
         function uiClose() {
             overlay.style.display = 'none';
             frame.src = ''; 
@@ -231,22 +223,16 @@
             localStorage.removeItem(STORAGE_KEY_GAME);
         }
 
-        // 5. Синхронизация с кнопкой "Назад" браузера
-        window.onpopstate = function(event) {
-            uiClose();
-        };
+        window.onpopstate = function() { uiClose(); };
 
-        // 6. Автовосстановление при загрузке (Memory)
-        window.onload = function() {
+        window.addEventListener('load', () => {
             const wasOpen = localStorage.getItem(STORAGE_KEY_OPEN);
             const lastGame = localStorage.getItem(STORAGE_KEY_GAME);
-            
             if (wasOpen === 'true' && lastGame) {
                 openGame(lastGame, true);
-                // Подменяем состояние, чтобы кнопка назад работала сразу
                 history.replaceState({ gameOpen: true }, "");
             }
-        };
+        });
     </script>
 </body>
 </html>
