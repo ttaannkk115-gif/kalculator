@@ -22,90 +22,46 @@
         }
 
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             font-family: 'Segoe UI', Roboto, sans-serif;
             background: var(--dark-bg);
             color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            display: flex; justify-content: center; align-items: center;
             min-height: 100vh;
             background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 100%);
             overflow: hidden;
         }
 
-        .app-container {
-            width: 90%;
-            max-width: 380px;
-            animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: scale(0.95); } 
-            to { opacity: 1; transform: scale(1); } 
-        }
+        .app-container { width: 90%; max-width: 380px; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
         .header { text-align: center; margin-bottom: 25px; cursor: pointer; user-select: none; }
         .header h1 { font-size: 26px; font-weight: 800; margin: 0; letter-spacing: 1px; }
         .header span { color: var(--main-gold); }
 
         .status-badge {
-            display: inline-flex;
-            align-items: center;
+            display: inline-flex; align-items: center;
             background: rgba(255, 193, 7, 0.08);
             color: var(--main-gold);
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 11px;
-            margin-top: 8px;
+            padding: 6px 18px; border-radius: 20px;
+            font-size: 11px; margin-top: 8px;
             border: 1px solid rgba(255, 193, 7, 0.2);
             font-family: 'Courier New', monospace;
-            min-width: 220px;
-            justify-content: center;
-            gap: 10px;
+            min-width: 200px; justify-content: center; gap: 10px;
         }
 
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            background: var(--main-gold);
-            border-radius: 50%;
-            box-shadow: 0 0 8px var(--main-gold);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
-        }
+        .status-dot { width: 6px; height: 6px; background: var(--main-gold); border-radius: 50%; box-shadow: 0 0 8px var(--main-gold); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
         .menu-grid { display: grid; gap: 12px; }
-
         .menu-item {
-            background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 18px;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            transition: var(--transition);
+            background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px; padding: 20px; display: flex; align-items: center;
+            cursor: pointer; transition: var(--transition);
         }
+        .menu-item:hover { background: rgba(255, 255, 255, 0.12); border-color: var(--main-gold); transform: translateY(-3px); }
 
-        .menu-item:hover {
-            background: rgba(255, 255, 255, 0.12);
-            border-color: var(--main-gold);
-            transform: translateY(-3px);
-        }
-
-        .icon-box {
-            width: 48px; height: 48px; border-radius: 14px;
-            display: flex; justify-content: center; align-items: center;
-            margin-right: 16px; flex-shrink: 0;
-        }
-
+        .icon-box { width: 48px; height: 48px; border-radius: 14px; display: flex; justify-content: center; align-items: center; margin-right: 16px; flex-shrink: 0; }
         .icon-price { background: rgba(255, 193, 7, 0.15); color: var(--main-gold); }
         .icon-calc { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
         .icon-note { background: rgba(156, 39, 176, 0.15); color: var(--note-purple); }
@@ -115,49 +71,30 @@
         .info h3 { margin: 0; font-size: 17px; font-weight: 600; }
 
         .overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--dark-bg);
-            z-index: 2000;
-            display: none;
-            flex-direction: column;
-            animation: slideUp 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--dark-bg); z-index: 2000; display: none;
+            flex-direction: column; animation: slideUp 0.35s cubic-bezier(0.4, 0, 0.2, 1);
             backdrop-filter: blur(10px);
         }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-        @keyframes slideUp { 
-            from { transform: translateY(100%); } 
-            to { transform: translateY(0); } 
-        }
-
-        .overlay-header {
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #161616;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
+        .overlay-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: #161616; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
         #overlay-title, #admin-title { font-weight: 600; color: var(--main-gold); text-transform: uppercase; letter-spacing: 1px; }
 
-        .close-btn {
-            background: rgba(255,255,255,0.05);
-            border: none;
-            color: #ff4444;
-            font-size: 28px;
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
+        .close-btn { background: rgba(255,255,255,0.05); border: none; color: #ff4444; font-size: 28px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; }
         .overlay-body { flex-grow: 1; overflow: hidden; }
         #app-frame { width: 100%; height: 100%; border: none; background: #fff; }
 
-        /* Таблица админа */
+        /* Админ-панель */
+        .admin-controls { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; }
+        .admin-input { background: #000; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 6px; width: 60%; font-size: 12px; }
+        .btn-action { background: var(--main-gold); color: #000; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
+        .btn-clear-logs { background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
+        .btn-danger { background: #ff4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
+        
         #users-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        #users-table th, #users-table td { padding: 12px; border-bottom: 1px solid #222; text-align: left; }
-        #users-table th { color: var(--text-dim); font-size: 12px; text-transform: uppercase; }
+        #users-table th, #users-table td { padding: 10px; border-bottom: 1px solid #222; text-align: left; font-size: 12px; }
+        .excluded-tag { display: inline-block; background: #333; color: #ff4444; padding: 2px 8px; border-radius: 4px; margin: 2px; font-size: 10px; border: 1px solid #444; cursor: pointer; }
 
         .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #444; letter-spacing: 2px; text-transform: uppercase; }
     </style>
@@ -169,7 +106,7 @@
         <h1>VOLT<span>MASTER</span></h1>
         <div id="status" class="status-badge">
             <div class="status-dot"></div>
-            <span>CONNECTING...</span>
+            <span id="stats-display">ЗАГРУЗКА...</span>
         </div>
     </div>
 
@@ -178,34 +115,29 @@
             <div class="icon-box icon-price"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
             <div class="info"><h3>Прайс-лист</h3></div>
         </div>
-
         <div class="menu-item" onclick="openApp('Расчеты', 'izmerenie.html')">
             <div class="icon-box icon-calc"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
             <div class="info"><h3>Расчеты</h3></div>
         </div>
-
         <div class="menu-item" onclick="openApp('Заметки', 'zametka.html')">
             <div class="icon-box icon-note"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
             <div class="info"><h3>Заметки</h3></div>
         </div>
-
         <div class="menu-item" onclick="openApp('Чат-помощник', 'signa.html')">
             <div class="icon-box icon-chat"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
             <div class="info"><h3>Чат-помощник</h3></div>
         </div>
-
         <div class="menu-item" onclick="openApp('Перекур', 'igri.html')">
             <div class="icon-box icon-break"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><path d="M6 1v3M10 1v3M14 1v3"/></svg></div>
             <div class="info"><h3>Перекур</h3></div>
         </div>
     </div>
-
-    <div class="footer">Cloud Sync & Auto-save Active</div>
+    <div class="footer">VOLT MASTER CLOUD 2026</div>
 </div>
 
 <div id="app-overlay" class="overlay">
     <div class="overlay-header">
-        <span id="overlay-title">Загрузка...</span>
+        <span id="overlay-title">App</span>
         <button class="close-btn" onclick="closeApp()">&times;</button>
     </div>
     <div class="overlay-body"><iframe id="app-frame" src=""></iframe></div>
@@ -216,116 +148,142 @@
         <span id="admin-title">ADMIN PANEL</span>
         <button class="close-btn" onclick="closeAdmin()">&times;</button>
     </div>
-    <div class="overlay-body" style="padding: 20px; overflow-y: auto; background: #0a0a0a;">
-        <div id="admin-stats" style="color: var(--main-gold); font-family: monospace; margin-bottom: 20px; font-size: 14px;"></div>
+    <div class="overlay-body" style="padding: 15px; overflow-y: auto; background: #0a0a0a;">
+        <div class="admin-controls">
+            <div style="margin-bottom: 10px; font-size: 11px; color: var(--main-gold); font-weight: bold;">ИСКЛЮЧИТЬ ID:</div>
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="exclude-input" class="admin-input" placeholder="ID">
+                <button class="btn-action" onclick="addToExcluded()">+ ДОБАВИТЬ</button>
+            </div>
+            <div id="excluded-list-display" style="margin-top: 10px;"></div>
+        </div>
+        <div class="admin-controls">
+            <div id="admin-today-visits" style="font-size: 14px; color: var(--main-gold); margin-bottom: 10px;">ЗАХОДОВ СЕГОДНЯ: --</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button class="btn-clear-logs" onclick="clearOnlyLogs()">ОЧИСТИТЬ ЛОГИ</button>
+                <button class="btn-danger" onclick="fullReset()">СБРОСИТЬ ВСЁ</button>
+            </div>
+            <p style="font-size: 9px; color: #666; margin-top: 8px;">* "Очистить логи" не удаляет количество зарегистрированных.</p>
+        </div>
         <table id="users-table">
-            <thead>
-                <tr><th>ID Пользователя</th><th>Последняя активность</th></tr>
-            </thead>
+            <thead><tr><th>ID [Дата]</th><th>Время</th></tr></thead>
             <tbody id="users-list-body"></tbody>
         </table>
     </div>
 </div>
 
 <script>
-    // 1. Firebase Config
-    const firebaseConfig = {
-        databaseURL: "https://kalculator-8e345-default-rtdb.firebaseio.com/"
-    };
+    const firebaseConfig = { databaseURL: "https://kalculator-8e345-default-rtdb.firebaseio.com/" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // 2. Регистрация и Счетчик
-    function initTracker() {
-        const statusEl = document.getElementById('status');
-        // Используем ваше имя Master или сохраненный ID
-        let myId = localStorage.getItem('user_id_2026') || "Master_" + Math.floor(Math.random() * 1000);
-        localStorage.setItem('user_id_2026', myId);
+    let myId = localStorage.getItem('user_id_2026') || "User_" + Math.floor(Math.random() * 1000);
+    localStorage.setItem('user_id_2026', myId);
 
-        const usersRef = database.ref('users');
-        
-        // Запись входа
-        usersRef.child(myId).update({
-            last_active: new Date().toISOString(),
-            userAgent: navigator.userAgent
-        });
+    async function initTracker() {
+        const statsEl = document.getElementById('stats-display');
+        const now = new Date();
+        const dateKey = now.toISOString().split('T')[0];
+        const timeString = now.toLocaleTimeString('ru-RU');
 
-        // Слушатель общего количества
-        usersRef.on('value', (snapshot) => {
-            const count = snapshot.numChildren();
-            statusEl.innerHTML = `
-                <div class="status-dot"></div>
+        const exclSnapshot = await database.ref('excluded_list').once('value');
+        const excludedArray = Object.values(exclSnapshot.val() || {});
+        const isExcluded = excludedArray.includes(myId);
+
+        if (!isExcluded) {
+            database.ref(`registered_users/${myId}`).set({ last_seen: firebase.database.ServerValue.TIMESTAMP });
+            database.ref(`visits/${dateKey}`).push().set({ userId: myId, time: timeString });
+        }
+
+        database.ref('registered_users').on('value', snap => {
+            const count = snap.numChildren();
+            statsEl.innerHTML = `
                 <span style="color: var(--main-gold)">${myId}</span>
-                <span style="opacity: 0.3; margin: 0 5px;">|</span>
+                <span style="opacity: 0.3;">|</span>
                 <span style="color: #fff">ВСЕГО: ${count}</span>
             `;
+            if(isExcluded) {
+                document.querySelector('.status-dot').style.background = '#2196f3';
+                document.querySelector('.status-dot').style.boxShadow = '0 0 8px #2196f3';
+            }
         });
     }
 
-    // 3. Логика Админ-панели (3 клика)
-    let logoClicks = 0;
-    let logoTimer;
-    document.getElementById('main-logo').addEventListener('click', () => {
-        logoClicks++;
-        clearTimeout(logoTimer);
-        logoTimer = setTimeout(() => logoClicks = 0, 1000);
+    // --- АДМИН ПАНЕЛЬ ---
+    function openAdmin() {
+        document.getElementById('admin-overlay').style.display = 'flex';
+        const dateKey = new Date().toISOString().split('T')[0];
+        
+        database.ref(`visits/${dateKey}`).on('value', snap => {
+            document.getElementById('admin-today-visits').innerText = `ЗАХОДОВ СЕГОДНЯ: ${snap.numChildren()}`;
+        });
 
-        if (logoClicks === 3) {
-            logoClicks = 0;
-            const pass = prompt("Доступ в панель управления:");
-            if (pass === "Gazik0303") {
-                openAdmin();
-            } else if (pass !== null) {
-                alert("Неверный пароль");
-            }
+        database.ref('visits').on('value', snap => {
+            const listBody = document.getElementById('users-list-body');
+            listBody.innerHTML = '';
+            snap.forEach(dateSnap => {
+                dateSnap.forEach(vSnap => {
+                    const v = vSnap.val();
+                    listBody.innerHTML += `<tr><td><small>[${dateSnap.key}]</small> ${v.userId}</td><td>${v.time}</td></tr>`;
+                });
+            });
+        });
+
+        database.ref('excluded_list').on('value', snap => {
+            const display = document.getElementById('excluded-list-display');
+            display.innerHTML = '';
+            snap.forEach(child => {
+                display.innerHTML += `<span class="excluded-tag" onclick="removeExcluded('${child.key}')">${child.val()} ×</span>`;
+            });
+        });
+    }
+
+    // НОВАЯ ФУНКЦИЯ: Очищает только логи входов
+    function clearOnlyLogs() {
+        if(confirm("Master, очистить только историю заходов? (Список 'ВСЕГО' сохранится)")) {
+            database.ref('visits').remove().then(() => alert("Логи очищены!"));
+        }
+    }
+
+    // ПОЛНЫЙ СБРОС (если нужно)
+    function fullReset() {
+        if(confirm("ВНИМАНИЕ: Это удалит ВСЕ регистрации и логи. Вы уверены?")) {
+            database.ref().remove().then(() => alert("База полностью обнулена."));
+        }
+    }
+
+    function addToExcluded() {
+        const val = document.getElementById('exclude-input').value.trim();
+        if(val) database.ref('excluded_list').push(val);
+        document.getElementById('exclude-input').value = '';
+    }
+
+    function removeExcluded(key) { if(confirm("Удалить?")) database.ref(`excluded_list/${key}`).remove(); }
+
+    function closeAdmin() { 
+        document.getElementById('admin-overlay').style.display = 'none'; 
+        database.ref('visits').off(); 
+        database.ref('registered_users').off();
+    }
+
+    let clicks = 0, timer;
+    document.getElementById('main-logo').addEventListener('click', () => {
+        clicks++; clearTimeout(timer);
+        timer = setTimeout(() => clicks = 0, 1000);
+        if(clicks === 3) {
+            const p = prompt("Пароль:");
+            if(p === "Gazik0303") openAdmin();
         }
     });
 
-    function openAdmin() {
-        document.getElementById('admin-overlay').style.display = 'flex';
-        const listBody = document.getElementById('users-list-body');
-        const statsEl = document.getElementById('admin-stats');
-
-        database.ref('users').once('value', (snapshot) => {
-            listBody.innerHTML = '';
-            let total = 0;
-            snapshot.forEach((child) => {
-                total++;
-                const user = child.val();
-                const date = new Date(user.last_active).toLocaleString('ru-RU');
-                listBody.innerHTML += `<tr><td style="color: var(--main-gold)">${child.key}</td><td style="color: #eee">${date}</td></tr>`;
-            });
-            statsEl.innerText = `БАЗА ДАННЫХ: ${total} УНИКАЛЬНЫХ ID`;
-        });
-    }
-
-    function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; }
-
-    // 4. Управление приложениями
-    function openApp(name, url) {
-        if (navigator.vibrate) navigator.vibrate(25);
+    function openApp(name, url) { 
         document.getElementById('overlay-title').innerText = name;
         document.getElementById('app-frame').src = url;
         document.getElementById('app-overlay').style.display = 'flex';
-        localStorage.setItem('volt_last_app', name);
     }
+    function closeApp() { document.getElementById('app-overlay').style.display = 'none'; document.getElementById('app-frame').src = 'about:blank'; }
 
-    function closeApp() {
-        document.getElementById('app-overlay').style.display = 'none';
-        document.getElementById('app-frame').src = 'about:blank';
-    }
-
-    // Автосохранение состояния
-    function autoSave() {
-        const state = { time: new Date().toISOString(), status: 'active' };
-        localStorage.setItem('volt_master_autosave_2026', JSON.stringify(state));
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        initTracker();
-        setInterval(autoSave, 30000);
-    });
+    document.addEventListener('DOMContentLoaded', initTracker);
 </script>
-
 </body>
 </html>
