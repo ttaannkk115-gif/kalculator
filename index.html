@@ -7,6 +7,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+    <script src="https://openfpcdn.io/fingerprintjs/v4/i.js"></script>
 
     <style>
         :root {
@@ -61,7 +62,7 @@
         }
         .menu-item:hover { background: rgba(255, 255, 255, 0.12); border-color: var(--main-gold); transform: translateY(-3px); }
 
-        .icon-box { width: 48px; height: 48px; border-radius: 14px; display: flex; justify-content: center; align-items: center; margin-right: 16px; flex-shrink: 0; }
+        .icon-box { width: 48px; height: 48px; border-radius: 14px; display: flex; justify-content: center; align-items: center; margin-right: 166px; flex-shrink: 0; margin-right: 16px; }
         .icon-price { background: rgba(255, 193, 7, 0.15); color: var(--main-gold); }
         .icon-calc { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
         .icon-note { background: rgba(156, 39, 176, 0.15); color: var(--note-purple); }
@@ -92,6 +93,7 @@
         .btn-clear-logs { background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
         .btn-danger { background: #ff4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
         
+        #log-container { overflow-y: auto; max-height: 400px; }
         #users-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
         #users-table td { padding: 10px; border-bottom: 1px solid #222; text-align: left; font-size: 12px; }
         
@@ -114,7 +116,7 @@
         <h1>VOLT<span>MASTER</span></h1>
         <div id="status" class="status-badge">
             <div class="status-dot"></div>
-            <span id="stats-display">ЗАГРУЗКА...</span>
+            <span id="stats-display">ИНИЦИАЛИЗАЦИЯ...</span>
         </div>
     </div>
 
@@ -151,7 +153,6 @@
 <div id="admin-overlay" class="overlay">
     <div class="overlay-header"><span id="admin-title">ADMIN PANEL</span><button class="close-btn" onclick="closeAdmin()">&times;</button></div>
     <div class="overlay-body" style="padding: 15px; overflow-y: auto; background: #0a0a0a;" id="admin-content">
-        
         <div class="admin-controls">
             <div style="margin-bottom: 10px; font-size: 11px; color: var(--main-gold); font-weight: bold;">ИСКЛЮЧИТЬ ID:</div>
             <div style="display: flex; gap: 5px;">
@@ -160,7 +161,6 @@
             </div>
             <div id="excluded-list-display" style="margin-top: 10px;"></div>
         </div>
-
         <div class="admin-controls">
             <div id="admin-today-visits" style="font-size: 14px; color: var(--main-gold); margin-bottom: 10px;">ЗАХОДОВ СЕГОДНЯ: --</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -168,7 +168,6 @@
                 <button class="btn-danger" onclick="fullReset()">СБРОСИТЬ ВСЁ</button>
             </div>
         </div>
-
         <div id="log-container"></div>
     </div>
 </div>
@@ -178,8 +177,7 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    let myId = localStorage.getItem('user_id_2026') || "User_" + Math.floor(Math.random() * 1000);
-    localStorage.setItem('user_id_2026', myId);
+    let myId = "";
 
     async function initTracker() {
         const statsEl = document.getElementById('stats-display');
@@ -187,6 +185,16 @@
         const dateKey = now.toISOString().split('T')[0];
         const timeString = now.toLocaleTimeString('ru-RU');
 
+        // Инициализация Fingerprint для стабильного ID на устройстве
+        const fpPromise = FingerprintJS.load();
+        const fp = await fpPromise;
+        const result = await fp.get();
+        
+        // Создаем ID на основе отпечатка (8 символов)
+        myId = "ID-" + result.visitorId.substring(0, 8).toUpperCase();
+        localStorage.setItem('user_id_2026', myId);
+
+        // Проверка исключения
         const exclSnapshot = await database.ref('excluded_list').once('value');
         const excludedArray = Object.values(exclSnapshot.val() || {});
         const isExcluded = excludedArray.includes(myId);
@@ -204,6 +212,11 @@
                 document.querySelector('.status-dot').style.boxShadow = '0 0 8px #2196f3';
             }
         });
+        
+        // Автосохранение черновика ID в админке
+        const exInput = document.getElementById('exclude-input');
+        exInput.value = localStorage.getItem('draft_exclude') || "";
+        exInput.addEventListener('input', (e) => localStorage.setItem('draft_exclude', e.target.value));
     }
 
     function openAdmin() {
@@ -211,31 +224,25 @@
         const dateKey = new Date().toISOString().split('T')[0];
         const logContainer = document.getElementById('log-container');
         
-        // Сегодняшние заходы
         database.ref(`visits/${dateKey}`).on('value', snap => {
             document.getElementById('admin-today-visits').innerText = `ЗАХОДОВ СЕГОДНЯ: ${snap.numChildren()}`;
         });
 
-        // Основной лог с разделением по дням и сортировкой
         database.ref('visits').on('value', snap => {
             logContainer.innerHTML = '';
-            
-            // Получаем дни и сортируем их (новые дни сверху)
             const days = [];
             snap.forEach(daySnap => { days.push({ key: daySnap.key, data: daySnap.val() }); });
             days.reverse(); 
 
             days.forEach(day => {
-                // Добавляем разделитель даты
                 logContainer.innerHTML += `<div class="date-divider">--- ${day.key} ---</div><table id="table-${day.key}" style="width:100%"></table>`;
                 const table = document.getElementById(`table-${day.key}`);
-                
-                // Превращаем заходы дня в массив и переворачиваем (новые вверху)
                 const visits = Object.values(day.data).reverse();
                 
                 visits.forEach(v => {
                     const row = table.insertRow();
-                    row.innerHTML = `<td style="color:#eee">${v.userId}</td><td style="text-align:right; color:var(--text-dim)">${v.time}</td>`;
+                    const isMe = v.userId === myId ? 'style="color: var(--main-gold); font-weight: bold;"' : 'style="color:#eee"';
+                    row.innerHTML = `<td ${isMe}>${v.userId}</td><td style="text-align:right; color:var(--text-dim)">${v.time}</td>`;
                 });
             });
         });
@@ -249,18 +256,17 @@
         });
     }
 
-    function clearOnlyLogs() {
-        if(confirm("Очистить только историю заходов?")) database.ref('visits').remove();
-    }
-
-    function fullReset() {
-        if(confirm("ВНИМАНИЕ: Это удалит всё! Уверены?")) database.ref().remove();
-    }
-
+    function clearOnlyLogs() { if(confirm("Очистить историю?")) database.ref('visits').remove(); }
+    function fullReset() { if(confirm("Удалить ВСЕ данные базы?")) database.ref().remove(); }
+    
     function addToExcluded() {
-        const val = document.getElementById('exclude-input').value.trim();
-        if(val) database.ref('excluded_list').push(val);
-        document.getElementById('exclude-input').value = '';
+        const input = document.getElementById('exclude-input');
+        const val = input.value.trim();
+        if(val) {
+            database.ref('excluded_list').push(val);
+            input.value = '';
+            localStorage.removeItem('draft_exclude');
+        }
     }
 
     function removeExcluded(key) { if(confirm("Удалить?")) database.ref(`excluded_list/${key}`).remove(); }
