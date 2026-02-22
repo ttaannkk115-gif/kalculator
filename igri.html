@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>VoltMaster Games</title>
     <style>
         :root {
@@ -11,6 +11,8 @@
             --text-gold: #d4af37;
             --text-white: #ffffff;
             --sub-text: #666666;
+            --accent-blue: #00bfff;
+            --accent-orange: #ff8c00;
         }
 
         body {
@@ -26,6 +28,7 @@
             overflow-x: hidden;
         }
 
+        /* Шапка */
         .header {
             text-align: center;
             margin-top: 40px;
@@ -52,6 +55,7 @@
             display: inline-block;
         }
 
+        /* Список игр */
         .menu-container {
             width: 100%;
             max-width: 400px;
@@ -70,7 +74,7 @@
             color: white;
             transition: transform 0.1s ease, background-color 0.2s;
             cursor: pointer;
-            border: 1px solid transparent;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .menu-item:active { transform: scale(0.97); }
@@ -87,12 +91,15 @@
             margin-right: 20px;
         }
 
-        .icon-1 { background: rgba(212, 175, 55, 0.15); color: #d4af37; }
-        .icon-2 { background: rgba(255, 140, 0, 0.15); color: #ff8c00; }
+        /* Цвета иконок */
+        .icon-gold { background: rgba(212, 175, 55, 0.15); color: var(--text-gold); }
+        .icon-orange { background: rgba(255, 140, 0, 0.15); color: var(--accent-orange); }
+        .icon-blue { background: rgba(0, 191, 255, 0.15); color: var(--accent-blue); }
+        .icon-yellow { background: rgba(255, 215, 0, 0.15); color: #ffd700; }
 
         .item-text { font-size: 18px; font-weight: 600; }
 
-        /* Fullscreen Overlay Styles */
+        /* Оверлей (экран игры) */
         #game-overlay {
             display: none;
             position: fixed;
@@ -112,21 +119,21 @@
 
         .close-btn {
             position: absolute;
-            top: 20px;
+            top: env(safe-area-inset-top, 20px); /* Учет челки на iPhone */
             right: 20px;
-            width: 40px;
-            height: 40px;
-            background: rgba(255, 255, 255, 0.2);
+            width: 45px;
+            height: 45px;
+            background: rgba(0, 0, 0, 0.5);
             color: white;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 28px;
             cursor: pointer;
             z-index: 1001;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .footer-info {
@@ -136,6 +143,7 @@
             font-size: 10px;
             text-transform: uppercase;
             text-align: center;
+            letter-spacing: 1px;
         }
     </style>
 </head>
@@ -148,18 +156,28 @@
 
     <div class="menu-container">
         <div class="menu-item" onclick="openGame('voprosi.html')">
-            <div class="icon-box icon-1">⚡</div>
+            <div class="icon-box icon-gold">⚡</div>
             <div class="item-text">Вопросы для электрика</div>
         </div>
 
         <div class="menu-item" onclick="openGame('patnashki.html')">
-            <div class="icon-box icon-2">🧩</div>
+            <div class="icon-box icon-orange">🧩</div>
             <div class="item-text">Игра Пятнашки</div>
+        </div>
+
+        <div class="menu-item" onclick="openGame('Memory.html')">
+            <div class="icon-box icon-blue">🎴</div>
+            <div class="item-text">Игра Memory</div>
+        </div>
+
+        <div class="menu-item" onclick="openGame('Flappy.html')">
+            <div class="icon-box icon-yellow">🐦</div>
+            <div class="item-text">Flappy Bird</div>
         </div>
     </div>
 
     <div class="footer-info">
-        Memory auto-save active
+        Memory auto-save active • v1.2
     </div>
 
     <div id="game-overlay">
@@ -168,26 +186,33 @@
     </div>
 
     <script>
-        // Обновление часов
+        // 1. ЧАСЫ
         function updateClock() {
             const now = new Date();
             const time = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('clock').innerText = `System Active • ${time}`;
+            const clockElement = document.getElementById('clock');
+            if (clockElement) clockElement.innerText = `System Active • ${time}`;
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Функции оверлея
-        function openGame(url) {
+        // 2. ЛОГИКА ОВЕРЛЕЯ
+        function openGame(url, isRestore = false) {
             const overlay = document.getElementById('game-overlay');
             const frame = document.getElementById('game-frame');
             
             frame.src = url;
             overlay.style.display = 'block';
-            document.body.style.overflow = 'hidden'; // Запрет прокрутки основного сайта
+            document.body.style.overflow = 'hidden';
 
-            // Сохраняем в память последнюю игру
-            localStorage.setItem('lastGameOpened', url);
+            // Сохранение в память браузера
+            localStorage.setItem('volt_last_game', url);
+            localStorage.setItem('volt_is_open', 'true');
+
+            // История браузера (чтобы кнопка "Назад" закрывала игру, а не сайт)
+            if (!isRestore) {
+                history.pushState({ gameOpen: true }, "");
+            }
         }
 
         function closeGame() {
@@ -195,9 +220,28 @@
             const frame = document.getElementById('game-frame');
             
             overlay.style.display = 'none';
-            frame.src = ''; // Останавливаем игру при закрытии
+            frame.src = ''; 
             document.body.style.overflow = 'auto';
+
+            // Очистка памяти о текущей сессии
+            localStorage.removeItem('volt_is_open');
+            localStorage.removeItem('volt_last_game');
         }
+
+        // 3. ОБРАБОТКА КНОПКИ "НАЗАД"
+        window.onpopstate = function(event) {
+            closeGame();
+        };
+
+        // 4. АВТОВОССТАНОВЛЕНИЕ (Memory)
+        window.onload = function() {
+            const wasOpen = localStorage.getItem('volt_is_open');
+            const lastGame = localStorage.getItem('volt_last_game');
+            
+            if (wasOpen === 'true' && lastGame) {
+                openGame(lastGame, true);
+            }
+        };
     </script>
 </body>
 </html>
