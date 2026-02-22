@@ -27,7 +27,6 @@
             min-height: 100vh;
             padding: 20px;
             overflow-x: hidden;
-            /* Запрет скролла всей страницы при активной игре */
             touch-action: manipulation;
         }
 
@@ -186,7 +185,7 @@
             <div class="item-text">Тренировка памяти</div>
         </div>
 
-        <div class="menu-item" onclick="openGame('bird.html')">
+        <div class="menu-item" onclick="openExternalGame('bird.html')">
             <div class="icon-box icon-4">🐦</div>
             <div class="item-text">Flappy Bird</div>
         </div>
@@ -212,7 +211,7 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Улучшенные функции управления игрой
+        // Открытие игры в ОВЕРЛЕЕ (внутри текущей страницы)
         function openGame(url) {
             const overlay = document.getElementById('game-overlay');
             const frame = document.getElementById('game-frame');
@@ -220,29 +219,35 @@
             frame.src = url;
             overlay.style.display = 'block';
             
-            // Плавное проявление
             setTimeout(() => overlay.classList.add('active'), 10);
             document.body.style.overflow = 'hidden'; 
 
-            // Автоматический фокус на фрейм после загрузки, чтобы работала клавиатура
             frame.onload = function() {
                 frame.contentWindow.focus();
-                // Для мобильных устройств имитируем клик, если игра требует активации
-                frame.contentWindow.addEventListener('click', () => {
-                    frame.contentWindow.focus();
-                });
             };
 
             localStorage.setItem('voltMaster_lastSession', url);
         }
 
+        // НОВАЯ ФУНКЦИЯ: Открытие в новой вкладке
+        function openExternalGame(url) {
+            const newWindow = window.open(url, '_blank');
+            if (newWindow) {
+                newWindow.focus();
+            } else {
+                // Если браузер блокирует popup, открываем в текущей
+                window.location.href = url;
+            }
+            localStorage.setItem('voltMaster_lastSession', url);
+        }
+
+        // Закрытие оверлея
         function closeGame() {
             const overlay = document.getElementById('game-overlay');
             const frame = document.getElementById('game-frame');
             
             overlay.classList.remove('active');
             
-            // Ждем окончания анимации (300мс) перед полным скрытием
             setTimeout(() => {
                 overlay.style.display = 'none';
                 frame.src = ''; 
@@ -250,12 +255,10 @@
             }, 300);
         }
 
-        // Закрытие на клавишу ESC
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeGame();
         });
 
-        // Проверка сохраненной сессии
         window.addEventListener('DOMContentLoaded', () => {
             const lastGame = localStorage.getItem('voltMaster_lastSession');
             if (lastGame) {
