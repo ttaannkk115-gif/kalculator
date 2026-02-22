@@ -7,7 +7,6 @@
     
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
-    <script src="https://openfpcdn.io/fingerprintjs/v4/i.js"></script>
 
     <style>
         :root {
@@ -48,7 +47,7 @@
             font-size: 11px; margin-top: 8px;
             border: 1px solid rgba(255, 193, 7, 0.2);
             font-family: 'Courier New', monospace;
-            min-width: 220px; justify-content: center; gap: 10px;
+            min-width: 200px; justify-content: center; gap: 10px;
         }
 
         .status-dot { width: 6px; height: 6px; background: var(--main-gold); border-radius: 50%; box-shadow: 0 0 8px var(--main-gold); animation: pulse 2s infinite; }
@@ -93,7 +92,9 @@
         .btn-clear-logs { background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
         .btn-danger { background: #ff4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
         
-        #log-container { margin-top: 10px; }
+        #users-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        #users-table td { padding: 10px; border-bottom: 1px solid #222; text-align: left; font-size: 12px; }
+        
         .date-divider { 
             background: #1a1a1a; color: var(--main-gold); 
             padding: 8px 15px; font-size: 11px; font-weight: bold; 
@@ -113,7 +114,7 @@
         <h1>VOLT<span>MASTER</span></h1>
         <div id="status" class="status-badge">
             <div class="status-dot"></div>
-            <span id="stats-display">ЗАПУСК...</span>
+            <span id="stats-display">ЗАГРУЗКА...</span>
         </div>
     </div>
 
@@ -149,7 +150,8 @@
 
 <div id="admin-overlay" class="overlay">
     <div class="overlay-header"><span id="admin-title">ADMIN PANEL</span><button class="close-btn" onclick="closeAdmin()">&times;</button></div>
-    <div class="overlay-body" style="padding: 15px; overflow-y: auto; background: #0a0a0a;">
+    <div class="overlay-body" style="padding: 15px; overflow-y: auto; background: #0a0a0a;" id="admin-content">
+        
         <div class="admin-controls">
             <div style="margin-bottom: 10px; font-size: 11px; color: var(--main-gold); font-weight: bold;">ИСКЛЮЧИТЬ ID:</div>
             <div style="display: flex; gap: 5px;">
@@ -158,6 +160,15 @@
             </div>
             <div id="excluded-list-display" style="margin-top: 10px;"></div>
         </div>
+
+        <div class="admin-controls">
+            <div id="admin-today-visits" style="font-size: 14px; color: var(--main-gold); margin-bottom: 10px;">ЗАХОДОВ СЕГОДНЯ: --</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button class="btn-clear-logs" onclick="clearOnlyLogs()">ОЧИСТИТЬ ЛОГИ</button>
+                <button class="btn-danger" onclick="fullReset()">СБРОСИТЬ ВСЁ</button>
+            </div>
+        </div>
+
         <div id="log-container"></div>
     </div>
 </div>
@@ -167,35 +178,14 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    let myId = "";
-
-    async function getFingerprint() {
-        try {
-            // Пытаемся получить отпечаток с таймаутом 2 сек
-            const fpPromise = FingerprintJS.load();
-            const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000));
-            const fp = await Promise.race([fpPromise, timeout]);
-            const result = await fp.get();
-            return "ID-" + result.visitorId.substring(0, 8).toUpperCase();
-        } catch (e) {
-            // Если не вышло, берем старый добрый localStorage или создаем новый случайный
-            let fallbackId = localStorage.getItem('user_id_2026');
-            if (!fallbackId) {
-                fallbackId = "USER-" + Math.floor(Math.random() * 9000 + 1000);
-                localStorage.setItem('user_id_2026', fallbackId);
-            }
-            return fallbackId;
-        }
-    }
+    let myId = localStorage.getItem('user_id_2026') || "User_" + Math.floor(Math.random() * 1000);
+    localStorage.setItem('user_id_2026', myId);
 
     async function initTracker() {
         const statsEl = document.getElementById('stats-display');
         const now = new Date();
         const dateKey = now.toISOString().split('T')[0];
         const timeString = now.toLocaleTimeString('ru-RU');
-
-        // Получаем ID (Fingerprint или Fallback)
-        myId = await getFingerprint();
 
         const exclSnapshot = await database.ref('excluded_list').once('value');
         const excludedArray = Object.values(exclSnapshot.val() || {});
@@ -216,45 +206,82 @@
         });
     }
 
-    // Остальные функции админки и оверлеев без изменений
     function openAdmin() {
         document.getElementById('admin-overlay').style.display = 'flex';
+        const dateKey = new Date().toISOString().split('T')[0];
+        const logContainer = document.getElementById('log-container');
+        
+        // Сегодняшние заходы
+        database.ref(`visits/${dateKey}`).on('value', snap => {
+            document.getElementById('admin-today-visits').innerText = `ЗАХОДОВ СЕГОДНЯ: ${snap.numChildren()}`;
+        });
+
+        // Основной лог с разделением по дням и сортировкой
         database.ref('visits').on('value', snap => {
-            const logContainer = document.getElementById('log-container');
             logContainer.innerHTML = '';
+            
+            // Получаем дни и сортируем их (новые дни сверху)
             const days = [];
             snap.forEach(daySnap => { days.push({ key: daySnap.key, data: daySnap.val() }); });
-            days.reverse().forEach(day => {
-                logContainer.innerHTML += `<div class="date-divider">${day.key}</div><table style="width:100%">`;
-                Object.values(day.data).reverse().forEach(v => {
-                    const isMe = v.userId === myId ? 'style="color: var(--main-gold);"' : 'style="color:#eee"';
-                    logContainer.innerHTML += `<tr><td ${isMe}>${v.userId}</td><td style="text-align:right; color:#666">${v.time}</td></tr>`;
+            days.reverse(); 
+
+            days.forEach(day => {
+                // Добавляем разделитель даты
+                logContainer.innerHTML += `<div class="date-divider">--- ${day.key} ---</div><table id="table-${day.key}" style="width:100%"></table>`;
+                const table = document.getElementById(`table-${day.key}`);
+                
+                // Превращаем заходы дня в массив и переворачиваем (новые вверху)
+                const visits = Object.values(day.data).reverse();
+                
+                visits.forEach(v => {
+                    const row = table.insertRow();
+                    row.innerHTML = `<td style="color:#eee">${v.userId}</td><td style="text-align:right; color:var(--text-dim)">${v.time}</td>`;
                 });
-                logContainer.innerHTML += `</table>`;
             });
         });
+
         database.ref('excluded_list').on('value', snap => {
             const display = document.getElementById('excluded-list-display');
             display.innerHTML = '';
-            snap.forEach(child => { display.innerHTML += `<span class="excluded-tag" onclick="removeExcluded('${child.key}')">${child.val()} ×</span>`; });
+            snap.forEach(child => {
+                display.innerHTML += `<span class="excluded-tag" onclick="removeExcluded('${child.key}')">${child.val()} ×</span>`;
+            });
         });
+    }
+
+    function clearOnlyLogs() {
+        if(confirm("Очистить только историю заходов?")) database.ref('visits').remove();
+    }
+
+    function fullReset() {
+        if(confirm("ВНИМАНИЕ: Это удалит всё! Уверены?")) database.ref().remove();
     }
 
     function addToExcluded() {
         const val = document.getElementById('exclude-input').value.trim();
-        if(val) { database.ref('excluded_list').push(val); document.getElementById('exclude-input').value = ''; }
+        if(val) database.ref('excluded_list').push(val);
+        document.getElementById('exclude-input').value = '';
     }
+
     function removeExcluded(key) { if(confirm("Удалить?")) database.ref(`excluded_list/${key}`).remove(); }
     function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; database.ref('visits').off(); }
-    function openApp(name, url) { document.getElementById('overlay-title').innerText = name; document.getElementById('app-frame').src = url; document.getElementById('app-overlay').style.display = 'flex'; }
-    function closeApp() { document.getElementById('app-overlay').style.display = 'none'; document.getElementById('app-frame').src = 'about:blank'; }
 
     let clicks = 0, timer;
     document.getElementById('main-logo').addEventListener('click', () => {
         clicks++; clearTimeout(timer);
         timer = setTimeout(() => clicks = 0, 1000);
-        if(clicks === 3) { const p = prompt("Пароль:"); if(p === "Gazik0303") openAdmin(); }
+        if(clicks === 3) {
+            const p = prompt("Пароль:");
+            if(p === "Gazik0303") openAdmin();
+        }
     });
+
+    function openApp(name, url) { 
+        document.getElementById('overlay-title').innerText = name;
+        document.getElementById('app-frame').src = url;
+        document.getElementById('app-overlay').style.display = 'flex';
+    }
+    function closeApp() { document.getElementById('app-overlay').style.display = 'none'; document.getElementById('app-frame').src = 'about:blank'; }
 
     document.addEventListener('DOMContentLoaded', initTracker);
 </script>
