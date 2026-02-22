@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Neon Bird: Ready Start</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            color: white;
+            font-family: 'Arial', sans-serif;
+        }
+        #gameCanvas {
+            border: 2px solid #00f2ff;
+            background: #050505;
+            max-width: 100vw;
+            touch-action: none;
+        }
+        #score { 
+            position: absolute; top: 20px; width: 100%;
+            text-align: center; font-size: 3.5rem; margin: 0; 
+            text-shadow: 0 0 15px #00f2ff; pointer-events: none; z-index: 5;
+        }
+        #main-menu {
+            position: absolute; z-index: 100;
+            background: rgba(0, 0, 0, 0.95);
+            padding: 30px; border: 2px solid #00f2ff;
+            border-radius: 20px; text-align: center;
+            display: flex; flex-direction: column; gap: 15px;
+        }
+        .btn {
+            width: 220px; padding: 15px; border: none; border-radius: 10px;
+            font-size: 1.2rem; font-weight: bold; cursor: pointer;
+            text-transform: uppercase; transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-easy { background: #00ff88; color: #000; }
+        .btn-hard { background: #ffcc00; color: #000; }
+        .btn-hc { background: #ff0055; color: #fff; }
+        #tap-hint {
+            position: absolute; bottom: 25%; color: #00f2ff;
+            font-weight: bold; font-size: 1.2rem; letter-spacing: 2px;
+            text-shadow: 0 0 10px #00f2ff; pointer-events: none;
+            animation: blink 1s infinite; display: none;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        h2 { margin: 0 0 10px 0; color: #00f2ff; }
+    </style>
+</head>
+<body>
+
+    <h1 id="score">0</h1>
+
+    <div id="main-menu">
+        <h2>СЛОЖНОСТЬ</h2>
+        <button class="btn btn-easy" onclick="selectDifficulty('easy')">ЛЕГКО</button>
+        <button class="btn btn-hard" onclick="selectDifficulty('hard')">СЛОЖНО</button>
+        <button class="btn btn-hc" onclick="selectDifficulty('hardcore')">HARDCORE</button>
+    </div>
+
+    <div id="tap-hint">НАЖМИ, ЧТОБЫ ЛЕТЕТЬ</div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreEl = document.getElementById("score");
+        const menuEl = document.getElementById("main-menu");
+        const hintEl = document.getElementById("tap-hint");
+
+        const scale = window.devicePixelRatio || 1;
+        canvas.width = (window.innerWidth > 400 ? 400 : window.innerWidth) * scale;
+        canvas.height = (window.innerHeight * 0.85) * scale;
+        ctx.scale(scale, scale);
+        const w = canvas.width / scale;
+        const h = canvas.height / scale;
+
+        let bird = { x: 60, y: h/2, r: 13, v: 0, g: 0.45, j: -7.5 };
+        let pipes = [];
+        let score = 0;
+        let gameActive = false;
+        let waitingToStart = false; // Новое состояние ожидания первого тапа
+        let frame = 0;
+        let config = { speed: 3.5, gap: 180, moving: false };
+
+        function selectDifficulty(mode) {
+            if (mode === 'easy') config = { speed: 3.5, gap: 195, moving: false };
+            if (mode === 'hard') config = { speed: 5.2, gap: 145, moving: false };
+            if (mode === 'hardcore') config = { speed: 6.5, gap: 125, moving: true };
+
+            // Подготовка визуальной сцены
+            bird.y = h/2; bird.v = 0; pipes = []; score = 0;
+            scoreEl.textContent = "0";
+            menuEl.style.display = "none";
+            hintEl.style.display = "block";
+            
+            // Генерируем первую трубу заранее, чтобы её было видно
+            const minH = 80;
+            const pipeH = Math.random() * (h - config.gap - minH * 2) + minH;
+            pipes.push({ x: w + 50, top: pipeH, bot: h - pipeH - config.gap, passed: false, offset: 0, dir: 1 });
+            
+            waitingToStart = true; // Переходим в режим ожидания
+        }
+
+        function drawPipe(x, y, width, height, isTop) {
+            let grad = ctx.createLinearGradient(x, 0, x + width, 0);
+            grad.addColorStop(0, '#733214'); 
+            grad.addColorStop(0.3, '#d47d4a'); 
+            grad.addColorStop(1, '#59260f'); 
+            ctx.fillStyle = grad;
+            ctx.fillRect(x, y, width, height);
+            ctx.fillStyle = '#8c4b2d';
+            let headW = width + 10;
+            let headX = x - 5;
+            let headH = 25;
+            let headY = isTop ? height - headH : y;
+            ctx.fillRect(headX, headY, headW, headH);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(headX, headY, headW, headH);
+        }
+
+        function drawBird() {
+            ctx.save();
+            // В режиме ожидания птичка просто плавает, в игре — падает по физике
+            let ty = (gameActive || waitingToStart && !gameActive) ? bird.y : h/2 + Math.sin(frame/10)*12;
+            if (waitingToStart && !gameActive) ty = h/2 + Math.sin(frame/10)*8;
+            
+            ctx.translate(bird.x, ty);
+            ctx.fillStyle = "#00f2ff";
+            ctx.beginPath(); ctx.arc(0, 0, bird.r, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "#fff";
+            ctx.beginPath(); ctx.arc(6, -4, 4, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "#000";
+            ctx.beginPath(); ctx.arc(7, -4, 2, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "#ff0055";
+            ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(22, 3); ctx.lineTo(10, 6); ctx.fill();
+            ctx.restore();
+        }
+
+        function loop() {
+            ctx.clearRect(0, 0, w, h);
+            frame++;
+
+            // Рисуем сетку фона
+            ctx.strokeStyle = "#151515";
+            for(let i=0; i<w+40; i+=40) {
+                ctx.beginPath(); ctx.moveTo(i-(frame%40), 0); ctx.lineTo(i-(frame%40), h); ctx.stroke();
+            }
+
+            if (gameActive) {
+                bird.v += bird.g;
+                bird.y += bird.v;
+
+                pipes.forEach(p => {
+                    p.x -= config.speed;
+                    if (config.moving) {
+                        p.offset += (1.6 * p.dir);
+                        if (Math.abs(p.offset) > 70) p.dir *= -1;
+                    }
+                    let tH = p.top + p.offset;
+                    let bY = h - (p.bot - p.offset);
+                    drawPipe(p.x, 0, 50, tH, true);
+                    drawPipe(p.x, bY, 50, h - bY, false);
+
+                    if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + 50) {
+                        if (bird.y - bird.r < tH || bird.y + bird.r > bY) {
+                            gameActive = false;
+                            waitingToStart = false;
+                        }
+                    }
+                    if (!p.passed && p.x + 50 < bird.x) {
+                        score++; scoreEl.textContent = score; p.passed = true;
+                    }
+                });
+
+                if (pipes[0]?.x < -60) pipes.shift();
+                if (pipes.length > 0 && pipes[pipes.length-1].x < w - 210) {
+                    const minH = 80;
+                    const pipeH = Math.random() * (h - config.gap - minH * 2) + minH;
+                    pipes.push({ x: w, top: pipeH, bot: h - pipeH - config.gap, passed: false, offset: 0, dir: 1 });
+                }
+                if (bird.y + bird.r > h || bird.y - bird.r < 0) {
+                    gameActive = false;
+                    waitingToStart = false;
+                }
+                if (!gameActive) menuEl.style.display = "flex";
+
+            } else if (waitingToStart) {
+                // Если мы выбрали сложность, но еще не нажали "старт"
+                // Рисуем птичку и трубы статично
+                pipes.forEach(p => {
+                    drawPipe(p.x, 0, 50, p.top, true);
+                    drawPipe(p.x, h - p.bot, 50, p.bot, false);
+                });
+            }
+
+            drawBird();
+            requestAnimationFrame(loop);
+        }
+
+        const handleAction = (e) => {
+            if (waitingToStart && !gameActive) {
+                // Первый тап после выбора сложности — запускаем игру
+                waitingToStart = false;
+                gameActive = true;
+                hintEl.style.display = "none";
+                bird.v = bird.j; // Сразу делаем первый прыжок
+            } else if (gameActive) {
+                e?.preventDefault();
+                bird.v = bird.j;
+            }
+        };
+
+        window.addEventListener("mousedown", handleAction);
+        window.addEventListener("touchstart", handleAction, {passive: false});
+
+        loop();
+    </script>
+</body>
+</html>
