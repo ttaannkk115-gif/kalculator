@@ -92,8 +92,16 @@
         .btn-clear-logs { background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
         .btn-danger { background: #ff4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
         
-        #users-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        #users-table th, #users-table td { padding: 10px; border-bottom: 1px solid #222; text-align: left; font-size: 12px; }
+        #users-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        #users-table td { padding: 10px; border-bottom: 1px solid #222; text-align: left; font-size: 12px; }
+        
+        .date-divider { 
+            background: #1a1a1a; color: var(--main-gold); 
+            padding: 8px 15px; font-size: 11px; font-weight: bold; 
+            letter-spacing: 1px; border-left: 3px solid var(--main-gold);
+            margin-top: 15px; text-transform: uppercase;
+        }
+        
         .excluded-tag { display: inline-block; background: #333; color: #ff4444; padding: 2px 8px; border-radius: 4px; margin: 2px; font-size: 10px; border: 1px solid #444; cursor: pointer; }
 
         .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #444; letter-spacing: 2px; text-transform: uppercase; }
@@ -136,19 +144,14 @@
 </div>
 
 <div id="app-overlay" class="overlay">
-    <div class="overlay-header">
-        <span id="overlay-title">App</span>
-        <button class="close-btn" onclick="closeApp()">&times;</button>
-    </div>
+    <div class="overlay-header"><span id="overlay-title">App</span><button class="close-btn" onclick="closeApp()">&times;</button></div>
     <div class="overlay-body"><iframe id="app-frame" src=""></iframe></div>
 </div>
 
 <div id="admin-overlay" class="overlay">
-    <div class="overlay-header">
-        <span id="admin-title">ADMIN PANEL</span>
-        <button class="close-btn" onclick="closeAdmin()">&times;</button>
-    </div>
-    <div class="overlay-body" style="padding: 15px; overflow-y: auto; background: #0a0a0a;">
+    <div class="overlay-header"><span id="admin-title">ADMIN PANEL</span><button class="close-btn" onclick="closeAdmin()">&times;</button></div>
+    <div class="overlay-body" style="padding: 15px; overflow-y: auto; background: #0a0a0a;" id="admin-content">
+        
         <div class="admin-controls">
             <div style="margin-bottom: 10px; font-size: 11px; color: var(--main-gold); font-weight: bold;">ИСКЛЮЧИТЬ ID:</div>
             <div style="display: flex; gap: 5px;">
@@ -157,18 +160,16 @@
             </div>
             <div id="excluded-list-display" style="margin-top: 10px;"></div>
         </div>
+
         <div class="admin-controls">
             <div id="admin-today-visits" style="font-size: 14px; color: var(--main-gold); margin-bottom: 10px;">ЗАХОДОВ СЕГОДНЯ: --</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <button class="btn-clear-logs" onclick="clearOnlyLogs()">ОЧИСТИТЬ ЛОГИ</button>
                 <button class="btn-danger" onclick="fullReset()">СБРОСИТЬ ВСЁ</button>
             </div>
-            <p style="font-size: 9px; color: #666; margin-top: 8px;">* "Очистить логи" не удаляет количество зарегистрированных.</p>
         </div>
-        <table id="users-table">
-            <thead><tr><th>ID [Дата]</th><th>Время</th></tr></thead>
-            <tbody id="users-list-body"></tbody>
-        </table>
+
+        <div id="log-container"></div>
     </div>
 </div>
 
@@ -192,16 +193,12 @@
 
         if (!isExcluded) {
             database.ref(`registered_users/${myId}`).set({ last_seen: firebase.database.ServerValue.TIMESTAMP });
-            database.ref(`visits/${dateKey}`).push().set({ userId: myId, time: timeString });
+            database.ref(`visits/${dateKey}`).push().set({ userId: myId, time: timeString, timestamp: firebase.database.ServerValue.TIMESTAMP });
         }
 
         database.ref('registered_users').on('value', snap => {
             const count = snap.numChildren();
-            statsEl.innerHTML = `
-                <span style="color: var(--main-gold)">${myId}</span>
-                <span style="opacity: 0.3;">|</span>
-                <span style="color: #fff">ВСЕГО: ${count}</span>
-            `;
+            statsEl.innerHTML = `<span style="color: var(--main-gold)">${myId}</span> <span style="opacity: 0.3;">|</span> <span style="color: #fff">ВСЕГО: ${count}</span>`;
             if(isExcluded) {
                 document.querySelector('.status-dot').style.background = '#2196f3';
                 document.querySelector('.status-dot').style.boxShadow = '0 0 8px #2196f3';
@@ -209,22 +206,36 @@
         });
     }
 
-    // --- АДМИН ПАНЕЛЬ ---
     function openAdmin() {
         document.getElementById('admin-overlay').style.display = 'flex';
         const dateKey = new Date().toISOString().split('T')[0];
+        const logContainer = document.getElementById('log-container');
         
+        // Сегодняшние заходы
         database.ref(`visits/${dateKey}`).on('value', snap => {
             document.getElementById('admin-today-visits').innerText = `ЗАХОДОВ СЕГОДНЯ: ${snap.numChildren()}`;
         });
 
+        // Основной лог с разделением по дням и сортировкой
         database.ref('visits').on('value', snap => {
-            const listBody = document.getElementById('users-list-body');
-            listBody.innerHTML = '';
-            snap.forEach(dateSnap => {
-                dateSnap.forEach(vSnap => {
-                    const v = vSnap.val();
-                    listBody.innerHTML += `<tr><td><small>[${dateSnap.key}]</small> ${v.userId}</td><td>${v.time}</td></tr>`;
+            logContainer.innerHTML = '';
+            
+            // Получаем дни и сортируем их (новые дни сверху)
+            const days = [];
+            snap.forEach(daySnap => { days.push({ key: daySnap.key, data: daySnap.val() }); });
+            days.reverse(); 
+
+            days.forEach(day => {
+                // Добавляем разделитель даты
+                logContainer.innerHTML += `<div class="date-divider">--- ${day.key} ---</div><table id="table-${day.key}" style="width:100%"></table>`;
+                const table = document.getElementById(`table-${day.key}`);
+                
+                // Превращаем заходы дня в массив и переворачиваем (новые вверху)
+                const visits = Object.values(day.data).reverse();
+                
+                visits.forEach(v => {
+                    const row = table.insertRow();
+                    row.innerHTML = `<td style="color:#eee">${v.userId}</td><td style="text-align:right; color:var(--text-dim)">${v.time}</td>`;
                 });
             });
         });
@@ -238,18 +249,12 @@
         });
     }
 
-    // НОВАЯ ФУНКЦИЯ: Очищает только логи входов
     function clearOnlyLogs() {
-        if(confirm("Master, очистить только историю заходов? (Список 'ВСЕГО' сохранится)")) {
-            database.ref('visits').remove().then(() => alert("Логи очищены!"));
-        }
+        if(confirm("Очистить только историю заходов?")) database.ref('visits').remove();
     }
 
-    // ПОЛНЫЙ СБРОС (если нужно)
     function fullReset() {
-        if(confirm("ВНИМАНИЕ: Это удалит ВСЕ регистрации и логи. Вы уверены?")) {
-            database.ref().remove().then(() => alert("База полностью обнулена."));
-        }
+        if(confirm("ВНИМАНИЕ: Это удалит всё! Уверены?")) database.ref().remove();
     }
 
     function addToExcluded() {
@@ -259,12 +264,7 @@
     }
 
     function removeExcluded(key) { if(confirm("Удалить?")) database.ref(`excluded_list/${key}`).remove(); }
-
-    function closeAdmin() { 
-        document.getElementById('admin-overlay').style.display = 'none'; 
-        database.ref('visits').off(); 
-        database.ref('registered_users').off();
-    }
+    function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; database.ref('visits').off(); }
 
     let clicks = 0, timer;
     document.getElementById('main-logo').addEventListener('click', () => {
