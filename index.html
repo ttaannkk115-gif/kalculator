@@ -85,15 +85,11 @@
         .overlay-body { flex-grow: 1; overflow: hidden; }
         #app-frame { width: 100%; height: 100%; border: none; background: #fff; }
 
-        /* Админ-панель */
         .admin-controls { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; }
         .admin-input { background: #000; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 6px; width: 60%; font-size: 12px; }
         .btn-action { background: var(--main-gold); color: #000; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
         .btn-clear-logs { background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
         .btn-danger { background: #ff4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
-        
-        #users-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-        #users-table td { padding: 10px; border-bottom: 1px solid #222; text-align: left; font-size: 12px; }
         
         .date-divider { 
             background: #1a1a1a; color: var(--main-gold); 
@@ -103,7 +99,6 @@
         }
         
         .excluded-tag { display: inline-block; background: #333; color: #ff4444; padding: 2px 8px; border-radius: 4px; margin: 2px; font-size: 10px; border: 1px solid #444; cursor: pointer; }
-
         .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #444; letter-spacing: 2px; text-transform: uppercase; }
     </style>
 </head>
@@ -151,7 +146,6 @@
 <div id="admin-overlay" class="overlay">
     <div class="overlay-header"><span id="admin-title">ADMIN PANEL</span><button class="close-btn" onclick="closeAdmin()">&times;</button></div>
     <div class="overlay-body" style="padding: 15px; overflow-y: auto; background: #0a0a0a;" id="admin-content">
-        
         <div class="admin-controls">
             <div style="margin-bottom: 10px; font-size: 11px; color: var(--main-gold); font-weight: bold;">ИСКЛЮЧИТЬ ID:</div>
             <div style="display: flex; gap: 5px;">
@@ -160,7 +154,6 @@
             </div>
             <div id="excluded-list-display" style="margin-top: 10px;"></div>
         </div>
-
         <div class="admin-controls">
             <div id="admin-today-visits" style="font-size: 14px; color: var(--main-gold); margin-bottom: 10px;">ЗАХОДОВ СЕГОДНЯ: --</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -168,7 +161,6 @@
                 <button class="btn-danger" onclick="fullReset()">СБРОСИТЬ ВСЁ</button>
             </div>
         </div>
-
         <div id="log-container"></div>
     </div>
 </div>
@@ -178,8 +170,15 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    let myId = localStorage.getItem('user_id_2026') || "User_" + Math.floor(Math.random() * 1000);
-    localStorage.setItem('user_id_2026', myId);
+    // Логика ID с автоматической миграцией и сохранением
+    let myId = localStorage.getItem('user_id_2026');
+    if (!myId) {
+        myId = "ID-" + Math.floor(Math.random() * 1000);
+        localStorage.setItem('user_id_2026', myId);
+    } else if (myId.startsWith('User_')) {
+        myId = myId.replace('User_', 'ID-');
+        localStorage.setItem('user_id_2026', myId);
+    }
 
     async function initTracker() {
         const statsEl = document.getElementById('stats-display');
@@ -198,6 +197,7 @@
 
         database.ref('registered_users').on('value', snap => {
             const count = snap.numChildren();
+            // Обновленный формат отображения ID
             statsEl.innerHTML = `<span style="color: var(--main-gold)">${myId}</span> <span style="opacity: 0.3;">|</span> <span style="color: #fff">ВСЕГО: ${count}</span>`;
             if(isExcluded) {
                 document.querySelector('.status-dot').style.background = '#2196f3';
@@ -206,40 +206,27 @@
         });
     }
 
+    // Функции управления админкой и приложениями (сохранение всего старого функционала)
     function openAdmin() {
         document.getElementById('admin-overlay').style.display = 'flex';
         const dateKey = new Date().toISOString().split('T')[0];
-        const logContainer = document.getElementById('log-container');
-        
-        // Сегодняшние заходы
         database.ref(`visits/${dateKey}`).on('value', snap => {
             document.getElementById('admin-today-visits').innerText = `ЗАХОДОВ СЕГОДНЯ: ${snap.numChildren()}`;
         });
-
-        // Основной лог с разделением по дням и сортировкой
         database.ref('visits').on('value', snap => {
+            const logContainer = document.getElementById('log-container');
             logContainer.innerHTML = '';
-            
-            // Получаем дни и сортируем их (новые дни сверху)
             const days = [];
             snap.forEach(daySnap => { days.push({ key: daySnap.key, data: daySnap.val() }); });
-            days.reverse(); 
-
-            days.forEach(day => {
-                // Добавляем разделитель даты
+            days.reverse().forEach(day => {
                 logContainer.innerHTML += `<div class="date-divider">--- ${day.key} ---</div><table id="table-${day.key}" style="width:100%"></table>`;
                 const table = document.getElementById(`table-${day.key}`);
-                
-                // Превращаем заходы дня в массив и переворачиваем (новые вверху)
-                const visits = Object.values(day.data).reverse();
-                
-                visits.forEach(v => {
+                Object.values(day.data).reverse().forEach(v => {
                     const row = table.insertRow();
                     row.innerHTML = `<td style="color:#eee">${v.userId}</td><td style="text-align:right; color:var(--text-dim)">${v.time}</td>`;
                 });
             });
         });
-
         database.ref('excluded_list').on('value', snap => {
             const display = document.getElementById('excluded-list-display');
             display.innerHTML = '';
@@ -249,20 +236,13 @@
         });
     }
 
-    function clearOnlyLogs() {
-        if(confirm("Очистить только историю заходов?")) database.ref('visits').remove();
-    }
-
-    function fullReset() {
-        if(confirm("ВНИМАНИЕ: Это удалит всё! Уверены?")) database.ref().remove();
-    }
-
+    function clearOnlyLogs() { if(confirm("Очистить только историю заходов?")) database.ref('visits').remove(); }
+    function fullReset() { if(confirm("ВНИМАНИЕ: Это удалит всё! Уверены?")) database.ref().remove(); }
     function addToExcluded() {
         const val = document.getElementById('exclude-input').value.trim();
         if(val) database.ref('excluded_list').push(val);
         document.getElementById('exclude-input').value = '';
     }
-
     function removeExcluded(key) { if(confirm("Удалить?")) database.ref(`excluded_list/${key}`).remove(); }
     function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; database.ref('visits').off(); }
 
