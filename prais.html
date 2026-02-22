@@ -172,13 +172,17 @@
 </div>
 
 <script>
-// 1. Инициализация ID и Firebase
+// 1. Инициализация ID и Регистрация
 let userId = localStorage.getItem('user_id_2026'); 
 if (!userId) {
     userId = 'ID-' + Math.floor(1000 + Math.random() * 9000);
     localStorage.setItem('user_id_2026', userId);
+    
+    // Регистрация мастера в уникальном списке
+    database.ref('users_registry/' + userId).set({
+        registered_at: firebase.database.ServerValue.TIMESTAMP
+    });
 }
-// Выводим ID на экран в шапку
 document.getElementById('user-display-id').innerText = userId;
 
 let allowedAdmins = [];  
@@ -838,23 +842,40 @@ function loadInfo() {
     }
 }
 
-const visitRef = database.ref('global_visit_count');
+// Получаем текущую дату в формате ГГГГ-ММ-ДД
+const today = new Date().toLocaleDateString('en-CA'); 
 
-function updateVisitCounter() {
-    if (!sessionStorage.getItem('counted_visit')) {
-        visitRef.transaction((currentValue) => {
-            return (currentValue || 0) + 1;
-        });
-        sessionStorage.setItem('counted_visit', 'true');
+function updateStats() {
+    // Счетчик визитов именно за СЕГОДНЯ
+    // Используем sessionStorage, чтобы повторные обновления страницы в одном сеансе не накручивали счетчик
+    if (!sessionStorage.getItem('counted_today_' + today)) {
+        database.ref('daily_visits/' + today).transaction(v => (v || 0) + 1);
+        sessionStorage.setItem('counted_today_' + today, 'true');
     }
-    visitRef.on('value', (snapshot) => {
-        const count = snapshot.val() || 0;
+
+    // Слушатель для обновления данных в шапке в реальном времени
+    database.ref().on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        
+        // Общее количество уникальных зарегистрированных мастеров
+        const totalMasters = data.users_registry ? Object.keys(data.users_registry).length : 0;
+        
+        // Количество визитов только за сегодня
+        const visitsToday = (data.daily_visits && data.daily_visits[today]) ? data.daily_visits[today] : 0;
+        
         const counterEl = document.getElementById('visit-counter');
         if (counterEl) {
-            counterEl.innerText = `ВСЕГО ПОСЕТИТЕЛЕЙ: ${count}`;
+            counterEl.innerHTML = `МАСТЕРОВ: <span style="color:#ffeb3b">${totalMasters}</span> | ЗА СЕГОДНЯ: <span style="color:#ffeb3b">${visitsToday}</span>`;
         }
     });
 }
+
+// В самом низу замените старый вызов updateVisitCounter(); на:
+loadInfo(); 
+renderCatalog(); 
+sync(); 
+updateStats(); 
+
 loadInfo(); renderCatalog(); sync(); updateVisitCounter();
 function openPrava() {
     // Закрываем уведомление и открываем полноэкранное окно с правами
