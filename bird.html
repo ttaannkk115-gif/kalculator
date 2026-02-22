@@ -19,7 +19,6 @@
             -webkit-user-select: none;
         }
 
-        /* Кнопка выхода */
         .exit-button {
             position: absolute;
             top: 15px;
@@ -40,13 +39,6 @@
             transition: all 0.2s;
             box-shadow: 0 0 10px rgba(255, 0, 85, 0.3);
         }
-        
-        .exit-button:hover {
-            background: #ff0055;
-            color: white;
-            box-shadow: 0 0 20px #ff0055;
-            transform: scale(1.1);
-        }
 
         #gameCanvas {
             border: 2px solid #00f2ff;
@@ -61,52 +53,73 @@
             text-shadow: 0 0 15px #00f2ff; pointer-events: none; z-index: 5;
         }
 
-        /* Экран завершения игры */
+        /* Окно Game Over */
         #game-over-screen {
             position: absolute;
             display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             border: 3px solid #ff0055;
             border-radius: 20px;
             padding: 30px;
             text-align: center;
             z-index: 100;
-            box-shadow: 0 0 30px rgba(255, 0, 85, 0.5);
+            box-shadow: 0 0 40px rgba(255, 0, 85, 0.6);
         }
         
         #game-over-screen h2 { color: #ff0055; margin: 0 0 10px 0; font-size: 2rem; }
         .score-info { font-size: 1.5rem; margin: 10px 0; }
-        .high-score { color: #ffcc00; font-size: 1.2rem; }
-        .restart-hint { margin-top: 20px; color: #00f2ff; animation: blink 1s infinite; }
+        .high-score { color: #ffcc00; font-size: 1.2rem; margin-bottom: 20px; }
 
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        /* Стилизованная кнопка рестарта */
+        #restart-btn {
+            background: transparent;
+            border: 2px solid #00f2ff;
+            color: #00f2ff;
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+            animation: pulse-btn 1.5s infinite;
+        }
+
+        #restart-btn:active {
+            transform: scale(0.9);
+            background: #00f2ff;
+            color: #000;
+        }
+
+        @keyframes pulse-btn {
+            0% { box-shadow: 0 0 5px rgba(0, 242, 255, 0.4); }
+            50% { box-shadow: 0 0 20px rgba(0, 242, 255, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(0, 242, 255, 0.4); }
+        }
     </style>
 </head>
 <body>
 
     <div class="exit-button" onclick="exitGame()">×</div>
-
     <h1 id="score-display">0</h1>
 
     <div id="game-over-screen">
         <h2>ИГРА ОКОНЧЕНА</h2>
         <div class="score-info">СЧЕТ: <span id="final-score">0</span></div>
         <div class="high-score">РЕКОРД: <span id="best-score">0</span></div>
-        <div class="restart-hint">НАЖМИ, ЧТОБЫ ПЕРЕИГРАТЬ</div>
+        <button id="restart-btn" onclick="startNewGame()">НАЖМИ, ЧТОБЫ ПЕРЕИГРАТЬ</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
     <script>
         function exitGame() {
-            if (window.parent && window.parent.closeGame) {
-                window.parent.closeGame();
-            } else {
-                window.history.back();
-            }
+            if (window.parent && window.parent.closeGame) window.parent.closeGame();
+            else window.history.back();
         }
 
         const canvas = document.getElementById("gameCanvas");
@@ -129,39 +142,49 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // Игровые объекты
-        let bird = { x: 60, y: h/2, r: 13, v: 0, g: 0.45, j: -7.5 };
+        let bird = { x: 60, y: h/2, r: 11, hitR: 8, v: 0, g: 0.4, j: -6.5 };
         let pipes = [];
         let score = 0;
         let highScore = localStorage.getItem("neonBirdBest") || 0;
         let gameActive = false;
-        let isGameOver = false;
+        let isGameOver = false; // Флаг состояния смерти
         let frame = 0;
         
-        const config = { speed: 4.3, gap: 175 };
+        const config = { 
+            baseSpeed: 3.1, 
+            baseGap: 165, 
+            speed: 3.1, 
+            gap: 165,
+            minGap: 130 
+        };
+
+        function updateDifficulty() {
+            if (score > 5) {
+                let diffScore = score - 5;
+                config.speed = Math.min(5.5, config.baseSpeed + (diffScore * 0.1));
+                config.gap = Math.max(config.minGap, config.baseGap - (diffScore * 1.5));
+            }
+        }
 
         function startNewGame() {
-            bird.y = h/2;
-            bird.v = 0;
-            pipes = [];
-            score = 0;
+            // Сбрасываем все параметры
+            bird.y = h/2; bird.v = 0;
+            pipes = []; score = 0;
+            config.speed = config.baseSpeed;
+            config.gap = config.baseGap;
             scoreEl.textContent = "0";
             gameOverEl.style.display = "none";
-            isGameOver = false;
+            isGameOver = false; // Важно: снимаем блокировку
             gameActive = true;
         }
 
         function endGame() {
             gameActive = false;
-            isGameOver = true;
-            
-            // Сохранение рекорда в память браузера
+            isGameOver = true; // Блокируем случайные клики по экрану
             if (score > highScore) {
                 highScore = score;
                 localStorage.setItem("neonBirdBest", highScore);
             }
-            
-            // Обновление UI
             finalScoreEl.textContent = score;
             bestScoreEl.textContent = highScore;
             gameOverEl.style.display = "flex";
@@ -179,7 +202,7 @@
             ctx.fillStyle = '#8c4b2d';
             let headW = width + 10;
             let headX = x - 5;
-            let headH = 20;
+            let headH = 18;
             let headY = isTop ? height - headH : y;
             ctx.fillRect(headX, headY, headW, headH);
             ctx.restore();
@@ -188,15 +211,13 @@
         function drawBird() {
             ctx.save();
             ctx.translate(bird.x, bird.y);
-            let rotation = Math.min(Math.PI/4, Math.max(-Math.PI/4, bird.v * 0.05));
-            ctx.rotate(rotation);
-            
+            ctx.rotate(Math.min(Math.PI/4, Math.max(-Math.PI/4, bird.v * 0.06)));
             ctx.fillStyle = "#00f2ff";
             ctx.beginPath(); ctx.arc(0, 0, bird.r, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle = "#fff";
-            ctx.beginPath(); ctx.arc(6, -4, 4, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(5, -4, 3.5, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle = "#ff0055";
-            ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(22, 3); ctx.lineTo(10, 6); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(19, 3); ctx.lineTo(9, 5); ctx.fill();
             ctx.restore();
         }
 
@@ -204,20 +225,23 @@
             ctx.clearRect(0, 0, w, h);
             frame++;
 
-            // Фон (сетка)
             ctx.strokeStyle = "#151515";
+            let gridOffset = (frame * (gameActive ? config.speed : 1) * 0.5) % 40;
             for(let i=0; i<w+40; i+=40) {
-                ctx.beginPath(); ctx.moveTo(i - (frame % 40), 0); ctx.lineTo(i - (frame % 40), h); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(i - gridOffset, 0); ctx.lineTo(i - gridOffset, h); ctx.stroke();
             }
 
             if (gameActive) {
                 bird.v += bird.g;
                 bird.y += bird.v;
 
-                if (pipes.length === 0 || pipes[pipes.length-1].x < w - 220) {
-                    const minH = 80;
-                    const pipeH = Math.random() * (h - config.gap - minH * 2) + minH;
-                    pipes.push({ x: w, top: pipeH, passed: false });
+                let spawnDist = 220 * (3.0 / config.speed);
+                if (pipes.length === 0 || pipes[pipes.length-1].x < w - Math.max(160, spawnDist)) {
+                    const margin = 100;
+                    let lastTop = pipes.length > 0 ? pipes[pipes.length-1].top : h/2;
+                    let nextTop = lastTop + (Math.random() * 240 - 120);
+                    nextTop = Math.max(margin, Math.min(h - config.gap - margin, nextTop));
+                    pipes.push({ x: w, top: nextTop, passed: false });
                 }
 
                 pipes.forEach(p => {
@@ -225,15 +249,11 @@
                     drawPipe(p.x, 0, 50, p.top, true);
                     drawPipe(p.x, p.top + config.gap, 50, h - (p.top + config.gap), false);
 
-                    // Коллизии
-                    if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + 50) {
-                        if (bird.y - bird.r < p.top || bird.y + bird.r > p.top + config.gap) {
-                            endGame();
-                        }
+                    if (bird.x + bird.hitR > p.x && bird.x - bird.hitR < p.x + 50) {
+                        if (bird.y - bird.hitR < p.top || bird.y + bird.hitR > p.top + config.gap) endGame();
                     }
-                    // Счет
                     if (!p.passed && p.x + 50 < bird.x) {
-                        score++; 
+                        score++; updateDifficulty();
                         scoreEl.textContent = score; 
                         p.passed = true;
                     }
@@ -247,16 +267,23 @@
             
             if (!gameActive && !isGameOver) {
                 ctx.fillStyle = "rgba(0, 242, 255, 0.8)";
-                ctx.font = "bold 20px Arial";
+                ctx.font = "bold 18px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText("КЛИКНИ ДЛЯ СТАРТА", w / 2, h / 2 + 60);
+                ctx.fillText("НАЖМИ НА ЭКРАН, ЧТОБЫ ВЗЛЕТЕТЬ", w / 2, h / 2 + 60);
             }
 
             requestAnimationFrame(loop);
         }
 
         const handleAction = (e) => {
+            // 1. Игнорируем нажатия на кнопку выхода
             if (e.target.closest('.exit-button')) return;
+            // 2. Игнорируем нажатия на кнопку рестарта (она сама вызовет startNewGame)
+            if (e.target.closest('#restart-btn')) return;
+            
+            // 3. Если игра окончена, клики по экрану НИЧЕГО не делают
+            if (isGameOver) return;
+
             if (e.type === 'touchstart') e.preventDefault();
             
             if (!gameActive) {
@@ -268,8 +295,10 @@
 
         window.addEventListener("mousedown", handleAction);
         window.addEventListener("touchstart", handleAction, {passive: false});
-        window.addEventListener("keydown", (e) => {
-            if (e.code === "Space") handleAction(e);
+        window.addEventListener("keydown", (e) => { 
+            if (e.code === "Space") {
+                if (!isGameOver) handleAction(e);
+            }
         });
 
         loop();
