@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Neon Bird: VoltMaster Edition</title>
+    <title>Neon Bird: Master Edition</title>
     <style>
         body {
             margin: 0;
@@ -19,24 +19,24 @@
             -webkit-user-select: none;
         }
 
-        /* Кнопка выхода справа */
+        /* Кнопка выхода */
         .exit-button {
             position: absolute;
             top: 15px;
-            right: 15px; /* Теперь справа */
+            right: 15px;
             width: 35px;
             height: 35px;
             background: rgba(255, 0, 85, 0.1);
             border: 2px solid #ff0055;
             color: #ff0055;
-            border-radius: 50%; /* Сделал круглой для эстетики */
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 22px;
             font-weight: bold;
             cursor: pointer;
-            z-index: 1000; /* Самый высокий приоритет */
+            z-index: 1000;
             transition: all 0.2s;
             box-shadow: 0 0 10px rgba(255, 0, 85, 0.3);
         }
@@ -61,6 +61,7 @@
             text-shadow: 0 0 15px #00f2ff; pointer-events: none; z-index: 5;
         }
 
+        /* Экран завершения игры */
         #game-over-screen {
             position: absolute;
             display: none;
@@ -128,6 +129,7 @@
         window.addEventListener('resize', resize);
         resize();
 
+        // Игровые объекты
         let bird = { x: 60, y: h/2, r: 13, v: 0, g: 0.45, j: -7.5 };
         let pipes = [];
         let score = 0;
@@ -147,10 +149,26 @@
             gameOverEl.style.display = "none";
             isGameOver = false;
             gameActive = true;
-            window.focus();
+        }
+
+        function endGame() {
+            gameActive = false;
+            isGameOver = true;
+            
+            // Сохранение рекорда в память браузера
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem("neonBirdBest", highScore);
+            }
+            
+            // Обновление UI
+            finalScoreEl.textContent = score;
+            bestScoreEl.textContent = highScore;
+            gameOverEl.style.display = "flex";
         }
 
         function drawPipe(x, y, width, height, isTop) {
+            ctx.save();
             let grad = ctx.createLinearGradient(x, 0, x + width, 0);
             grad.addColorStop(0, '#733214'); 
             grad.addColorStop(0.3, '#d47d4a'); 
@@ -164,15 +182,15 @@
             let headH = 20;
             let headY = isTop ? height - headH : y;
             ctx.fillRect(headX, headY, headW, headH);
+            ctx.restore();
         }
 
         function drawBird() {
             ctx.save();
             ctx.translate(bird.x, bird.y);
-            if (gameActive || isGameOver) {
-                let rotation = Math.min(Math.PI/4, Math.max(-Math.PI/4, bird.v * 0.05));
-                ctx.rotate(rotation);
-            }
+            let rotation = Math.min(Math.PI/4, Math.max(-Math.PI/4, bird.v * 0.05));
+            ctx.rotate(rotation);
+            
             ctx.fillStyle = "#00f2ff";
             ctx.beginPath(); ctx.arc(0, 0, bird.r, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle = "#fff";
@@ -182,19 +200,11 @@
             ctx.restore();
         }
 
-        function drawStartHint() {
-            if (!gameActive && !isGameOver) {
-                ctx.fillStyle = "rgba(0, 242, 255, 0.8)";
-                ctx.font = "bold 20px Arial";
-                ctx.textAlign = "center";
-                ctx.fillText("КЛИКНИ ДЛЯ СТАРТА", w / 2, h / 2 + 60);
-            }
-        }
-
         function loop() {
             ctx.clearRect(0, 0, w, h);
             frame++;
 
+            // Фон (сетка)
             ctx.strokeStyle = "#151515";
             for(let i=0; i<w+40; i+=40) {
                 ctx.beginPath(); ctx.moveTo(i - (frame % 40), 0); ctx.lineTo(i - (frame % 40), h); ctx.stroke();
@@ -215,13 +225,17 @@
                     drawPipe(p.x, 0, 50, p.top, true);
                     drawPipe(p.x, p.top + config.gap, 50, h - (p.top + config.gap), false);
 
+                    // Коллизии
                     if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + 50) {
                         if (bird.y - bird.r < p.top || bird.y + bird.r > p.top + config.gap) {
                             endGame();
                         }
                     }
+                    // Счет
                     if (!p.passed && p.x + 50 < bird.x) {
-                        score++; scoreEl.textContent = score; p.passed = true;
+                        score++; 
+                        scoreEl.textContent = score; 
+                        p.passed = true;
                     }
                 });
 
@@ -230,20 +244,22 @@
             }
 
             drawBird();
-            drawStartHint();
+            
+            if (!gameActive && !isGameOver) {
+                ctx.fillStyle = "rgba(0, 242, 255, 0.8)";
+                ctx.font = "bold 20px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText("КЛИКНИ ДЛЯ СТАРТА", w / 2, h / 2 + 60);
+            }
+
             requestAnimationFrame(loop);
         }
 
         const handleAction = (e) => {
-            // Если нажали на кнопку выхода, не прыгаем
             if (e.target.closest('.exit-button')) return;
-
-            window.focus();
             if (e.type === 'touchstart') e.preventDefault();
             
-            if (!gameActive && !isGameOver) {
-                startNewGame();
-            } else if (isGameOver) {
+            if (!gameActive) {
                 startNewGame();
             } else {
                 bird.v = bird.j;
