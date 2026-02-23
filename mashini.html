@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Эвакуатор: УЛЬТРА КОМБО</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #111; font-family: 'Arial Black', sans-serif; touch-action: none; }
+        canvas { display: block; }
+        #ui {
+            position: absolute; top: 15px; left: 15px; color: white; pointer-events: none;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8); z-index: 5;
+        }
+        #combo-container {
+            position: absolute; top: 75px; left: 15px; width: 140px; display: none;
+        }
+        #combo-text { color: #ffeb3b; font-size: 26px; font-style: italic; margin-bottom: 5px; }
+        #combo-bar-bg { width: 100%; height: 10px; background: rgba(255,255,255,0.2); border-radius: 5px; overflow: hidden; border: 1px solid rgba(0,0,0,0.5); }
+        #combo-bar-fill { width: 100%; height: 100%; background: #ffeb3b; }
+        
+        #restart-menu {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95); color: white; padding: 30px; border-radius: 20px;
+            text-align: center; display: none; z-index: 10; border: 3px solid #ff4444; width: 85%;
+        }
+        button {
+            background: #ff4444; color: white; border: none; padding: 18px 35px; font-size: 20px;
+            font-weight: bold; border-radius: 12px; cursor: pointer; margin-top: 15px; box-shadow: 0 5px 0 #990000;
+        }
+        button:active { transform: translateY(3px); box-shadow: 0 2px 0 #990000; }
+        .bonus-anim {
+            position: absolute; font-weight: bold; pointer-events: none; 
+            animation: flyUp 0.6s ease-out forwards; text-shadow: 2px 2px 0px black; text-align: center;
+        }
+        @keyframes flyUp { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: translateY(-130px) scale(1.4); } }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div style="font-size: 30px; color: #fff;">СЧЕТ: <span id="score">0</span></div>
+    <div style="font-size: 14px; color: #888;">РЕКОРД МАСТЕРА: <span id="high-score">0</span></div>
+</div>
+
+<div id="combo-container">
+    <div id="combo-text">X2 COMBO</div>
+    <div id="combo-bar-bg"><div id="combo-bar-fill"></div></div>
+</div>
+
+<div id="restart-menu">
+    <h2 style="margin: 0; color: #ff4444;">💥 КРАШ!</h2>
+    <p id="final-score" style="font-size: 24px; margin: 15px 0;"></p>
+    <button onclick="resetGame()">ВЕРНУТЬСЯ НА ТРАССУ</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const highEl = document.getElementById('high-score');
+    const menu = document.getElementById('restart-menu');
+    const comboContainer = document.getElementById('combo-container');
+    const comboText = document.getElementById('combo-text');
+    const comboFill = document.getElementById('combo-bar-fill');
+
+    let score = 0;
+    let highScore = localStorage.getItem('towTruckFastCombo') || 0;
+    highEl.innerText = highScore;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let gameActive = true;
+    let isCrashed = false;
+    const Y_OFFSET = 85;
+
+    // Настройки комбо (Время уходит ОЧЕНЬ быстро)
+    let comboMultiplier = 1;
+    let comboTimer = 0;
+    const BASE_COMBO_TIME = 80; // Было 150, стало 80 (около 1.3 секунды)
+
+    const player = {
+        x: canvas.width / 2 - 25,
+        y: canvas.height - 200,
+        w: 52, h: 105,
+        targetX: canvas.width / 2 - 25,
+        targetY: canvas.height - 200,
+        hazard: false
+    };
+
+    let obstacles = [];
+    let roadY = 0;
+
+    setInterval(() => { if(isCrashed) player.hazard = !player.hazard; }, 200);
+
+    function drawCar(x, y, w, h, color, isPlayer) {
+        ctx.save();
+        if (isPlayer && comboMultiplier > 1) {
+            ctx.shadowBlur = 10 + (comboMultiplier * 4);
+            ctx.shadowColor = comboMultiplier > 5 ? "#ff4444" : "#ffeb3b";
+        }
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 12);
+        ctx.fill();
+        ctx.fillStyle = '#111';
+        ctx.fillRect(x + 10, y + 15, w - 20, 25); 
+        ctx.fillRect(x + 10, y + 70, w - 20, 15);
+        ctx.fillStyle = (isPlayer && isCrashed && player.hazard) ? '#ff9800' : (isPlayer ? '#fff' : '#ffee58');
+        ctx.fillRect(x + 6, y + 2, 12, 6);
+        ctx.fillRect(x + w - 18, y + 2, 12, 6);
+        ctx.restore();
+    }
+
+    function spawn() {
+        if (!gameActive || isCrashed) return;
+        const w = 48;
+        obstacles.push({
+            x: Math.random() * (canvas.width - w),
+            y: -120,
+            w: w, h: 95,
+            color: ['#2980b9', '#27ae60', '#8e44ad', '#f39c12', '#1abc9c'][Math.floor(Math.random()*5)],
+            speed: 7 + Math.random() * 6, // Трафик стал быстрее
+            bonus: false
+        });
+        setTimeout(spawn, Math.max(250, 750 - score/25));
+    }
+
+    function update() {
+        ctx.fillStyle = '#222';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Дорога
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        roadY += (isCrashed ? 0 : 18);
+        if (roadY > 100) roadY = 0;
+        for (let i = -100; i < canvas.height; i += 100) {
+            ctx.fillRect(canvas.width/2 - 4, i + roadY, 8, 55);
+        }
+
+        // Логика быстрого Комбо
+        if (comboTimer > 0 && !isCrashed) {
+            // Чем выше комбо, тем быстрее падает таймер
+            comboTimer -= (1 + comboMultiplier * 0.1); 
+            
+            comboContainer.style.display = 'block';
+            let percent = (comboTimer / BASE_COMBO_TIME * 100);
+            comboFill.style.width = Math.max(0, percent) + '%';
+            comboFill.style.background = percent < 30 ? '#ff4444' : '#ffeb3b';
+            comboText.innerText = `X${comboMultiplier} COMBO`;
+        } else {
+            comboMultiplier = 1;
+            comboContainer.style.display = 'none';
+        }
+
+        if (!isCrashed) {
+            player.x += (player.targetX - player.x) * 0.22;
+            player.y += (player.targetY - player.y) * 0.22;
+        }
+
+        drawCar(player.x, player.y, player.w, player.h, '#e74c3c', true);
+
+        obstacles.forEach((obs, i) => {
+            if (!isCrashed) obs.y += obs.speed;
+            drawCar(obs.x, obs.y, obs.w, obs.h, obs.color, false);
+
+            let dx = Math.abs((player.x + player.w/2) - (obs.x + obs.w/2));
+            let dy = Math.abs((player.y + player.h/2) - (obs.y + obs.h/2));
+
+            if (!obs.bonus && dx < 68 && dx > 44 && dy < 50) {
+                comboMultiplier++;
+                comboTimer = BASE_COMBO_TIME;
+                let points = 50 * comboMultiplier;
+                score += points;
+                obs.bonus = true;
+                showBonusText(player.x, player.y, points, comboMultiplier);
+                scoreEl.innerText = score;
+            }
+
+            if (player.x < obs.x + obs.w - 6 && player.x + player.w > obs.x + 6 &&
+                player.y < obs.y + obs.h - 6 && player.y + player.h > obs.y + 6) {
+                triggerCrash();
+            }
+
+            if (obs.y > canvas.height) obstacles.splice(i, 1);
+        });
+
+        requestAnimationFrame(update);
+    }
+
+    function showBonusText(x, y, pts, multi) {
+        const b = document.createElement('div');
+        b.className = 'bonus-anim';
+        b.style.left = x + 'px';
+        b.style.top = y + 'px';
+        b.style.color = multi > 5 ? '#ff4444' : '#00ff00';
+        b.style.fontSize = (20 + multi * 2) + 'px';
+        b.innerHTML = `+${pts}<br>X${multi}`;
+        document.body.appendChild(b);
+        setTimeout(() => b.remove(), 600);
+    }
+
+    function triggerCrash() {
+        if (isCrashed) return;
+        isCrashed = true; gameActive = false;
+        if (score > highScore) {
+            localStorage.setItem('towTruckFastCombo', score);
+            highEl.innerText = score;
+        }
+        setTimeout(() => {
+            document.getElementById('final-score').innerText = `ТВОЙ РЕЗУЛЬТАТ: ${score}`;
+            menu.style.display = 'block';
+        }, 600);
+    }
+
+    function resetGame() {
+        score = 0; scoreEl.innerText = 0;
+        obstacles = []; isCrashed = false; gameActive = true;
+        comboMultiplier = 1; comboTimer = 0;
+        menu.style.display = 'none';
+        player.x = canvas.width / 2 - 25;
+        player.y = canvas.height - 200;
+        spawn();
+    }
+
+    const move = (ex, ey) => {
+        if (isCrashed) return;
+        player.targetX = ex - player.w/2;
+        player.targetY = ey - player.h - Y_OFFSET;
+    };
+
+    window.addEventListener('touchstart', (e) => move(e.touches[0].clientX, e.touches[0].clientY));
+    window.addEventListener('touchmove', (e) => { e.preventDefault(); move(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+    window.addEventListener('mousemove', (e) => move(e.clientX, e.clientY));
+
+    spawn();
+    update();
+</script>
+</body>
+</html>
