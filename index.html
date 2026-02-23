@@ -50,11 +50,7 @@
             font-family: monospace;
         }
 
-        .status-dot { 
-            width: 7px; height: 7px; border-radius: 50%; 
-            transition: 0.3s; flex-shrink: 0;
-            box-shadow: 0 0 5px rgba(0,0,0,0.5);
-        }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
 
         .menu-grid { display: grid; gap: 12px; }
         .menu-item {
@@ -71,6 +67,7 @@
         .icon-chat { background: rgba(33, 150, 243, 0.15); color: var(--chat-blue); }
         .icon-break { background: rgba(76, 175, 80, 0.15); color: var(--break-green); }
 
+        /* ИСПРАВЛЕННЫЙ OVERLAY ДЛЯ ПОЛНОГО ЭКРАНА */
         .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--dark-bg); z-index: 2000; display: none;
@@ -78,21 +75,25 @@
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
-        .overlay-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: #161616; border-bottom: 1px solid #333; }
-        .close-btn { background: none; border: none; color: #ff4444; font-size: 30px; cursor: pointer; }
-        iframe { width: 100%; height: 100%; border: none; }
+        .overlay-header { 
+            padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; 
+            background: #161616; border-bottom: 1px solid #333; flex-shrink: 0;
+        }
+        
+        /* Это решит проблему "половины экрана" */
+        .overlay-body { flex-grow: 1; position: relative; overflow: hidden; }
+        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
 
-        /* Styles for Admin Panel from Image */
+        .close-btn { background: none; border: none; color: #ff4444; font-size: 30px; cursor: pointer; }
+
+        /* Admin Panel Styles */
         .admin-controls { background: #1a1a1a; padding: 18px; border-radius: 16px; margin-bottom: 15px; border: 1px solid #333; }
         .admin-input-group { display: flex; gap: 8px; margin: 10px 0; }
         .admin-input { flex: 1; background: #000; border: 1px solid #333; border-radius: 8px; color: #fff; padding: 10px; font-size: 14px; }
         .admin-add-btn { background: var(--main-gold); border: none; width: 45px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        
         .btn-danger { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 8px; width: 100%; font-size: 14px; text-transform: uppercase; }
         .btn-orange { background: #f57c00; }
-        
         .tag { background: rgba(255,255,255,0.05); border: 1px solid #444; color: #ff4444; padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-        
         .date-divider { background: #111; color: var(--main-gold); padding: 10px; font-size: 12px; font-weight: bold; margin-top: 20px; text-align: center; border-radius: 8px; border: 1px solid #222; }
         .log-item { padding: 15px 5px; border-bottom: 1px solid #1a1a1a; }
         .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #444; letter-spacing: 2px; }
@@ -148,22 +149,17 @@
         <button class="close-btn" onclick="closeAdmin()">&times;</button>
     </div>
     <div class="overlay-body" style="padding: 15px; overflow-y: auto; background: #0a0a0a;">
-        
         <div class="admin-controls">
             <div id="admin-summary" style="font-size:16px; color:var(--main-gold); margin-bottom:15px; font-weight:bold;">СЕГОДНЯ ЗАШЛИ: <span id="today-count">0</span></div>
-            
             <label style="color: var(--main-gold); font-size: 11px; display: block;">ИСКЛЮЧИТЬ ID:</label>
             <div class="admin-input-group">
                 <input type="text" id="exclude-input" class="admin-input" placeholder="ID">
                 <button class="admin-add-btn" onclick="addExclusion()">+</button>
             </div>
-            
             <div id="excluded-tags" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;"></div>
-
             <button class="btn-danger btn-orange" onclick="clearOnlyLogs()">ОЧИСТИТЬ ЛОГИ</button>
             <button class="btn-danger" onclick="fullReset()">ПОЛНЫЙ СБРОС БАЗЫ</button>
         </div>
-
         <div id="log-container"></div>
     </div>
 </div>
@@ -186,12 +182,10 @@
         const dateKey = now.toISOString().split('T')[0];
         const timeString = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
-        // Загрузка исключений ПЕРЕД регистрацией визита
         database.ref('excluded_list').on('value', snap => {
             excludedIds = Object.values(snap.val() || {});
             renderExclusionTags();
             
-            // Если мы не в бане, записываем визит
             if (!excludedIds.includes(myId)) {
                 database.ref(`registered_users/${myId}`).set({ last_seen: firebase.database.ServerValue.TIMESTAMP });
                 const visitRef = database.ref(`visits/${dateKey}/${myId}`);
@@ -217,8 +211,6 @@
             dot.style.boxShadow = online ? "0 0 10px var(--main-gold)" : "0 0 10px #ff4444";
         });
     }
-
-    // --- Функции Админки ---
 
     function renderExclusionTags() {
         const container = document.getElementById('excluded-tags');
@@ -251,27 +243,18 @@
 
     function loadLogs() {
         const dateKey = new Date().toISOString().split('T')[0];
-        
-        // Счетчик "Сегодня зашли" с фильтром
         database.ref(`visits/${dateKey}`).on('value', snap => {
             let count = 0;
-            snap.forEach(child => {
-                if (!excludedIds.includes(child.key)) count++;
-            });
+            snap.forEach(child => { if (!excludedIds.includes(child.key)) count++; });
             document.getElementById('today-count').innerText = count;
         });
 
-        // Список логов с фильтром
         database.ref('visits').on('value', snap => {
             const container = document.getElementById('log-container');
             container.innerHTML = '';
             const all = snap.val() || {};
-            
             Object.keys(all).sort().reverse().forEach(date => {
-                const dayVisits = Object.values(all[date])
-                    .filter(v => !excludedIds.includes(v.userId))
-                    .sort((a,b) => b.timestamp - a.timestamp);
-
+                const dayVisits = Object.values(all[date]).filter(v => !excludedIds.includes(v.userId)).sort((a,b) => b.timestamp - a.timestamp);
                 if(dayVisits.length > 0) {
                     container.innerHTML += `<div class="date-divider">--- ${date} ---</div>`;
                     dayVisits.forEach(v => {
@@ -290,23 +273,9 @@
     }
 
     function clearOnlyLogs() { if(confirm("Удалить историю заходов?")) database.ref('visits').remove(); }
-    
-    function fullReset() {
-        if(confirm("ВНИМАНИЕ! Это удалит ВСЕ данные (пользователей, логи, исключения). Продолжить?")) {
-            database.ref().remove();
-            location.reload();
-        }
-    }
-
-    function openAdmin() { 
-        document.getElementById('admin-overlay').style.display = 'flex'; 
-        loadLogs(); 
-    }
-    
-    function closeAdmin() { 
-        document.getElementById('admin-overlay').style.display = 'none'; 
-        database.ref('visits').off(); 
-    }
+    function fullReset() { if(confirm("Удалить ВСЕ данные?")) { database.ref().remove(); location.reload(); } }
+    function openAdmin() { document.getElementById('admin-overlay').style.display = 'flex'; loadLogs(); }
+    function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; database.ref('visits').off(); }
 
     function openApp(name, url) { 
         document.getElementById('overlay-title').innerText = name; 
@@ -319,7 +288,6 @@
         document.getElementById('app-frame').src = 'about:blank'; 
     }
 
-    // Секретный вход
     let clicks = 0;
     document.getElementById('main-logo').onclick = () => {
         clicks++;
