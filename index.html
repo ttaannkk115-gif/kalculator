@@ -47,7 +47,7 @@
             font-size: 11px; margin-top: 8px;
             border: 1px solid rgba(255, 193, 7, 0.2);
             font-family: 'Courier New', monospace;
-            min-width: 200px; justify-content: center; gap: 10px;
+            min-width: 220px; justify-content: center; gap: 10px;
         }
 
         .status-dot { width: 6px; height: 6px; background: var(--main-gold); border-radius: 50%; box-shadow: 0 0 8px var(--main-gold); animation: pulse 2s infinite; }
@@ -155,7 +155,7 @@
             <div id="excluded-list-display" style="margin-top: 10px;"></div>
         </div>
         <div class="admin-controls">
-            <div id="admin-today-visits" style="font-size: 14px; color: var(--main-gold); margin-bottom: 10px;">ЗАХОДОВ СЕГОДНЯ: --</div>
+            <div id="admin-today-visits" style="font-size: 14px; color: var(--main-gold); margin-bottom: 10px;">УНИКАЛЬНЫХ СЕГОДНЯ: --</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <button class="btn-clear-logs" onclick="clearOnlyLogs()">ОЧИСТИТЬ ЛОГИ</button>
                 <button class="btn-danger" onclick="fullReset()">СБРОСИТЬ ВСЁ</button>
@@ -170,7 +170,7 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Логика ID с автоматической миграцией и сохранением
+    // Логика ID пользователя
     let myId = localStorage.getItem('user_id_2026');
     if (!myId) {
         myId = "ID-" + Math.floor(Math.random() * 1000);
@@ -180,11 +180,12 @@
         localStorage.setItem('user_id_2026', myId);
     }
 
+    // Трекер активности
     async function initTracker() {
         const statsEl = document.getElementById('stats-display');
         const now = new Date();
         const dateKey = now.toISOString().split('T')[0];
-        const timeString = now.toLocaleTimeString('ru-RU');
+        const timeString = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
         const exclSnapshot = await database.ref('excluded_list').once('value');
         const excludedArray = Object.values(exclSnapshot.val() || {});
@@ -192,70 +193,141 @@
 
         if (!isExcluded) {
             database.ref(`registered_users/${myId}`).set({ last_seen: firebase.database.ServerValue.TIMESTAMP });
-            database.ref(`visits/${dateKey}`).push().set({ userId: myId, time: timeString, timestamp: firebase.database.ServerValue.TIMESTAMP });
+
+            const todayVisitsRef = database.ref(`visits/${dateKey}`);
+            const existingVisitQuery = await todayVisitsRef.orderByChild('userId').equalTo(myId).once('value');
+
+            if (existingVisitQuery.exists()) {
+                const visitKey = Object.keys(existingVisitQuery.val())[0];
+                const currentData = existingVisitQuery.val()[visitKey];
+                
+                // Исправление undefined для истории времени
+                let history = currentData.allTimes || currentData.time || timeString;
+                if (!history.includes(timeString)) { history += `, ${timeString}`; }
+
+                todayVisitsRef.child(visitKey).update({
+                    time: timeString,
+                    allTimes: history,
+                    count: (currentData.count || 1) + 1,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+            } else {
+                todayVisitsRef.push({
+                    userId: myId,
+                    time: timeString,
+                    allTimes: timeString,
+                    count: 1,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+            }
         }
 
         database.ref('registered_users').on('value', snap => {
             const count = snap.numChildren();
-            // Обновленный формат отображения ID
             statsEl.innerHTML = `<span style="color: var(--main-gold)">${myId}</span> <span style="opacity: 0.3;">|</span> <span style="color: #fff">ВСЕГО: ${count}</span>`;
             if(isExcluded) {
-                document.querySelector('.status-dot').style.background = '#2196f3';
-                document.querySelector('.status-dot').style.boxShadow = '0 0 8px #2196f3';
+                const dot = document.querySelector('.status-dot');
+                if(dot) {
+                    dot.style.background = '#2196f3';
+                    dot.style.boxShadow = '0 0 8px #2196f3';
+                }
             }
         });
     }
 
-    // Функции управления админкой и приложениями (сохранение всего старого функционала)
+    // Админ-панель
     function openAdmin() {
         document.getElementById('admin-overlay').style.display = 'flex';
         const dateKey = new Date().toISOString().split('T')[0];
+        
         database.ref(`visits/${dateKey}`).on('value', snap => {
-            document.getElementById('admin-today-visits').innerText = `ЗАХОДОВ СЕГОДНЯ: ${snap.numChildren()}`;
+            const el = document.getElementById('admin-today-visits');
+            if(el) el.innerText = `УНИКАЛЬНЫХ СЕГОДНЯ: ${snap.numChildren()}`;
         });
+
         database.ref('visits').on('value', snap => {
             const logContainer = document.getElementById('log-container');
+            if(!logContainer) return;
             logContainer.innerHTML = '';
+            
             const days = [];
             snap.forEach(daySnap => { days.push({ key: daySnap.key, data: daySnap.val() }); });
+            
             days.reverse().forEach(day => {
-                logContainer.innerHTML += `<div class="date-divider">--- ${day.key} ---</div><table id="table-${day.key}" style="width:100%"></table>`;
-                const table = document.getElementById(`table-${day.key}`);
-                Object.values(day.data).reverse().forEach(v => {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'date-divider';
+                dayHeader.innerText = `--- ${day.key} ---`;
+                logContainer.appendChild(dayHeader);
+
+                const table = document.createElement('table');
+                table.style.width = "100%";
+                table.style.borderCollapse = "collapse";
+                
+                const sortedVisits = Object.values(day.data).sort((a, b) => b.timestamp - a.timestamp);
+
+                sortedVisits.forEach(v => {
                     const row = table.insertRow();
-                    row.innerHTML = `<td style="color:#eee">${v.userId}</td><td style="text-align:right; color:var(--text-dim)">${v.time}</td>`;
+                    // Исправление отображения undefined
+                    const displayCount = v.count || 1;
+                    const displayHistory = v.allTimes || v.time || "--:--";
+
+                    row.innerHTML = `
+                        <td style="padding: 12px 8px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="color:#fff; font-weight: 600; font-size: 14px;">${v.userId || 'ID-?'}</span>
+                                <span style="color:var(--main-gold); font-size: 10px; background: rgba(255,193,7,0.1); padding: 1px 6px; border-radius: 4px;">x${displayCount}</span>
+                            </div>
+                            <div style="color:var(--text-dim); font-size: 10px; margin-top: 5px; font-family: monospace;">
+                                <span style="color: #4caf50;">●</span> ${displayHistory}
+                            </div>
+                        </td>
+                        <td style="text-align:right; vertical-align: top; padding-top: 14px; color:var(--main-gold); font-size: 11px; font-weight: bold; opacity: 0.8;">
+                            ${v.time || '--:--'}
+                        </td>`;
                 });
+                logContainer.appendChild(table);
             });
         });
+
         database.ref('excluded_list').on('value', snap => {
             const display = document.getElementById('excluded-list-display');
-            display.innerHTML = '';
-            snap.forEach(child => {
-                display.innerHTML += `<span class="excluded-tag" onclick="removeExcluded('${child.key}')">${child.val()} ×</span>`;
-            });
+            if(display) {
+                display.innerHTML = '';
+                snap.forEach(child => {
+                    const tag = document.createElement('span');
+                    tag.className = 'excluded-tag';
+                    tag.innerHTML = `${child.val()} ×`;
+                    tag.onclick = () => removeExcluded(child.key);
+                    display.appendChild(tag);
+                });
+            }
         });
     }
 
-    function clearOnlyLogs() { if(confirm("Очистить только историю заходов?")) database.ref('visits').remove(); }
-    function fullReset() { if(confirm("ВНИМАНИЕ: Это удалит всё! Уверены?")) database.ref().remove(); }
+    // Управление логами и исключениями
+    function removeExcluded(key) { if(confirm("Удалить из списка исключений?")) database.ref(`excluded_list/${key}`).remove(); }
     function addToExcluded() {
-        const val = document.getElementById('exclude-input').value.trim();
+        const input = document.getElementById('exclude-input');
+        const val = input.value.trim();
         if(val) database.ref('excluded_list').push(val);
-        document.getElementById('exclude-input').value = '';
+        input.value = '';
     }
-    function removeExcluded(key) { if(confirm("Удалить?")) database.ref(`excluded_list/${key}`).remove(); }
+    function clearOnlyLogs() { if(confirm("Очистить историю всех заходов?")) database.ref('visits').remove(); }
+    function fullReset() { if(confirm("ВНИМАНИЕ: Это удалит АБСОЛЮТНО ВСЕ данные из базы. Уверены?")) database.ref().remove(); }
     function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; database.ref('visits').off(); }
 
+    // Секретный вход в админку
     let clicks = 0, timer;
     document.getElementById('main-logo').addEventListener('click', () => {
         clicks++; clearTimeout(timer);
         timer = setTimeout(() => clicks = 0, 1000);
         if(clicks === 3) {
-            const p = prompt("Пароль:");
+            const p = prompt("Введите пароль доступа:");
             if(p === "Gazik0303") openAdmin();
         }
     });
 
+    // Управление окнами приложений
     function openApp(name, url) { 
         document.getElementById('overlay-title').innerText = name;
         document.getElementById('app-frame').src = url;
@@ -263,6 +335,7 @@
     }
     function closeApp() { document.getElementById('app-overlay').style.display = 'none'; document.getElementById('app-frame').src = 'about:blank'; }
 
+    // Инициализация при загрузке
     document.addEventListener('DOMContentLoaded', initTracker);
 </script>
 </body>
