@@ -50,7 +50,11 @@
             font-family: monospace;
         }
 
-        .status-dot { width: 7px; height: 7px; border-radius: 50%; transition: 0.3s; flex-shrink: 0; }
+        .status-dot { 
+            width: 7px; height: 7px; border-radius: 50%; 
+            transition: 0.3s; flex-shrink: 0;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
 
         .menu-grid { display: grid; gap: 12px; }
         .menu-item {
@@ -70,22 +74,27 @@
         .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--dark-bg); z-index: 2000; display: none;
-            flex-direction: column; animation: slideUp 0.35s ease;
+            flex-direction: column; animation: slideUp 0.3s ease;
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
+        
         .overlay-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: #161616; border-bottom: 1px solid #333; }
         .close-btn { background: none; border: none; color: #ff4444; font-size: 30px; cursor: pointer; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* Админка */
-        .admin-controls { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; }
-        .admin-input { background: #000; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 6px; width: 60%; font-size: 12px; }
-        .btn-action { background: var(--main-gold); color: #000; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-danger { background: #ff4444; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
+        /* Styles for Admin Panel from Image */
+        .admin-controls { background: #1a1a1a; padding: 18px; border-radius: 16px; margin-bottom: 15px; border: 1px solid #333; }
+        .admin-input-group { display: flex; gap: 8px; margin: 10px 0; }
+        .admin-input { flex: 1; background: #000; border: 1px solid #333; border-radius: 8px; color: #fff; padding: 10px; font-size: 14px; }
+        .admin-add-btn { background: var(--main-gold); border: none; width: 45px; border-radius: 8px; font-weight: bold; cursor: pointer; }
         
-        .date-divider { background: #1a1a1a; color: var(--main-gold); padding: 8px; font-size: 11px; font-weight: bold; margin-top: 15px; text-align: center; border-radius: 5px; }
-        .excluded-tag { display: inline-block; background: #333; color: #ff4444; padding: 2px 8px; border-radius: 4px; margin: 2px; font-size: 10px; cursor: pointer; border: 1px solid #444; }
+        .btn-danger { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 8px; width: 100%; font-size: 14px; text-transform: uppercase; }
+        .btn-orange { background: #f57c00; }
+        
+        .tag { background: rgba(255,255,255,0.05); border: 1px solid #444; color: #ff4444; padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        
+        .date-divider { background: #111; color: var(--main-gold); padding: 10px; font-size: 12px; font-weight: bold; margin-top: 20px; text-align: center; border-radius: 8px; border: 1px solid #222; }
+        .log-item { padding: 15px 5px; border-bottom: 1px solid #1a1a1a; }
         .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #444; letter-spacing: 2px; }
     </style>
 </head>
@@ -126,26 +135,35 @@
 </div>
 
 <div id="app-overlay" class="overlay">
-    <div class="overlay-header"><span id="overlay-title" style="color:var(--main-gold); font-weight:bold;">App</span><button class="close-btn" onclick="closeApp()">&times;</button></div>
+    <div class="overlay-header">
+        <span id="overlay-title" style="color:var(--main-gold); font-weight:bold;">App</span>
+        <button class="close-btn" onclick="closeApp()">&times;</button>
+    </div>
     <div class="overlay-body"><iframe id="app-frame"></iframe></div>
 </div>
 
 <div id="admin-overlay" class="overlay">
-    <div class="overlay-header"><span style="color:var(--main-gold); font-weight:bold;">ADMIN PANEL</span><button class="close-btn" onclick="closeAdmin()">&times;</button></div>
+    <div class="overlay-header">
+        <span style="color:var(--main-gold); font-weight:bold;">ADMIN PANEL</span>
+        <button class="close-btn" onclick="closeAdmin()">&times;</button>
+    </div>
     <div class="overlay-body" style="padding: 15px; overflow-y: auto; background: #0a0a0a;">
+        
         <div class="admin-controls">
-            <div id="admin-summary" style="font-size:14px; color:var(--main-gold); margin-bottom:10px; font-weight:bold;">СЕГОДНЯ ЗАШЛИ: --</div>
-            <div style="font-size:11px; color:var(--main-gold); margin-bottom:8px;">ИСКЛЮЧИТЬ ID:</div>
-            <div style="display:flex; gap:5px;">
+            <div id="admin-summary" style="font-size:16px; color:var(--main-gold); margin-bottom:15px; font-weight:bold;">СЕГОДНЯ ЗАШЛИ: <span id="today-count">0</span></div>
+            
+            <label style="color: var(--main-gold); font-size: 11px; display: block;">ИСКЛЮЧИТЬ ID:</label>
+            <div class="admin-input-group">
                 <input type="text" id="exclude-input" class="admin-input" placeholder="ID">
-                <button class="btn-action" onclick="addToExcluded()">+</button>
+                <button class="admin-add-btn" onclick="addExclusion()">+</button>
             </div>
-            <div id="excluded-list-display" style="margin-top:10px;"></div>
-        </div>
-        <div class="admin-controls">
-            <button class="btn-danger" style="background:#ff9800;" onclick="clearOnlyLogs()">ОЧИСТИТЬ ЛОГИ</button>
+            
+            <div id="excluded-tags" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;"></div>
+
+            <button class="btn-danger btn-orange" onclick="clearOnlyLogs()">ОЧИСТИТЬ ЛОГИ</button>
             <button class="btn-danger" onclick="fullReset()">ПОЛНЫЙ СБРОС БАЗЫ</button>
         </div>
+
         <div id="log-container"></div>
     </div>
 </div>
@@ -158,7 +176,8 @@
     let myId = localStorage.getItem('user_id_2026') || "ID-" + Math.floor(Math.random() * 1000);
     localStorage.setItem('user_id_2026', myId);
 
-    let totalRegistered = 0;
+    let totalReg = 0;
+    let excludedIds = [];
 
     async function initTracker() {
         const statsEl = document.getElementById('stats-display');
@@ -167,109 +186,134 @@
         const dateKey = now.toISOString().split('T')[0];
         const timeString = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
-        // 1. Слушаем общее кол-во
-        database.ref('registered_users').on('value', snap => {
-            totalRegistered = snap.numChildren();
-            renderStatusBar();
+        // Загрузка исключений ПЕРЕД регистрацией визита
+        database.ref('excluded_list').on('value', snap => {
+            excludedIds = Object.values(snap.val() || {});
+            renderExclusionTags();
+            
+            // Если мы не в бане, записываем визит
+            if (!excludedIds.includes(myId)) {
+                database.ref(`registered_users/${myId}`).set({ last_seen: firebase.database.ServerValue.TIMESTAMP });
+                const visitRef = database.ref(`visits/${dateKey}/${myId}`);
+                visitRef.transaction((curr) => {
+                    if (curr) {
+                        let h = curr.allTimes || curr.time || "";
+                        if (!h.includes(timeString)) h += `, ${timeString}`;
+                        return { ...curr, time: timeString, allTimes: h, count: (curr.count || 1) + 1, timestamp: firebase.database.ServerValue.TIMESTAMP };
+                    }
+                    return { userId: myId, time: timeString, allTimes: timeString, count: 1, timestamp: firebase.database.ServerValue.TIMESTAMP };
+                });
+            }
         });
 
-        // 2. Статус сети (точка)
+        database.ref('registered_users').on('value', snap => {
+            totalReg = snap.numChildren();
+            statsEl.innerHTML = `<span style="color:var(--main-gold)">${myId}</span> <span style="opacity:0.2; margin:0 5px;">|</span> ВСЕГО: ${totalReg}`;
+        });
+
         database.ref(".info/connected").on("value", (snap) => {
             const online = snap.val() === true;
             dot.style.background = online ? "var(--main-gold)" : "#ff4444";
             dot.style.boxShadow = online ? "0 0 10px var(--main-gold)" : "0 0 10px #ff4444";
         });
+    }
 
-        function renderStatusBar() {
-            statsEl.innerHTML = `<span style="color:var(--main-gold)">${myId}</span> <span style="opacity:0.2; margin:0 5px;">|</span> ВСЕГО: ${totalRegistered}`;
-        }
+    // --- Функции Админки ---
 
-        // 3. Запись посещения
-        const exclSnap = await database.ref('excluded_list').once('value');
-        const excluded = Object.values(exclSnap.val() || {});
-        
-        if (!excluded.includes(myId)) {
-            database.ref(`registered_users/${myId}`).set({ last_seen: firebase.database.ServerValue.TIMESTAMP });
-            
-            const visitRef = database.ref(`visits/${dateKey}/${myId}`);
-            visitRef.transaction((curr) => {
-                if (curr) {
-                    let h = curr.allTimes || curr.time || "";
-                    if (!h.includes(timeString)) h += `, ${timeString}`;
-                    return { ...curr, time: timeString, allTimes: h, count: (curr.count || 1) + 1, timestamp: firebase.database.ServerValue.TIMESTAMP };
-                }
-                return { userId: myId, time: timeString, allTimes: timeString, count: 1, timestamp: firebase.database.ServerValue.TIMESTAMP };
-            });
+    function renderExclusionTags() {
+        const container = document.getElementById('excluded-tags');
+        if(!container) return;
+        container.innerHTML = '';
+        excludedIds.forEach(id => {
+            const tag = document.createElement('div');
+            tag.className = 'tag';
+            tag.innerHTML = `${id} <span>&times;</span>`;
+            tag.onclick = () => removeExclusion(id);
+            container.appendChild(tag);
+        });
+    }
+
+    function addExclusion() {
+        const val = document.getElementById('exclude-input').value.trim();
+        if (val) {
+            database.ref('excluded_list').push(val);
+            document.getElementById('exclude-input').value = '';
         }
     }
 
-    // --- АДМИН ФУНКЦИИ (ВСЕ ВОССТАНОВЛЕНЫ) ---
-    function openAdmin() {
-        document.getElementById('admin-overlay').style.display = 'flex';
-        const dateKey = new Date().toISOString().split('T')[0];
+    function removeExclusion(id) {
+        database.ref('excluded_list').once('value', snap => {
+            snap.forEach(child => {
+                if (child.val() === id) child.ref.remove();
+            });
+        });
+    }
 
-        // Сегодняшние заходы
+    function loadLogs() {
+        const dateKey = new Date().toISOString().split('T')[0];
+        
+        // Счетчик "Сегодня зашли" с фильтром
         database.ref(`visits/${dateKey}`).on('value', snap => {
-            document.getElementById('admin-summary').innerText = `СЕГОДНЯ ЗАШЛИ: ${snap.numChildren()}`;
+            let count = 0;
+            snap.forEach(child => {
+                if (!excludedIds.includes(child.key)) count++;
+            });
+            document.getElementById('today-count').innerText = count;
         });
 
-        // Логи с группировкой
+        // Список логов с фильтром
         database.ref('visits').on('value', snap => {
             const container = document.getElementById('log-container');
             container.innerHTML = '';
             const all = snap.val() || {};
+            
             Object.keys(all).sort().reverse().forEach(date => {
-                container.innerHTML += `<div class="date-divider">--- ${date} ---</div>`;
-                Object.values(all[date]).sort((a,b) => b.timestamp - a.timestamp).forEach(v => {
-                    container.innerHTML += `
-                        <div style="padding:12px 8px; border-bottom:1px solid #222;">
-                            <div style="display:flex; justify-content:space-between; font-size:13px;">
-                                <b>${v.userId} <span style="color:var(--main-gold); font-size:10px;">x${v.count || 1}</span></b>
-                                <span style="color:var(--main-gold); font-size:11px;">${v.time}</span>
-                            </div>
-                            <div style="color:#666; font-size:10px; margin-top:4px;">● ${v.allTimes || v.time}</div>
-                        </div>`;
-                });
-            });
-        });
+                const dayVisits = Object.values(all[date])
+                    .filter(v => !excludedIds.includes(v.userId))
+                    .sort((a,b) => b.timestamp - a.timestamp);
 
-        // Список исключений
-        database.ref('excluded_list').on('value', snap => {
-            const display = document.getElementById('excluded-list-display');
-            display.innerHTML = '';
-            snap.forEach(child => {
-                const tag = document.createElement('span');
-                tag.className = 'excluded-tag';
-                tag.innerHTML = `${child.val()} ×`;
-                tag.onclick = () => removeExcluded(child.key);
-                display.appendChild(tag);
+                if(dayVisits.length > 0) {
+                    container.innerHTML += `<div class="date-divider">--- ${date} ---</div>`;
+                    dayVisits.forEach(v => {
+                        container.innerHTML += `
+                            <div class="log-item">
+                                <div style="display:flex; justify-content:space-between; font-size:14px;">
+                                    <b>${v.userId} <span style="color:var(--main-gold); font-size:11px;">x${v.count || 1}</span></b>
+                                    <span style="color:var(--main-gold); font-size:12px;">${v.time}</span>
+                                </div>
+                                <div style="color:#555; font-size:10px; margin-top:5px;">• ${v.allTimes}</div>
+                            </div>`;
+                    });
+                }
             });
         });
     }
 
-    function addToExcluded() {
-        const input = document.getElementById('exclude-input');
-        const val = input.value.trim();
-        if(val) database.ref('excluded_list').push(val);
-        input.value = '';
+    function clearOnlyLogs() { if(confirm("Удалить историю заходов?")) database.ref('visits').remove(); }
+    
+    function fullReset() {
+        if(confirm("ВНИМАНИЕ! Это удалит ВСЕ данные (пользователей, логи, исключения). Продолжить?")) {
+            database.ref().remove();
+            location.reload();
+        }
     }
 
-    function removeExcluded(key) { if(confirm("Удалить из исключений?")) database.ref(`excluded_list/${key}`).remove(); }
-    function clearOnlyLogs() { if(confirm("Удалить всю историю заходов?")) database.ref('visits').remove(); }
-    function fullReset() { if(confirm("ВНИМАНИЕ: Очистить всю базу (юзеров и логи)?")) database.ref().remove(); }
+    function openAdmin() { 
+        document.getElementById('admin-overlay').style.display = 'flex'; 
+        loadLogs(); 
+    }
     
     function closeAdmin() { 
         document.getElementById('admin-overlay').style.display = 'none'; 
         database.ref('visits').off(); 
-        database.ref('excluded_list').off();
     }
 
-    // --- УПРАВЛЕНИЕ ОКНАМИ ---
     function openApp(name, url) { 
         document.getElementById('overlay-title').innerText = name; 
         document.getElementById('app-frame').src = url; 
         document.getElementById('app-overlay').style.display = 'flex'; 
     }
+    
     function closeApp() { 
         document.getElementById('app-overlay').style.display = 'none'; 
         document.getElementById('app-frame').src = 'about:blank'; 
@@ -279,10 +323,7 @@
     let clicks = 0;
     document.getElementById('main-logo').onclick = () => {
         clicks++;
-        if(clicks === 3) {
-            if(prompt("Пароль:") === "Gazik0303") openAdmin();
-            clicks = 0;
-        }
+        if(clicks === 3) { if(prompt("Пароль:") === "Gazik0303") openAdmin(); clicks = 0; }
         setTimeout(() => clicks = 0, 1000);
     };
 
