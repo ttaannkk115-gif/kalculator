@@ -14,6 +14,7 @@
             --accent-blue: #007aff;
             --hover-bg: #252525;
             --flappy-green: #38c172;
+            --drive-red: #ff3232;
         }
 
         body {
@@ -102,6 +103,7 @@
         .icon-2 { background: rgba(255, 140, 0, 0.15); color: #ff8c00; }
         .icon-3 { background: rgba(0, 122, 255, 0.15); color: #007aff; }
         .icon-4 { background: rgba(56, 193, 114, 0.15); color: var(--flappy-green); }
+        .icon-drive { background: rgba(255, 50, 50, 0.15); color: var(--drive-red); }
 
         .item-text { font-size: 18px; font-weight: 600; }
 
@@ -185,6 +187,11 @@
             <div class="item-text">Тренировка памяти</div>
         </div>
 
+        <div class="menu-item" onclick="openGame('mashini.html')">
+            <div class="icon-box icon-drive">🏎️</div>
+            <div class="item-text">Комбо-Драйв</div>
+        </div>
+
         <div class="menu-item" onclick="openExternalGame('bird.html')">
             <div class="icon-box icon-4">🐦</div>
             <div class="item-text">Flappy Bird</div>
@@ -192,7 +199,7 @@
     </div>
 
     <div class="footer-info">
-        Memory auto-save active • VoltMaster OS v1.1
+        Memory auto-save active • VoltMaster OS v1.2
     </div>
 
     <div id="game-overlay">
@@ -211,7 +218,7 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Открытие игры в ОВЕРЛЕЕ (внутри текущей страницы)
+        // Открытие игры в ОВЕРЛЕЕ
         function openGame(url) {
             const overlay = document.getElementById('game-overlay');
             const frame = document.getElementById('game-frame');
@@ -229,13 +236,12 @@
             localStorage.setItem('voltMaster_lastSession', url);
         }
 
-        // НОВАЯ ФУНКЦИЯ: Открытие в новой вкладке
+        // Открытие во внешней вкладке (для Flappy Bird)
         function openExternalGame(url) {
             const newWindow = window.open(url, '_blank');
             if (newWindow) {
                 newWindow.focus();
             } else {
-                // Если браузер блокирует popup, открываем в текущей
                 window.location.href = url;
             }
             localStorage.setItem('voltMaster_lastSession', url);
@@ -262,7 +268,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             const lastGame = localStorage.getItem('voltMaster_lastSession');
             if (lastGame) {
-                console.log("Welcome back, Master. Last session:", lastGame);
+                console.log("Welcome back, Master. Last session saved.");
             }
         });
     </script>
