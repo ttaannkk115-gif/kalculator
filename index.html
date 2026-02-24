@@ -201,9 +201,10 @@
         });
 
         database.ref('registered_users').on('value', snap => {
-            totalReg = snap.numChildren();
-            statsEl.innerHTML = `<span style="color:var(--main-gold)">${myId}</span> <span style="opacity:0.2; margin:0 5px;">|</span> ВСЕГО: ${totalReg}`;
-        });
+    totalReg = snap.numChildren();
+    // Обновляем строку статуса: твой ID и общее число регистраций
+    statsEl.innerHTML = `<span style="color:var(--main-gold)">${myId}</span> <span style="opacity:0.2; margin:0 5px;">|</span> ВСЕГО: ${totalReg}`;
+});
 
         database.ref(".info/connected").on("value", (snap) => {
             const online = snap.val() === true;
