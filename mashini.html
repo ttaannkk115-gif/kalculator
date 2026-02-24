@@ -2,37 +2,55 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Эвакуатор: УЛЬТРА КОМБО</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #111; font-family: 'Arial Black', sans-serif; touch-action: none; }
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #111; 
+            font-family: 'Arial Black', sans-serif; 
+            touch-action: none; /* Отключает системный зум и скролл */
+            -webkit-user-select: none;
+            user-select: none;
+        }
         canvas { display: block; }
+        
         #ui {
             position: absolute; top: 15px; left: 15px; color: white; pointer-events: none;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8); z-index: 5;
         }
+        
         #combo-container {
-            position: absolute; top: 75px; left: 15px; width: 140px; display: none;
+            position: absolute; top: 85px; left: 15px; width: 140px; display: none;
         }
         #combo-text { color: #ffeb3b; font-size: 26px; font-style: italic; margin-bottom: 5px; }
         #combo-bar-bg { width: 100%; height: 10px; background: rgba(255,255,255,0.2); border-radius: 5px; overflow: hidden; border: 1px solid rgba(0,0,0,0.5); }
-        #combo-bar-fill { width: 100%; height: 100%; background: #ffeb3b; }
+        #combo-bar-fill { width: 100%; height: 100%; background: #ffeb3b; transition: width 0.1s linear; }
         
         #restart-menu {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: rgba(0,0,0,0.95); color: white; padding: 30px; border-radius: 20px;
-            text-align: center; display: none; z-index: 10; border: 3px solid #ff4444; width: 85%;
+            text-align: center; display: none; z-index: 10; border: 3px solid #ff4444; width: 80%;
+            pointer-events: auto;
         }
+        
         button {
             background: #ff4444; color: white; border: none; padding: 18px 35px; font-size: 20px;
             font-weight: bold; border-radius: 12px; cursor: pointer; margin-top: 15px; box-shadow: 0 5px 0 #990000;
+            -webkit-tap-highlight-color: transparent;
         }
         button:active { transform: translateY(3px); box-shadow: 0 2px 0 #990000; }
+
         .bonus-anim {
             position: absolute; font-weight: bold; pointer-events: none; 
             animation: flyUp 0.6s ease-out forwards; text-shadow: 2px 2px 0px black; text-align: center;
+            z-index: 6;
         }
-        @keyframes flyUp { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: translateY(-130px) scale(1.4); } }
+        @keyframes flyUp { 
+            0% { opacity: 1; transform: scale(1); } 
+            100% { opacity: 0; transform: translateY(-130px) scale(1.4); } 
+        }
     </style>
 </head>
 <body>
@@ -50,7 +68,7 @@
 <div id="restart-menu">
     <h2 style="margin: 0; color: #ff4444;">💥 КРАШ!</h2>
     <p id="final-score" style="font-size: 24px; margin: 15px 0;"></p>
-    <button onclick="resetGame()">ВЕРНУТЬСЯ НА ТРАССУ</button>
+    <button id="restart-btn">ВЕРНУТЬСЯ НА ТРАССУ</button>
 </div>
 
 <canvas id="gameCanvas"></canvas>
@@ -61,6 +79,7 @@
     const scoreEl = document.getElementById('score');
     const highEl = document.getElementById('high-score');
     const menu = document.getElementById('restart-menu');
+    const restartBtn = document.getElementById('restart-btn');
     const comboContainer = document.getElementById('combo-container');
     const comboText = document.getElementById('combo-text');
     const comboFill = document.getElementById('combo-bar-fill');
@@ -69,17 +88,20 @@
     let highScore = localStorage.getItem('towTruckFastCombo') || 0;
     highEl.innerText = highScore;
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
 
     let gameActive = true;
     let isCrashed = false;
-    const Y_OFFSET = 85;
+    const Y_OFFSET = 100; // Смещение вверх, чтобы машина была видна над пальцем
 
-    // Настройки комбо (Время уходит ОЧЕНЬ быстро)
     let comboMultiplier = 1;
     let comboTimer = 0;
-    const BASE_COMBO_TIME = 80; // Было 150, стало 80 (около 1.3 секунды)
+    const BASE_COMBO_TIME = 80;
 
     const player = {
         x: canvas.width / 2 - 25,
@@ -103,11 +125,15 @@
         }
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.roundRect(x, y, w, h, 12);
+        if (ctx.roundRect) ctx.roundRect(x, y, w, h, 12); else ctx.rect(x, y, w, h);
         ctx.fill();
+        
+        // Окна
         ctx.fillStyle = '#111';
         ctx.fillRect(x + 10, y + 15, w - 20, 25); 
         ctx.fillRect(x + 10, y + 70, w - 20, 15);
+        
+        // Фары
         ctx.fillStyle = (isPlayer && isCrashed && player.hazard) ? '#ff9800' : (isPlayer ? '#fff' : '#ffee58');
         ctx.fillRect(x + 6, y + 2, 12, 6);
         ctx.fillRect(x + w - 18, y + 2, 12, 6);
@@ -122,29 +148,28 @@
             y: -120,
             w: w, h: 95,
             color: ['#2980b9', '#27ae60', '#8e44ad', '#f39c12', '#1abc9c'][Math.floor(Math.random()*5)],
-            speed: 7 + Math.random() * 6, // Трафик стал быстрее
+            speed: 7 + Math.random() * 6 + (score / 500), 
             bonus: false
         });
-        setTimeout(spawn, Math.max(250, 750 - score/25));
+        let nextSpawn = Math.max(200, 700 - score/30);
+        setTimeout(spawn, nextSpawn);
     }
 
     function update() {
         ctx.fillStyle = '#222';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Дорога
+        // Разметка дороги
         ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        roadY += (isCrashed ? 0 : 18);
+        roadY += (isCrashed ? 0 : 20);
         if (roadY > 100) roadY = 0;
         for (let i = -100; i < canvas.height; i += 100) {
             ctx.fillRect(canvas.width/2 - 4, i + roadY, 8, 55);
         }
 
-        // Логика быстрого Комбо
+        // Логика комбо
         if (comboTimer > 0 && !isCrashed) {
-            // Чем выше комбо, тем быстрее падает таймер
-            comboTimer -= (1 + comboMultiplier * 0.1); 
-            
+            comboTimer -= (1 + comboMultiplier * 0.05); 
             comboContainer.style.display = 'block';
             let percent = (comboTimer / BASE_COMBO_TIME * 100);
             comboFill.style.width = Math.max(0, percent) + '%';
@@ -155,9 +180,14 @@
             comboContainer.style.display = 'none';
         }
 
+        // Плавное движение игрока
         if (!isCrashed) {
-            player.x += (player.targetX - player.x) * 0.22;
-            player.y += (player.targetY - player.y) * 0.22;
+            player.x += (player.targetX - player.x) * 0.25;
+            player.y += (player.targetY - player.y) * 0.25;
+            
+            // Ограничение по границам экрана
+            if (player.x < 0) player.x = 0;
+            if (player.x > canvas.width - player.w) player.x = canvas.width - player.w;
         }
 
         drawCar(player.x, player.y, player.w, player.h, '#e74c3c', true);
@@ -166,10 +196,11 @@
             if (!isCrashed) obs.y += obs.speed;
             drawCar(obs.x, obs.y, obs.w, obs.h, obs.color, false);
 
+            // Детекция "близкого проезда" для комбо (проезд боком)
             let dx = Math.abs((player.x + player.w/2) - (obs.x + obs.w/2));
             let dy = Math.abs((player.y + player.h/2) - (obs.y + obs.h/2));
 
-            if (!obs.bonus && dx < 68 && dx > 44 && dy < 50) {
+            if (!obs.bonus && dx < 70 && dx > 40 && dy < 50) {
                 comboMultiplier++;
                 comboTimer = BASE_COMBO_TIME;
                 let points = 50 * comboMultiplier;
@@ -179,8 +210,9 @@
                 scoreEl.innerText = score;
             }
 
-            if (player.x < obs.x + obs.w - 6 && player.x + player.w > obs.x + 6 &&
-                player.y < obs.y + obs.h - 6 && player.y + player.h > obs.y + 6) {
+            // Столкновение
+            if (player.x < obs.x + obs.w - 8 && player.x + player.w > obs.x + 8 &&
+                player.y < obs.y + obs.h - 8 && player.y + player.h > obs.y + 8) {
                 triggerCrash();
             }
 
@@ -196,7 +228,7 @@
         b.style.left = x + 'px';
         b.style.top = y + 'px';
         b.style.color = multi > 5 ? '#ff4444' : '#00ff00';
-        b.style.fontSize = (20 + multi * 2) + 'px';
+        b.style.fontSize = Math.min(40, (20 + multi * 2)) + 'px';
         b.innerHTML = `+${pts}<br>X${multi}`;
         document.body.appendChild(b);
         setTimeout(() => b.remove(), 600);
@@ -206,13 +238,14 @@
         if (isCrashed) return;
         isCrashed = true; gameActive = false;
         if (score > highScore) {
+            highScore = score;
             localStorage.setItem('towTruckFastCombo', score);
             highEl.innerText = score;
         }
         setTimeout(() => {
             document.getElementById('final-score').innerText = `ТВОЙ РЕЗУЛЬТАТ: ${score}`;
             menu.style.display = 'block';
-        }, 600);
+        }, 500);
     }
 
     function resetGame() {
@@ -222,19 +255,42 @@
         menu.style.display = 'none';
         player.x = canvas.width / 2 - 25;
         player.y = canvas.height - 200;
+        player.targetX = player.x;
+        player.targetY = player.y;
         spawn();
     }
 
-    const move = (ex, ey) => {
-        if (isCrashed) return;
-        player.targetX = ex - player.w/2;
-        player.targetY = ey - player.h - Y_OFFSET;
+    // УПРАВЛЕНИЕ: МЫШЬ И СЕНСОР
+    const handleMove = (clientX, clientY) => {
+        if (isCrashed || !gameActive) return;
+        player.targetX = clientX - player.w / 2;
+        // Держим машину чуть выше точки касания, чтобы палец её не закрывал
+        player.targetY = clientY - player.h / 2 - Y_OFFSET;
     };
 
-    window.addEventListener('touchstart', (e) => move(e.touches[0].clientX, e.touches[0].clientY));
-    window.addEventListener('touchmove', (e) => { e.preventDefault(); move(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-    window.addEventListener('mousemove', (e) => move(e.clientX, e.clientY));
+    // Слушатели для Touch (мобильные)
+    window.addEventListener('touchstart', (e) => {
+        if (e.target.tagName === 'BUTTON') return;
+        e.preventDefault();
+        handleMove(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: false });
 
+    window.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        handleMove(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: false });
+
+    // Слушатели для Мыши (ПК)
+    window.addEventListener('mousemove', (e) => {
+        handleMove(e.clientX, e.clientY);
+    });
+
+    restartBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        resetGame();
+    });
+
+    // Запуск
     spawn();
     update();
 </script>
