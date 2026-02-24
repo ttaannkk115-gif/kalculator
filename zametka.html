@@ -12,6 +12,7 @@
             --accent: #0a84ff;
             --danger: #ff453a;
             --secondary: #3a3a3c;
+            --success: #32d74b;
         }
 
         body {
@@ -23,7 +24,7 @@
             overflow-x: hidden;
         }
 
-        h2 { font-weight: 300; margin-bottom: 20px; }
+        h2 { font-weight: 300; margin-bottom: 20px; letter-spacing: 1px; }
 
         #notes-list { list-style: none; padding: 0; }
 
@@ -37,7 +38,6 @@
             animation: fadeIn 0.3s ease;
         }
 
-        /* Кнопка удаления заметки */
         .del-x {
             position: absolute;
             top: 5px;
@@ -55,13 +55,13 @@
             white-space: pre-wrap;
             word-break: break-word;
             display: block;
-            font-size: 17px;
-            line-height: 1.4;
+            font-size: 16px;
+            line-height: 1.5;
             margin: 5px 30px 10px 0;
             cursor: pointer;
+            font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
         }
 
-        /* Галерея в списке */
         .note-images {
             display: flex;
             gap: 8px;
@@ -89,16 +89,26 @@
 
         .note-date { font-size: 11px; color: #8e8e93; }
 
-        .send-btn {
+        .btn-group { display: flex; gap: 10px; }
+
+        .send-btn, .copy-btn {
             background: none;
             border: none;
             color: var(--accent);
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
+            padding: 5px;
         }
 
-        /* Панель управления (снизу) */
+        .copy-btn {
+            background: var(--secondary);
+            padding: 5px 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        /* Панель управления */
         .bottom-bar {
             position: fixed;
             bottom: 0; left: 0; right: 0;
@@ -144,7 +154,7 @@
             box-shadow: 0 4px 10px rgba(10, 132, 255, 0.3);
         }
 
-        /* Модалка редактирования */
+        /* Модалка */
         .modal {
             display: none;
             position: fixed;
@@ -156,8 +166,8 @@
         }
 
         .modal-content {
-            width: 90%;
-            max-height: 85vh;
+            width: 95%;
+            max-height: 90vh;
             background: #1c1c1e;
             border-radius: 20px;
             padding: 20px;
@@ -167,16 +177,16 @@
 
         #note-textarea {
             width: 100%;
-            height: 150px;
+            height: 250px;
             background: #2c2c2e;
             border: none;
             border-radius: 12px;
             color: white;
             padding: 15px;
-            font-size: 17px;
+            font-size: 16px;
             box-sizing: border-box;
             outline: none;
-            font-family: inherit;
+            font-family: 'SF Mono', monospace;
             resize: none;
         }
 
@@ -214,17 +224,13 @@
 
         .remove-img {
             position: absolute;
-            top: -5px;
-            right: -5px;
+            top: -5px; right: -5px;
             background: var(--danger);
             color: white;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
+            width: 20px; height: 20px;
             font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             border: 2px solid #1c1c1e;
             cursor: pointer;
         }
@@ -239,7 +245,7 @@
         .save-m { background: var(--accent); color: white; }
         .cancel-m { background: var(--secondary); color: white; }
 
-        /* ПРОСМОТРЩИК ФОТО */
+        /* Просмотрщик */
         #viewer {
             display: none;
             position: fixed;
@@ -251,60 +257,28 @@
             align-items: center;
         }
 
-        #viewer img {
-            max-width: 95%;
-            max-height: 75%;
-            object-fit: contain;
-            border-radius: 4px;
-        }
-
-        .viewer-close {
-            position: absolute;
-            top: 40px;
-            right: 25px;
-            width: 44px;
-            height: 44px;
-            background: rgba(255, 69, 58, 0.2);
-            color: #ff453a;
-            border: 2px solid #ff453a;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 1001;
-        }
-
-        .viewer-download {
-            margin-top: 30px;
-            color: white;
-            text-decoration: none;
-            font-weight: 600;
-            padding: 12px 25px;
-            background: var(--accent);
-            border-radius: 12px;
-        }
+        #viewer img { max-width: 95%; max-height: 75%; object-fit: contain; }
+        .viewer-close { position: absolute; top: 40px; right: 25px; font-size: 40px; color: var(--danger); cursor: pointer; }
+        .viewer-download { margin-top: 20px; color: white; text-decoration: none; background: var(--accent); padding: 10px 20px; border-radius: 10px; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-    <h2>Заметки</h2>
+    <h2>Master Elite Notes</h2>
     <div id="notes-list"></div>
 
     <div class="bottom-bar">
         <div class="search-box">
-            <input type="text" id="search-input" placeholder="Поиск по тексту...">
+            <input type="text" id="search-input" placeholder="Поиск кода или текста...">
         </div>
         <button class="fab" id="open-modal">+</button>
     </div>
 
     <div class="modal" id="modal">
         <div class="modal-content">
-            <textarea id="note-textarea" placeholder="Напишите что-нибудь..."></textarea>
+            <textarea id="note-textarea" placeholder="Вставьте код или текст здесь..."></textarea>
             
             <div class="photo-upload-area" id="photo-area">
                 <label class="add-photo-btn">
@@ -315,7 +289,7 @@
 
             <div class="modal-actions">
                 <button class="btn-m cancel-m" onclick="closeModal()">Отмена</button>
-                <button class="btn-m save-m" onclick="handleSave()">Готово</button>
+                <button class="btn-m save-m" onclick="handleSave()">Сохранить</button>
             </div>
         </div>
     </div>
@@ -323,11 +297,10 @@
     <div id="viewer">
         <div class="viewer-close" onclick="closeViewer()">×</div>
         <img id="viewer-img" src="">
-        <a id="download-link" class="viewer-download" download="image_master.png">Сохранить в галерею</a>
+        <a id="download-link" class="viewer-download" download="master_image.png">Скачать фото</a>
     </div>
 
 <script>
-    // Загрузка данных
     let notes = JSON.parse(localStorage.getItem('master_data_v7') || '[]');
     let currentEditId = null;
     let tempPhotos = [];
@@ -340,9 +313,24 @@
     const photoArea = document.getElementById('photo-area');
     const viewer = document.getElementById('viewer');
 
+    // Автосохранение черновика при вводе
+    textarea.addEventListener('input', () => {
+        if (!currentEditId) {
+            localStorage.setItem('master_draft', textarea.value);
+        }
+    });
+
+    // Экранирование HTML для безопасного отображения кода
+    function escapeHTML(str) {
+        if (!str) return '';
+        return str.replace(/[&<>"']/g, m => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[m]);
+    }
+
     function render(data = notes) {
         list.innerHTML = '';
-        [...data].reverse().forEach(n => {
+        [...data].sort((a,b) => b.id - a.id).forEach(n => {
             const div = document.createElement('div');
             div.className = 'note-item';
             
@@ -355,23 +343,26 @@
 
             div.innerHTML = `
                 <button class="del-x" onclick="deleteNote(${n.id})">×</button>
-                <span class="note-text" onclick="openEdit(${n.id})">${n.text || '(Без текста)'}</span>
+                <span class="note-text" onclick="openEdit(${n.id})">${escapeHTML(n.text) || '(Пусто)'}</span>
                 ${imagesHtml}
                 <div class="note-footer">
                     <span class="note-date">${n.date}</span>
-                    <button class="send-btn" onclick="shareNote(${n.id})">Поделиться</button>
+                    <div class="btn-group">
+                        <button class="copy-btn" onclick="copyToClipboard(${n.id}, this)">Копировать</button>
+                        <button class="send-btn" onclick="shareNote(${n.id})">Поделиться</button>
+                    </div>
                 </div>
             `;
             list.appendChild(div);
         });
     }
 
-    // Работа с изображениями
+    // Фото
     fileInput.onchange = (e) => {
         const files = Array.from(e.target.files);
         files.forEach(file => {
-            if (file.size > 2 * 1024 * 1024) {
-                alert('Файл слишком большой! Попробуйте фото поменьше.');
+            if (file.size > 1.5 * 1024 * 1024) {
+                alert('Файл слишком большой для памяти браузера!');
                 return;
             }
             const reader = new FileReader();
@@ -395,26 +386,30 @@
         });
     }
 
-    function removeTempPhoto(index) {
-        tempPhotos.splice(index, 1);
-        renderTempPhotos();
-    }
+    function removeTempPhoto(idx) { tempPhotos.splice(idx, 1); renderTempPhotos(); }
 
     // Сохранение
     function handleSave() {
         const text = textarea.value.trim();
         if(!text && tempPhotos.length === 0) return;
-
         const dateStr = new Date().toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
 
         if (currentEditId) {
             notes = notes.map(n => n.id === currentEditId ? {...n, text, photos: [...tempPhotos]} : n);
         } else {
             notes.push({ id: Date.now(), text, photos: [...tempPhotos], date: dateStr });
+            localStorage.removeItem('master_draft');
         }
         
         saveAndRender();
         closeModal();
+    }
+
+    function saveAndRender() {
+        try {
+            localStorage.setItem('master_data_v7', JSON.stringify(notes));
+            render();
+        } catch (e) { alert('Память переполнена! Удалите старые фото.'); }
     }
 
     function openEdit(id) {
@@ -428,52 +423,41 @@
     }
 
     function deleteNote(id) {
-        if (confirm('Удалить?')) {
+        if (confirm('Удалить эту запись?')) {
             notes = notes.filter(n => n.id !== id);
             saveAndRender();
         }
     }
 
-    function saveAndRender() {
-        try {
-            localStorage.setItem('master_data_v7', JSON.stringify(notes));
-            render();
-        } catch (e) {
-            alert('Память заполнена. Удалите заметки с крупными фото.');
-        }
+    function copyToClipboard(id, btn) {
+        const note = notes.find(n => n.id === id);
+        navigator.clipboard.writeText(note.text).then(() => {
+            const oldText = btn.innerText;
+            btn.innerText = 'Скопировано!';
+            btn.style.color = 'var(--success)';
+            setTimeout(() => {
+                btn.innerText = oldText;
+                btn.style.color = 'var(--accent)';
+            }, 1500);
+        });
     }
 
-    // Функции просмотрщика
+    async function shareNote(id) {
+        const note = notes.find(n => n.id === id);
+        if(navigator.share) await navigator.share({ text: note.text }).catch(()=>{});
+    }
+
     function openViewer(src) {
         document.getElementById('viewer-img').src = src;
         document.getElementById('download-link').href = src;
         viewer.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
     }
 
-    function closeViewer() {
-        viewer.style.display = 'none';
-        document.body.style.overflow = 'auto';
-    }
-
-    // Закрытие при клике на фон
-    viewer.onclick = (e) => { if(e.target === viewer) closeViewer(); };
-
-    async function shareNote(id) {
-        const note = notes.find(n => n.id === id);
-        if(navigator.share) {
-            try { await navigator.share({ text: note.text }); } catch(e) {}
-        }
-    }
-
-    search.oninput = () => {
-        const term = search.value.toLowerCase();
-        render(notes.filter(n => n.text.toLowerCase().includes(term)));
-    };
+    function closeViewer() { viewer.style.display = 'none'; }
 
     document.getElementById('open-modal').onclick = () => {
         currentEditId = null;
-        textarea.value = '';
+        textarea.value = localStorage.getItem('master_draft') || '';
         tempPhotos = [];
         renderTempPhotos();
         modal.style.display = 'flex';
@@ -481,6 +465,11 @@
     };
 
     function closeModal() { modal.style.display = 'none'; }
+
+    search.oninput = () => {
+        const term = search.value.toLowerCase();
+        render(notes.filter(n => n.text.toLowerCase().includes(term)));
+    };
 
     render();
 </script>
