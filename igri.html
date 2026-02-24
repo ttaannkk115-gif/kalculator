@@ -192,7 +192,7 @@
             <div class="item-text">Комбо-Драйв</div>
         </div>
 
-        <div class="menu-item" onclick="openExternalGame('bird.html')">
+        <div class="menu-item" onclick="openGame('bird.html')">
             <div class="icon-box icon-4">🐦</div>
             <div class="item-text">Flappy Bird</div>
         </div>
@@ -204,11 +204,11 @@
 
     <div id="game-overlay">
         <div class="close-btn" onclick="closeGame()">&times;</div>
-        <iframe id="game-frame" src="" allow="autoplay"></iframe>
+        <iframe id="game-frame" src="" allow="autoplay; fullscreen; keyboard"></iframe>
     </div>
 
     <script>
-        // Обновление часов
+        // Обновление часов в реальном времени
         function updateClock() {
             const now = new Date();
             const time = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -218,7 +218,7 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Открытие игры в ОВЕРЛЕЕ
+        // Универсальная функция открытия игры
         function openGame(url) {
             const overlay = document.getElementById('game-overlay');
             const frame = document.getElementById('game-frame');
@@ -226,25 +226,20 @@
             frame.src = url;
             overlay.style.display = 'block';
             
+            // Плавная анимация появления
             setTimeout(() => overlay.classList.add('active'), 10);
             document.body.style.overflow = 'hidden'; 
 
+            // Автоматический захват фокуса (важно для управления клавиатурой)
             frame.onload = function() {
                 frame.contentWindow.focus();
             };
 
+            // Сохранение в память браузера (как вы просили, Master)
             localStorage.setItem('voltMaster_lastSession', url);
-        }
-
-        // Открытие во внешней вкладке (для Flappy Bird)
-        function openExternalGame(url) {
-            const newWindow = window.open(url, '_blank');
-            if (newWindow) {
-                newWindow.focus();
-            } else {
-                window.location.href = url;
-            }
-            localStorage.setItem('voltMaster_lastSession', url);
+            
+            // Добавляем состояние в историю браузера, чтобы кнопка "Назад" не закрывала всё приложение
+            window.history.pushState({view: 'game'}, '');
         }
 
         // Закрытие оверлея
@@ -261,14 +256,22 @@
             }, 300);
         }
 
+        // Обработка клавиш (Esc для выхода)
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeGame();
         });
 
+        // Обработка кнопки "Назад" (для мобильных Master'ов)
+        window.onpopstate = function() {
+            if (document.getElementById('game-overlay').style.display === 'block') {
+                closeGame();
+            }
+        };
+
         window.addEventListener('DOMContentLoaded', () => {
             const lastGame = localStorage.getItem('voltMaster_lastSession');
             if (lastGame) {
-                console.log("Welcome back, Master. Last session saved.");
+                console.log("VoltMaster OS: Welcome back, Master. Browser memory linked.");
             }
         });
     </script>
