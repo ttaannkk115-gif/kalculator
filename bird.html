@@ -3,304 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Neon Bird: Master Edition</title>
+    <title>Neon Bird: Realistic Mountains Edition</title>
     <style>
-        body {
-            margin: 0;
-            background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            overflow: hidden;
-            color: white;
-            font-family: 'Arial', sans-serif;
-            touch-action: none;
-            -webkit-user-select: none;
-        }
-
-        .exit-button {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            width: 35px;
-            height: 35px;
-            background: rgba(255, 0, 85, 0.1);
-            border: 2px solid #ff0055;
-            color: #ff0055;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 1000;
-            transition: all 0.2s;
-            box-shadow: 0 0 10px rgba(255, 0, 85, 0.3);
-        }
-
-        #gameCanvas {
-            border: 2px solid #00f2ff;
-            background: #050505;
-            max-width: 100vw;
-            display: block;
-        }
-
-        #score-display { 
-            position: absolute; top: 20px; width: 100%;
-            text-align: center; font-size: 3.5rem; margin: 0; 
-            text-shadow: 0 0 15px #00f2ff; pointer-events: none; z-index: 5;
-        }
-
-        /* Окно Game Over */
-        #game-over-screen {
-            position: absolute;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.95);
-            border: 3px solid #ff0055;
-            border-radius: 20px;
-            padding: 30px;
-            text-align: center;
-            z-index: 100;
-            box-shadow: 0 0 40px rgba(255, 0, 85, 0.6);
-        }
-        
-        #game-over-screen h2 { color: #ff0055; margin: 0 0 10px 0; font-size: 2rem; }
-        .score-info { font-size: 1.5rem; margin: 10px 0; }
-        .high-score { color: #ffcc00; font-size: 1.2rem; margin-bottom: 20px; }
-
-        /* Стилизованная кнопка рестарта */
-        #restart-btn {
-            background: transparent;
-            border: 2px solid #00f2ff;
-            color: #00f2ff;
-            padding: 12px 25px;
-            font-size: 1rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
-            animation: pulse-btn 1.5s infinite;
-        }
-
-        #restart-btn:active {
-            transform: scale(0.9);
-            background: #00f2ff;
-            color: #000;
-        }
-
-        @keyframes pulse-btn {
-            0% { box-shadow: 0 0 5px rgba(0, 242, 255, 0.4); }
-            50% { box-shadow: 0 0 20px rgba(0, 242, 255, 0.8); }
-            100% { box-shadow: 0 0 5px rgba(0, 242, 255, 0.4); }
-        }
+        body { margin: 0; background: #4facfe; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; color: white; font-family: 'Arial', sans-serif; touch-action: none; -webkit-user-select: none; }
+        .exit-button { position: absolute; top: 15px; right: 15px; width: 35px; height: 35px; background: rgba(255, 0, 85, 0.2); border: 2px solid #ff0055; color: #ff0055; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; cursor: pointer; z-index: 1000; }
+        #gameCanvas { border: 2px solid #fff; background: #87CEEB; max-width: 100vw; display: block; }
+        #score-display { position: absolute; top: 20px; width: 100%; text-align: center; font-size: 3.5rem; margin: 0; text-shadow: 0 0 10px rgba(0,0,0,0.5); pointer-events: none; z-index: 5; color: #fff; }
+        #game-over-screen { position: absolute; display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.95); border: 3px solid #ff0055; border-radius: 20px; padding: 30px; text-align: center; z-index: 100; color: #333; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+        #restart-btn { background: #00f2ff; border: none; color: #000; padding: 12px 25px; font-size: 1rem; font-weight: bold; text-transform: uppercase; border-radius: 50px; cursor: pointer; }
     </style>
 </head>
 <body>
-
-    <div class="exit-button" onclick="exitGame()">×</div>
+    <div class="exit-button" onclick="window.history.back()">×</div>
     <h1 id="score-display">0</h1>
-
     <div id="game-over-screen">
-        <h2>ИГРА ОКОНЧЕНА</h2>
-        <div class="score-info">СЧЕТ: <span id="final-score">0</span></div>
-        <div class="high-score">РЕКОРД: <span id="best-score">0</span></div>
-        <button id="restart-btn" onclick="startNewGame()">НАЖМИ, ЧТОБЫ ПЕРЕИГРАТЬ</button>
+        <h2 style="color:#ff0055">ИГРА ОКОНЧЕНА</h2>
+        <div style="font-size:1.5rem">СЧЕТ: <span id="final-score">0</span></div>
+        <div style="color:#666; margin-bottom:20px">РЕКОРД: <span id="best-score">0</span></div>
+        <button id="restart-btn" onclick="startNewGame()">ИГРАТЬ СНОВА</button>
     </div>
-
     <canvas id="gameCanvas"></canvas>
 
     <script>
-        function exitGame() {
-            if (window.parent && window.parent.closeGame) window.parent.closeGame();
-            else window.history.back();
-        }
-
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const scoreEl = document.getElementById("score-display");
         const gameOverEl = document.getElementById("game-over-screen");
-        const finalScoreEl = document.getElementById("final-score");
-        const bestScoreEl = document.getElementById("best-score");
-
         const scale = window.devicePixelRatio || 1;
-        let w, h;
+        let w, h, frame = 0;
 
         function resize() {
             canvas.width = (window.innerWidth > 400 ? 400 : window.innerWidth) * scale;
             canvas.height = window.innerHeight * scale;
-            w = canvas.width / scale;
-            h = canvas.height / scale;
+            w = canvas.width / scale; h = canvas.height / scale;
             ctx.setTransform(scale, 0, 0, scale, 0, 0);
+            generateMountains();
         }
-        window.addEventListener('resize', resize);
-        resize();
 
-        let bird = { x: 60, y: h/2, r: 11, hitR: 8, v: 0, g: 0.4, j: -6.5 };
+        let bird = { x: 100, y: 0, r: 11, hitR: 7, v: 0, g: 0.4, j: -6.5 };
         let pipes = [];
+        let clouds = [];
+        let mountainLayers = [];
         let score = 0;
         let highScore = localStorage.getItem("neonBirdBest") || 0;
         let gameActive = false;
-        let isGameOver = false; // Флаг состояния смерти
-        let frame = 0;
-        
-        const config = { 
-            baseSpeed: 3.1, 
-            baseGap: 165, 
-            speed: 3.1, 
-            gap: 165,
-            minGap: 130 
-        };
+        let isGameOver = false;
+        const config = { speed: 3.1, gap: 165 };
 
-        function updateDifficulty() {
-            if (score > 5) {
-                let diffScore = score - 5;
-                config.speed = Math.min(5.5, config.baseSpeed + (diffScore * 0.1));
-                config.gap = Math.max(config.minGap, config.baseGap - (diffScore * 1.5));
+        function createMountainPoints(baseY, amplitude, detail) {
+            let pts = [{x: 0, y: baseY}];
+            let step = w / detail;
+            for (let i = 1; i <= detail; i++) {
+                pts.push({
+                    x: i * step,
+                    y: baseY + (Math.random() - 0.5) * amplitude + (Math.random() * 20 - 10)
+                });
             }
+            return pts;
         }
 
-        function startNewGame() {
-            // Сбрасываем все параметры
-            bird.y = h/2; bird.v = 0;
-            pipes = []; score = 0;
-            config.speed = config.baseSpeed;
-            config.gap = config.baseGap;
-            scoreEl.textContent = "0";
-            gameOverEl.style.display = "none";
-            isGameOver = false; // Важно: снимаем блокировку
-            gameActive = true;
+        function generateMountains() {
+            mountainLayers = [
+                { speed: 0.2, color: '#9bc4e2', points: createMountainPoints(h * 0.6, 120, 12), snow: true },
+                { speed: 0.5, color: '#5d86a6', points: createMountainPoints(h * 0.75, 100, 15), snow: false },
+                { speed: 0.9, color: '#34556e', points: createMountainPoints(h * 0.88, 60, 20), snow: false }
+            ];
         }
 
-        function endGame() {
-            gameActive = false;
-            isGameOver = true; // Блокируем случайные клики по экрану
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem("neonBirdBest", highScore);
-            }
-            finalScoreEl.textContent = score;
-            bestScoreEl.textContent = highScore;
-            gameOverEl.style.display = "flex";
+        for(let i=0; i<4; i++) {
+            clouds.push({ x: Math.random()*w, y: Math.random()*h*0.25, s: 0.05+Math.random()*0.15 });
+        }
+
+        function drawBackground() {
+            let skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+            skyGrad.addColorStop(0, '#4facfe'); skyGrad.addColorStop(1, '#a8e0ff');
+            ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+            clouds.forEach(c => {
+                c.x -= c.s; if(c.x < -120) c.x = w + 100;
+                ctx.beginPath(); ctx.arc(c.x, c.y, 25, 0, 7); ctx.arc(c.x+20, c.y-15, 30, 0, 7); ctx.arc(c.x+45, c.y, 25, 0, 7); ctx.fill();
+            });
+
+            mountainLayers.forEach((layer, layerIdx) => {
+                let offset = (frame * layer.speed) % w;
+                for (let i = -1; i <= 1; i++) {
+                    ctx.save();
+                    ctx.translate(i * w - offset, 0);
+                    
+                    // Рисуем тело горы
+                    let mGrad = ctx.createLinearGradient(0, h * 0.4, 0, h);
+                    mGrad.addColorStop(0, layer.color);
+                    mGrad.addColorStop(1, '#a8e0ff'); // Эффект тумана внизу
+                    ctx.fillStyle = mGrad;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(0, h);
+                    layer.points.forEach(p => ctx.lineTo(p.x, p.y));
+                    ctx.lineTo(w, h);
+                    ctx.fill();
+
+                    // Если слой дальний, рисуем снежные шапки
+                    if (layer.snow) {
+                        ctx.fillStyle = "white";
+                        ctx.globalAlpha = 0.6;
+                        layer.points.forEach((p, idx) => {
+                            if (p.y < h * 0.58) { // Только на самых высоких пиках
+                                ctx.beginPath();
+                                ctx.moveTo(p.x, p.y);
+                                ctx.lineTo(p.x - 15, p.y + 25);
+                                ctx.lineTo(p.x + 15, p.y + 25);
+                                ctx.fill();
+                            }
+                        });
+                        ctx.globalAlpha = 1.0;
+                    }
+                    ctx.restore();
+                }
+            });
         }
 
         function drawPipe(x, y, width, height, isTop) {
             ctx.save();
-            let grad = ctx.createLinearGradient(x, 0, x + width, 0);
-            grad.addColorStop(0, '#733214'); 
-            grad.addColorStop(0.3, '#d47d4a'); 
-            grad.addColorStop(1, '#59260f'); 
-            ctx.fillStyle = grad;
-            ctx.fillRect(x, y, width, height);
-            
-            ctx.fillStyle = '#8c4b2d';
-            let headW = width + 10;
-            let headX = x - 5;
-            let headH = 18;
-            let headY = isTop ? height - headH : y;
-            ctx.fillRect(headX, headY, headW, headH);
+            let g = ctx.createLinearGradient(x, 0, x+width, 0);
+            g.addColorStop(0, '#733214'); g.addColorStop(0.5, '#d47d4a'); g.addColorStop(1, '#59260f');
+            ctx.fillStyle = g; ctx.fillRect(x, y, width, height);
+            ctx.fillStyle = '#8c4b2d'; ctx.fillRect(x-5, isTop ? height-18 : y, width+10, 18);
             ctx.restore();
         }
 
         function drawBird() {
             ctx.save();
             ctx.translate(bird.x, bird.y);
-            ctx.rotate(Math.min(Math.PI/4, Math.max(-Math.PI/4, bird.v * 0.06)));
-            ctx.fillStyle = "#00f2ff";
-            ctx.beginPath(); ctx.arc(0, 0, bird.r, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = "#fff";
-            ctx.beginPath(); ctx.arc(5, -4, 3.5, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = "#ff0055";
-            ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(19, 3); ctx.lineTo(9, 5); ctx.fill();
+            ctx.rotate(Math.min(0.8, Math.max(-0.8, bird.v * 0.06)));
+            ctx.shadowBlur = 15; ctx.shadowColor = "#00f2ff";
+            ctx.fillStyle = "#00f2ff"; ctx.beginPath(); ctx.arc(0, 0, bird.r, 0, 7); ctx.fill();
+            ctx.shadowBlur = 0; ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(5, -4, 3, 0, 7); ctx.fill();
+            ctx.fillStyle = "#ff0055"; ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(18, 3); ctx.lineTo(9, 6); ctx.fill();
             ctx.restore();
+        }
+
+        function startNewGame() {
+            bird.y = h/2; bird.v = 0; pipes = []; score = 0;
+            config.speed = 3.1; config.gap = 165;
+            scoreEl.textContent = "0"; gameOverEl.style.display = "none";
+            isGameOver = false; gameActive = true;
+        }
+
+        function endGame() {
+            gameActive = false; isGameOver = true;
+            if (score > highScore) { highScore = score; localStorage.setItem("neonBirdBest", highScore); }
+            document.getElementById("final-score").textContent = score;
+            document.getElementById("best-score").textContent = highScore;
+            setTimeout(() => { gameOverEl.style.display = "flex"; }, 400);
         }
 
         function loop() {
             ctx.clearRect(0, 0, w, h);
-            frame++;
-
-            ctx.strokeStyle = "#151515";
-            let gridOffset = (frame * (gameActive ? config.speed : 1) * 0.5) % 40;
-            for(let i=0; i<w+40; i+=40) {
-                ctx.beginPath(); ctx.moveTo(i - gridOffset, 0); ctx.lineTo(i - gridOffset, h); ctx.stroke();
-            }
+            if(gameActive) frame += config.speed; else if(!isGameOver) frame += 0.5;
+            drawBackground();
 
             if (gameActive) {
-                bird.v += bird.g;
-                bird.y += bird.v;
-
-                let spawnDist = 220 * (3.0 / config.speed);
-                if (pipes.length === 0 || pipes[pipes.length-1].x < w - Math.max(160, spawnDist)) {
-                    const margin = 100;
-                    let lastTop = pipes.length > 0 ? pipes[pipes.length-1].top : h/2;
-                    let nextTop = lastTop + (Math.random() * 240 - 120);
-                    nextTop = Math.max(margin, Math.min(h - config.gap - margin, nextTop));
-                    pipes.push({ x: w, top: nextTop, passed: false });
+                bird.v += bird.g; bird.y += bird.v;
+                if (pipes.length === 0 || pipes[pipes.length-1].x < w - 220) {
+                    let top = 120 + Math.random() * (h - config.gap - 240);
+                    pipes.push({ x: w, top: top, passed: false });
                 }
-
                 pipes.forEach(p => {
                     p.x -= config.speed;
                     drawPipe(p.x, 0, 50, p.top, true);
                     drawPipe(p.x, p.top + config.gap, 50, h - (p.top + config.gap), false);
-
                     if (bird.x + bird.hitR > p.x && bird.x - bird.hitR < p.x + 50) {
                         if (bird.y - bird.hitR < p.top || bird.y + bird.hitR > p.top + config.gap) endGame();
                     }
-                    if (!p.passed && p.x + 50 < bird.x) {
-                        score++; updateDifficulty();
-                        scoreEl.textContent = score; 
-                        p.passed = true;
+                    if (!p.passed && p.x + 50 < bird.x) { 
+                        score++; 
+                        config.speed = Math.min(6, 3.1 + score * 0.04);
+                        config.gap = Math.max(140, 165 - score * 0.6);
+                        scoreEl.textContent = score; p.passed = true; 
                     }
                 });
-
-                if (pipes.length > 0 && pipes[0].x < -60) pipes.shift();
-                if (bird.y + bird.r > h || bird.y - bird.r < 0) endGame();
+                pipes = pipes.filter(p => p.x > -60);
+                if (bird.y + bird.r > h || bird.y < 0) endGame();
+            } else if (!isGameOver) {
+                ctx.fillStyle = "#fff"; ctx.font = "bold 16px Arial"; ctx.textAlign = "center";
+                ctx.fillText("КЛИКНИ, ЧТОБЫ ВЗЛЕТЕТЬ", w/2, h/2 + 80);
             }
-
             drawBird();
-            
-            if (!gameActive && !isGameOver) {
-                ctx.fillStyle = "rgba(0, 242, 255, 0.8)";
-                ctx.font = "bold 18px Arial";
-                ctx.textAlign = "center";
-                ctx.fillText("НАЖМИ НА ЭКРАН, ЧТОБЫ ВЗЛЕТЕТЬ", w / 2, h / 2 + 60);
-            }
-
             requestAnimationFrame(loop);
         }
 
-        const handleAction = (e) => {
-            // 1. Игнорируем нажатия на кнопку выхода
-            if (e.target.closest('.exit-button')) return;
-            // 2. Игнорируем нажатия на кнопку рестарта (она сама вызовет startNewGame)
-            if (e.target.closest('#restart-btn')) return;
-            
-            // 3. Если игра окончена, клики по экрану НИЧЕГО не делают
-            if (isGameOver) return;
-
-            if (e.type === 'touchstart') e.preventDefault();
-            
-            if (!gameActive) {
-                startNewGame();
-            } else {
-                bird.v = bird.j;
-            }
-        };
-
-        window.addEventListener("mousedown", handleAction);
-        window.addEventListener("touchstart", handleAction, {passive: false});
-        window.addEventListener("keydown", (e) => { 
-            if (e.code === "Space") {
-                if (!isGameOver) handleAction(e);
-            }
+        window.addEventListener("mousedown", (e) => {
+            if (e.target.closest('.exit-button') || e.target.closest('#restart-btn') || isGameOver) return;
+            if (!gameActive) startNewGame(); else bird.v = bird.j;
         });
+        window.addEventListener("touchstart", (e) => {
+            if (e.target.closest('.exit-button') || e.target.closest('#restart-btn') || isGameOver) return;
+            e.preventDefault(); if (!gameActive) startNewGame(); else bird.v = bird.j;
+        }, {passive: false});
 
+        window.addEventListener('resize', resize);
+        resize();
         loop();
     </script>
 </body>
