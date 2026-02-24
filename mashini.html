@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Эвакуатор: УЛЬТРА КОМБО</title>
+    <title>Эвакуатор: УМНЫЙ ТРАФИК</title>
     <style>
         body { 
             margin: 0; overflow: hidden; background: #111; 
             font-family: 'Arial Black', sans-serif; touch-action: none; 
             user-select: none; -webkit-user-select: none;
+        }
+        body::after {
+            content: ""; position: absolute; inset: 0;
+            box-shadow: inset 0 0 120px rgba(0,0,0,0.6); pointer-events: none;
         }
         canvas { display: block; touch-action: none; }
         #ui {
@@ -34,9 +38,15 @@
         .bonus-anim {
             position: absolute; font-weight: bold; pointer-events: none; 
             animation: flyUp 0.6s ease-out forwards; text-shadow: 2px 2px 0px black;
-            z-index: 100;
+            z-index: 100; text-align: center;
         }
         @keyframes flyUp { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: translateY(-130px) scale(1.4); } }
+        .shake { animation: shake 0.2s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: translate(0,0); }
+            25% { transform: translate(-5px, 5px); }
+            75% { transform: translate(5px, -5px); }
+        }
     </style>
 </head>
 <body>
@@ -47,7 +57,7 @@
 </div>
 
 <div id="combo-container">
-    <div id="combo-text">X2 COMBO</div>
+    <div id="combo-text">COMBO</div>
     <div id="combo-bar-bg"><div id="combo-bar-fill"></div></div>
 </div>
 
@@ -73,12 +83,16 @@
     let highScore = localStorage.getItem('towTruckFastCombo') || 0;
     highEl.innerText = highScore;
 
-    let gameActive = false; // Изначально выключено до старта
+    let gameActive = false;
     let isCrashed = false;
-    let comboMultiplier = 1;
+    let comboMultiplier = 1; 
     let comboTimer = 0;
     let spawnTimer = null; 
-    const BASE_COMBO_TIME = 80;
+    let particles = [];
+    let screenShake = 0;
+    
+    const BASE_POINTS = 5; 
+    const BASE_COMBO_TIME = 70;
 
     const player = {
         w: 52, h: 105,
@@ -86,14 +100,41 @@
         targetX: 0, targetY: 0
     };
 
+    // Частицы взрыва
+    class Particle {
+        constructor(x, y, color) {
+            this.x = x; this.y = y;
+            this.size = Math.random() * 5 + 2;
+            this.speedX = (Math.random() - 0.5) * 12;
+            this.speedY = (Math.random() - 0.5) * 12;
+            this.color = color;
+            this.life = 1.0;
+        }
+        update() {
+            this.x += this.speedX; this.y += this.speedY;
+            this.life -= 0.025;
+        }
+        draw() {
+            ctx.fillStyle = this.color; ctx.globalAlpha = this.life;
+            ctx.fillRect(this.x, this.y, this.size, this.size);
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    function createExplosion(x, y, color) {
+        for(let i=0; i<20; i++) particles.push(new Particle(x, y, color));
+        screenShake = 12;
+        document.body.classList.add('shake');
+        setTimeout(() => document.body.classList.remove('shake'), 200);
+    }
+
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        if(!gameActive && !isCrashed) {
+        if(!gameActive) {
             player.x = canvas.width / 2 - player.w / 2;
             player.y = canvas.height - 200;
-            player.targetX = player.x;
-            player.targetY = player.y;
+            player.targetX = player.x; player.targetY = player.y;
         }
     }
     window.addEventListener('resize', resize);
@@ -104,35 +145,52 @@
 
     function drawCar(x, y, w, h, color, isPlayer) {
         ctx.save();
-        if (isPlayer && comboMultiplier > 1) {
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = comboMultiplier > 5 ? "#ff4444" : "#ffeb3b";
+        let tilt = 0;
+        if (isPlayer && !isCrashed) {
+            tilt = (player.targetX - player.x) * 0.07;
+            if (comboMultiplier >= 2) {
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = comboMultiplier > 5 ? "#ff4444" : "#ffeb3b";
+            }
         }
+        ctx.translate(x + w/2, y + h/2);
+        ctx.rotate(tilt * Math.PI / 180);
         ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.rect(x, y, w, h);
-        ctx.fill();
+        ctx.fillRect(-w/2, -h/2, w, h);
         ctx.fillStyle = '#111';
-        ctx.fillRect(x + 10, y + 15, w - 20, 25); 
-        ctx.fillRect(x + 10, y + 70, w - 20, 15);
+        ctx.fillRect(-w/2 + 10, -h/2 + 15, w - 20, 25); 
+        ctx.fillRect(-w/2 + 10, -h/2 + 70, w - 20, 15);
         ctx.fillStyle = isPlayer ? '#fff' : '#ffee58';
-        ctx.fillRect(x + 6, y + 2, 10, 5);
-        ctx.fillRect(x + w - 16, y + 2, 10, 5);
+        ctx.fillRect(-w/2 + 6, -h/2 + 2, 10, 5);
+        ctx.fillRect(w/2 - 16, -h/2 + 2, 10, 5);
         ctx.restore();
     }
 
+    // ЛОГИКА УМНОГО СПАВНА
     function spawn() {
         if (!gameActive || isCrashed) return;
-        obstacles.push({
-            x: Math.random() * (canvas.width - 50),
-            y: -120,
-            w: 48, h: 95,
-            color: ['#2980b9', '#27ae60', '#8e44ad', '#f39c12'][Math.floor(Math.random()*4)],
-            speed: 6 + Math.random() * 6 + (score / 1500),
-            bonus: false
+
+        const laneCount = 4;
+        const laneWidth = canvas.width / laneCount;
+        const laneIndex = Math.floor(Math.random() * laneCount);
+        const spawnX = (laneIndex * laneWidth) + (laneWidth / 2) - 24;
+
+        // Проверка: нет ли другой машины слишком близко в этом ряду?
+        let isLaneBlocked = obstacles.some(obs => {
+            return obs.x > spawnX - 20 && obs.x < spawnX + 20 && obs.y < 200;
         });
+
+        if (!isLaneBlocked) {
+            obstacles.push({
+                x: spawnX,
+                y: -120, w: 48, h: 95,
+                color: ['#2980b9', '#27ae60', '#8e44ad', '#f39c12'][Math.floor(Math.random()*4)],
+                speed: 5 + Math.random() * 3 + (score / 800), 
+                bonus: false
+            });
+        }
         
-        let nextSpawn = Math.max(200, 700 - score/40);
+        let nextSpawn = Math.max(150, 600 - score/20);
         spawnTimer = setTimeout(spawn, nextSpawn);
     }
 
@@ -140,25 +198,38 @@
         ctx.fillStyle = '#222';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        if (screenShake > 0) {
+            ctx.save();
+            ctx.translate((Math.random()-0.5)*screenShake, (Math.random()-0.5)*screenShake);
+            screenShake *= 0.9;
+        }
+
         ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        roadY += (isCrashed ? 0 : 15);
+        roadY += (isCrashed ? 0 : 12 + (score/1000));
         if (roadY > 100) roadY = 0;
         for (let i = -100; i < canvas.height; i += 100) {
             ctx.fillRect(canvas.width/2 - 2, i + roadY, 4, 50);
         }
 
+        particles.forEach((p, i) => {
+            p.update(); p.draw();
+            if(p.life <= 0) particles.splice(i, 1);
+        });
+
         if (comboTimer > 0 && !isCrashed) {
-            comboTimer -= (0.5 + comboMultiplier * 0.02);
+            let drainSpeed = 0.8 + (comboMultiplier * 0.15); 
+            comboTimer -= drainSpeed;
             comboContainer.style.display = 'block';
             comboFill.style.width = (comboTimer / BASE_COMBO_TIME * 100) + '%';
-            comboText.innerText = `X${comboMultiplier} COMBO`;
+            comboText.innerText = comboMultiplier < 2 ? "READY?" : `X${comboMultiplier} COMBO`;
         } else {
+            comboMultiplier = 1;
             comboContainer.style.display = 'none';
         }
 
         if (gameActive && !isCrashed) {
-            player.x += (player.targetX - player.x) * 0.2;
-            player.y += (player.targetY - player.y) * 0.2;
+            player.x += (player.targetX - player.x) * 0.25;
+            player.y += (player.targetY - player.y) * 0.25;
         }
 
         drawCar(player.x, player.y, player.w, player.h, '#e74c3c', true);
@@ -171,45 +242,60 @@
             let dx = Math.abs((player.x + player.w/2) - (obs.x + obs.w/2));
             let dy = Math.abs((player.y + player.h/2) - (obs.y + obs.h/2));
             
-            if (!obs.bonus && !isCrashed && gameActive && dx < 70 && dx > 40 && dy < 60) {
-                comboMultiplier++;
-                comboTimer = BASE_COMBO_TIME;
-                let pts = 50 * comboMultiplier;
-                score += pts;
+            if (!obs.bonus && !isCrashed && gameActive && dx < 75 && dx > 44 && dy < 55) {
                 obs.bonus = true;
-                showBonusText(player.x, player.y, pts, comboMultiplier);
+                if (comboMultiplier <= 1) {
+                    score += BASE_POINTS;
+                    comboMultiplier = 1.1; 
+                    comboTimer = BASE_COMBO_TIME;
+                    showBonusText(player.x, player.y, BASE_POINTS, "FIRST");
+                } else {
+                    if (comboMultiplier < 2) comboMultiplier = 2;
+                    else comboMultiplier++;
+                    comboTimer = BASE_COMBO_TIME;
+                    let pts = BASE_POINTS * comboMultiplier;
+                    score += pts;
+                    showBonusText(player.x, player.y, pts, comboMultiplier);
+                    screenShake = 6;
+                }
                 scoreEl.innerText = score;
             }
 
             if (!isCrashed && gameActive &&
-                player.x < obs.x + obs.w - 8 && player.x + player.w > obs.x + 8 &&
-                player.y < obs.y + obs.h - 8 && player.y + player.h > obs.y + 8) {
+                player.x < obs.x + obs.w - 10 && player.x + player.w > obs.x + 10 &&
+                player.y < obs.y + obs.h - 10 && player.y + player.h > obs.y + 10) {
                 
-                isCrashed = true;
-                gameActive = false;
+                isCrashed = true; gameActive = false;
                 clearTimeout(spawnTimer);
+                createExplosion(player.x + player.w/2, player.y + player.h/2, '#ff4444');
+                createExplosion(obs.x + obs.w/2, obs.y + obs.h/2, obs.color);
                 
                 if (score > highScore) {
                     highScore = score;
                     localStorage.setItem('towTruckFastCombo', score);
                     highEl.innerText = highScore;
                 }
-
                 document.getElementById('final-score').innerText = `СЧЕТ: ${score}`;
-                menu.style.display = 'block'; 
+                setTimeout(() => menu.style.display = 'block', 500);
             }
-
-            if (obs.y > canvas.height + 100) obstacles.splice(i, 1);
+            if (obs.y > canvas.height + 150) obstacles.splice(i, 1);
         }
+
+        if (screenShake > 0) ctx.restore();
         requestAnimationFrame(update);
     }
 
     function showBonusText(x, y, pts, multi) {
         const b = document.createElement('div');
         b.className = 'bonus-anim';
-        b.style.left = x + 'px'; b.style.top = y + 'px';
-        b.style.color = multi > 5 ? '#ff4444' : '#ffeb3b';
-        b.innerHTML = `+${pts}<br>X${multi}`;
+        b.style.left = x + 'px'; b.style.top = (y - 20) + 'px';
+        if (multi === "FIRST") {
+            b.style.color = '#fff';
+            b.innerHTML = `+${pts}<br><span style="font-size:14px">START!</span>`;
+        } else {
+            b.style.color = multi > 5 ? '#ff4444' : '#ffeb3b';
+            b.innerHTML = `+${pts}<br>X${multi}`;
+        }
         document.body.appendChild(b);
         setTimeout(() => b.remove(), 600);
     }
@@ -219,10 +305,8 @@
         let clientX = e.touches ? e.touches[0].clientX : e.clientX;
         let clientY = e.touches ? e.touches[0].clientY : e.clientY;
         const rect = canvas.getBoundingClientRect();
-        let nextX = clientX - rect.left - player.w / 2;
-        let nextY = clientY - rect.top - player.h / 2 - 80;
-        player.targetX = Math.max(0, Math.min(canvas.width - player.w, nextX));
-        player.targetY = Math.max(0, Math.min(canvas.height - player.h, nextY));
+        player.targetX = Math.max(0, Math.min(canvas.width - player.w, clientX - rect.left - player.w / 2));
+        player.targetY = Math.max(0, Math.min(canvas.height - player.h, clientY - rect.top - player.h / 2 - 60));
         if (e.cancelable) e.preventDefault();
     }
 
@@ -231,36 +315,18 @@
     window.addEventListener('mousemove', handleMove);
 
     function resetGame() {
-        // Убиваем всё старое
         menu.style.display = 'none';
         clearTimeout(spawnTimer);
-        
-        // Сброс данных
-        score = 0;
-        scoreEl.innerText = '0';
-        obstacles = [];
-        isCrashed = false;
-        comboMultiplier = 1;
-        comboTimer = 0;
-        
-        // Машина в центр
+        score = 0; scoreEl.innerText = '0';
+        obstacles = []; particles = [];
+        isCrashed = false; comboMultiplier = 1; comboTimer = 0;
         player.x = canvas.width / 2 - player.w / 2;
         player.y = canvas.height - 200;
-        player.targetX = player.x;
-        player.targetY = player.y;
-
-        // Задержка перед стартом
-        setTimeout(() => {
-            gameActive = true;
-            spawn();
-        }, 300);
+        player.targetX = player.x; player.targetY = player.y;
+        setTimeout(() => { gameActive = true; spawn(); }, 300);
     }
 
-    window.onload = () => {
-        window.focus();
-        resetGame();
-        update();
-    };
+    window.onload = () => { resetGame(); update(); };
 </script>
 </body>
 </html>
