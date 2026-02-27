@@ -69,6 +69,19 @@
         .icon-chat { background: rgba(33, 150, 243, 0.15); color: var(--chat-blue); }
         .icon-break { background: rgba(76, 175, 80, 0.15); color: var(--break-green); }
 
+        /* Стили счетчиков */
+        .counter-badge {
+            display: none;
+            justify-content: center; align-items: center;
+            font-size: 11px; font-weight: 900;
+            min-width: 18px; height: 18px;
+            padding: 0 5px; border-radius: 10px;
+            margin-left: auto;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        #shabash-counter { background: var(--shabash-orange); color: #000; }
+        #chat-counter { background: var(--chat-blue); color: #fff; }
+
         .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--dark-bg); z-index: 2000; display: none;
@@ -127,7 +140,10 @@
         
         <div class="menu-item" onclick="openApp('Шабашки', 'shabashki.html')">
             <div class="icon-box icon-shabash">🛠</div>
-            <div class="info"><h3>Шабашки</h3></div>
+            <div class="info" style="display:flex; align-items:center; flex-grow:1;">
+                <h3 style="margin:0">Шабашки</h3>
+                <span id="shabash-counter" class="counter-badge">0</span>
+            </div>
         </div>
 
         <div class="menu-item" onclick="openApp('Расчеты', 'izmerenie.html')">
@@ -140,7 +156,10 @@
         </div>
         <div class="menu-item" onclick="openApp('Чат-помощник', 'signa.html')">
             <div class="icon-box icon-chat">💬</div>
-            <div class="info"><h3>Чат-помощник</h3></div>
+            <div class="info" style="display:flex; align-items:center; flex-grow:1;">
+                <h3 style="margin:0">Чат-помощник</h3>
+                <span id="chat-counter" class="counter-badge">0</span>
+            </div>
         </div>
         <div class="menu-item" onclick="openApp('Перекур', 'igri.html')">
             <div class="icon-box icon-break">☕</div>
@@ -189,6 +208,7 @@
 
     let totalReg = 0;
     let excludedIds = [];
+    let lastShabashCount = -1;
 
     async function initTracker() {
         const statsEl = document.getElementById('stats-display');
@@ -196,6 +216,11 @@
         const now = new Date();
         const dateKey = now.toISOString().split('T')[0];
         const timeString = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+        // Запрос на Push-уведомления
+        if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
 
         database.ref('excluded_list').on('value', snap => {
             excludedIds = Object.values(snap.val() || {});
@@ -225,8 +250,74 @@
             dot.style.background = online ? "var(--main-gold)" : "#ff4444";
             dot.style.boxShadow = online ? "0 0 10px var(--main-gold)" : "0 0 10px #ff4444";
         });
+
+        initAppCounters();
     }
 
+    // --- МОНИТОРИНГ ЧАТА И ШАБАШЕК ---
+    function initAppCounters() {
+        // 1. Шабашки (Общий список)
+        database.ref('shabashki/active').on('value', (snap) => {
+            const count = snap.numChildren();
+            const el = document.getElementById('shabash-counter');
+            
+            if (lastShabashCount !== -1 && count > lastShabashCount) {
+                sendNotification("⚡ VOLT MASTER", "Появилась новая шабашка!");
+                try { new Audio('https://www.soundjay.com/buttons/sounds/button-30.mp3').play(); } catch(e){}
+            }
+            lastShabashCount = count;
+
+            if (count > 0) {
+                el.innerText = count;
+                el.style.display = 'inline-flex';
+            } else {
+                el.style.display = 'none';
+            }
+        });
+
+        // 2. Чат (Глобальный + Личный)
+        database.ref().on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+
+            let unreadTotal = 0;
+            const lastSeenGlobalTs = parseInt(localStorage.getItem('last_msg_global_ts') || "0");
+
+            // Считаем Глобальный чат
+            if (data.global_messages) {
+                Object.values(data.global_messages).forEach(m => {
+                    if (m.sender !== myId && (m.ts || 0) > lastSeenGlobalTs) unreadTotal++;
+                });
+            }
+
+            // Считаем Личные сообщения
+            if (data.private_messages) {
+                Object.keys(data.private_messages).forEach(key => {
+                    if (key.includes(myId)) {
+                        Object.values(data.private_messages[key]).forEach(m => {
+                            if (m.sender !== myId && m.status !== 'read') unreadTotal++;
+                        });
+                    }
+                });
+            }
+
+            const chatEl = document.getElementById('chat-counter');
+            if (unreadTotal > 0) {
+                chatEl.innerText = unreadTotal;
+                chatEl.style.display = 'inline-flex';
+            } else {
+                chatEl.style.display = 'none';
+            }
+        });
+    }
+
+    function sendNotification(title, body) {
+        if (Notification.permission === 'granted') {
+            new Notification(title, { body: body, icon: 'https://cdn-icons-png.flaticon.com/512/355/355980.png' });
+        }
+    }
+
+    // --- АДМИН ПАНЕЛЬ И ЛОГИ ---
     function renderExclusionTags() {
         const container = document.getElementById('excluded-tags');
         if(!container) return;
