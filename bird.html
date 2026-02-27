@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Neon Bird: Realistic Mountains Edition</title>
+    <title>Neon Bird: Hardcore Edition</title>
     <style>
         body { margin: 0; background: #4facfe; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; color: white; font-family: 'Arial', sans-serif; touch-action: none; -webkit-user-select: none; }
         .exit-button { position: absolute; top: 15px; right: 15px; width: 35px; height: 35px; background: rgba(255, 0, 85, 0.2); border: 2px solid #ff0055; color: #ff0055; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; cursor: pointer; z-index: 1000; }
@@ -48,7 +48,10 @@
         let highScore = localStorage.getItem("neonBirdBest") || 0;
         let gameActive = false;
         let isGameOver = false;
-        const config = { speed: 3.1, gap: 165 };
+        let lastPipeTop = null;
+
+        // КРИТИЧЕСКИЕ НАСТРОЙКИ: Gap 125 — это очень узко
+        const config = { speed: 3.2, gap: 125 }; 
 
         function createMountainPoints(baseY, amplitude, detail) {
             let pts = [{x: 0, y: baseY}];
@@ -78,42 +81,30 @@
             let skyGrad = ctx.createLinearGradient(0, 0, 0, h);
             skyGrad.addColorStop(0, '#4facfe'); skyGrad.addColorStop(1, '#a8e0ff');
             ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, w, h);
-
             ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
             clouds.forEach(c => {
                 c.x -= c.s; if(c.x < -120) c.x = w + 100;
                 ctx.beginPath(); ctx.arc(c.x, c.y, 25, 0, 7); ctx.arc(c.x+20, c.y-15, 30, 0, 7); ctx.arc(c.x+45, c.y, 25, 0, 7); ctx.fill();
             });
-
-            mountainLayers.forEach((layer, layerIdx) => {
+            mountainLayers.forEach((layer) => {
                 let offset = (frame * layer.speed) % w;
                 for (let i = -1; i <= 1; i++) {
                     ctx.save();
                     ctx.translate(i * w - offset, 0);
-                    
-                    // Рисуем тело горы
                     let mGrad = ctx.createLinearGradient(0, h * 0.4, 0, h);
                     mGrad.addColorStop(0, layer.color);
-                    mGrad.addColorStop(1, '#a8e0ff'); // Эффект тумана внизу
+                    mGrad.addColorStop(1, '#a8e0ff');
                     ctx.fillStyle = mGrad;
-                    
                     ctx.beginPath();
                     ctx.moveTo(0, h);
                     layer.points.forEach(p => ctx.lineTo(p.x, p.y));
                     ctx.lineTo(w, h);
                     ctx.fill();
-
-                    // Если слой дальний, рисуем снежные шапки
                     if (layer.snow) {
-                        ctx.fillStyle = "white";
-                        ctx.globalAlpha = 0.6;
-                        layer.points.forEach((p, idx) => {
-                            if (p.y < h * 0.58) { // Только на самых высоких пиках
-                                ctx.beginPath();
-                                ctx.moveTo(p.x, p.y);
-                                ctx.lineTo(p.x - 15, p.y + 25);
-                                ctx.lineTo(p.x + 15, p.y + 25);
-                                ctx.fill();
+                        ctx.fillStyle = "white"; ctx.globalAlpha = 0.6;
+                        layer.points.forEach((p) => {
+                            if (p.y < h * 0.58) {
+                                ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 15, p.y + 25); ctx.lineTo(p.x + 15, p.y + 25); ctx.fill();
                             }
                         });
                         ctx.globalAlpha = 1.0;
@@ -145,7 +136,8 @@
 
         function startNewGame() {
             bird.y = h/2; bird.v = 0; pipes = []; score = 0;
-            config.speed = 3.1; config.gap = 165;
+            lastPipeTop = h / 2 - 60;
+            config.speed = 3.2; config.gap = 125; 
             scoreEl.textContent = "0"; gameOverEl.style.display = "none";
             isGameOver = false; gameActive = true;
         }
@@ -165,10 +157,24 @@
 
             if (gameActive) {
                 bird.v += bird.g; bird.y += bird.v;
-                if (pipes.length === 0 || pipes[pipes.length-1].x < w - 220) {
-                    let top = 120 + Math.random() * (h - config.gap - 240);
-                    pipes.push({ x: w, top: top, passed: false });
+                
+                if (pipes.length === 0 || pipes[pipes.length-1].x < w - 240) {
+                    let minTop = 60;
+                    let maxTop = h - config.gap - 80;
+                    let nextTop;
+                    if (lastPipeTop === null) {
+                        nextTop = minTop + Math.random() * (maxTop - minTop);
+                    } else {
+                        // При таком узком проходе уменьшаем перепады до 110px, чтобы реально было успеть
+                        let shift = 110; 
+                        let low = Math.max(minTop, lastPipeTop - shift);
+                        let high = Math.min(maxTop, lastPipeTop + shift);
+                        nextTop = low + Math.random() * (high - low);
+                    }
+                    lastPipeTop = nextTop;
+                    pipes.push({ x: w, top: nextTop, passed: false });
                 }
+
                 pipes.forEach(p => {
                     p.x -= config.speed;
                     drawPipe(p.x, 0, 50, p.top, true);
@@ -178,8 +184,8 @@
                     }
                     if (!p.passed && p.x + 50 < bird.x) { 
                         score++; 
-                        config.speed = Math.min(6, 3.1 + score * 0.04);
-                        config.gap = Math.max(140, 165 - score * 0.6);
+                        config.speed = Math.min(6.0, 3.2 + score * 0.05);
+                        config.gap = Math.max(110, 125 - score * 0.3); // Экстремальное сужение до 110
                         scoreEl.textContent = score; p.passed = true; 
                     }
                 });
@@ -202,9 +208,7 @@
             e.preventDefault(); if (!gameActive) startNewGame(); else bird.v = bird.j;
         }, {passive: false});
 
-        window.addEventListener('resize', resize);
-        resize();
-        loop();
+        window.addEventListener('resize', resize); resize(); loop();
     </script>
 </body>
 </html>
