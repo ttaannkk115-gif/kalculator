@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VOLT MASTER - Шабашки Full</title>
+    <style>
+        :root {
+            --main-gold: #ffc107;
+            --dark-bg: #0f0f0f;
+            --card-bg: rgba(255, 255, 255, 0.07);
+            --text-main: #ffffff;
+            --text-dim: #999999;
+            --success: #4caf50;
+            --process: #2196f3;
+            --danger: #ff4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            margin: 0; background: var(--dark-bg);
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 100%);
+            color: var(--text-main); padding-bottom: 90px; min-height: 100vh;
+        }
+
+        header { padding: 20px; text-align: center; }
+        .logo { font-size: 24px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin: 0; }
+        .logo span { color: var(--main-gold); }
+        .sub-header { font-size: 10px; color: #444; letter-spacing: 3px; margin-top: 5px; text-transform: uppercase; }
+
+        .status-badge {
+            display: inline-flex; align-items: center;
+            background: rgba(255, 193, 7, 0.08); color: #fff;
+            padding: 6px 15px; border-radius: 20px;
+            font-size: 11px; margin-top: 10px; border: 1px solid rgba(255, 193, 7, 0.2);
+        }
+
+        .card {
+            background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px; padding: 18px; margin: 0 15px 12px; position: relative;
+        }
+        .my-order { border-left: 4px solid var(--main-gold); }
+        .status-taken { border-color: var(--process); background: rgba(33, 150, 243, 0.05); }
+
+        .badge-status {
+            font-size: 9px; padding: 4px 8px; border-radius: 6px; font-weight: bold;
+            display: inline-block; margin-bottom: 10px; text-transform: uppercase;
+        }
+        .bg-free { background: rgba(255,255,255,0.1); color: #fff; }
+        .bg-busy { background: rgba(33, 150, 243, 0.2); color: var(--process); }
+
+        .card-header { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 8px; }
+        .tag-city { color: var(--main-gold); font-weight: bold; }
+        
+        h3 { margin: 5px 0; font-size: 17px; }
+        .addr { color: var(--text-dim); font-size: 13px; margin-bottom: 12px; }
+
+        .rej-list { 
+            background: rgba(255, 68, 68, 0.05); border-radius: 10px; 
+            padding: 8px; margin-bottom: 12px; font-size: 10px; border: 1px dashed rgba(255, 68, 68, 0.2);
+        }
+
+        .btn { border: none; padding: 14px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; font-size: 13px; }
+        .btn-main { background: var(--main-gold); color: #000; }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-outline { background: rgba(255,255,255,0.05); color: #fff; margin-top: 8px; border: 1px solid #333; }
+
+        .admin-tools { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05); }
+        .btn-small { padding: 6px; font-size: 9px; background: #222; color: #777; border-radius: 6px; flex: 1; border: none; cursor: pointer; }
+
+        nav {
+            position: fixed; bottom: 0; width: 100%; background: #0a0a0a;
+            border-top: 1px solid #222; display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000;
+        }
+        nav button { background: none; border: none; color: #444; font-size: 9px; font-weight: bold; }
+        nav button.active { color: var(--main-gold); }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 3000;
+        }
+        .modal { background: #161616; padding: 25px; border-radius: 20px; width: 85%; border: 1px solid #333; }
+
+        .hidden { display: none; }
+        input, select, textarea { background: rgba(0,0,0,0.3); border: 1px solid #333; border-radius: 12px; padding: 14px; color: #fff; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">VOLT<span>MASTER</span></div>
+    <div class="sub-header">ШАБАШКИ</div>
+    <div class="status-badge"><span id="my-id-display">ID...</span></div>
+</header>
+
+<div id="view-list"><div id="orders-list"></div></div>
+<div id="view-archive" class="hidden"><div id="archive-list"></div></div>
+
+<div id="view-add" class="hidden" style="padding: 20px;">
+    <h2 style="font-size: 18px;">Заявка</h2>
+    <input type="hidden" id="edit-id">
+    <select id="city-input">
+        <option value="Махачкала">Махачкала</option>
+        <option value="Каспийск">Каспийск</option>
+        <option value="Буйнакск">Буйнакск</option>
+    </select>
+    <input type="text" id="task" placeholder="Что сделать?">
+    <input type="text" id="address" placeholder="Адрес">
+    <input type="tel" id="phone" placeholder="+7 (___) ___-__-__" maxlength="18">
+    <button class="btn btn-main" onclick="saveOrder()" id="save-btn">ОПУБЛИКОВАТЬ</button>
+</div>
+
+<div id="modal-rej" class="modal-overlay">
+    <div class="modal">
+        <h3 style="color:var(--main-gold)">Причина отказа</h3>
+        <textarea id="rej-text" rows="4" placeholder="Почему отказываетесь?"></textarea>
+        <button class="btn btn-main" onclick="submitRejection()">ОТПРАВИТЬ</button>
+        <button class="btn btn-outline" onclick="closeModal()">ОТМЕНА</button>
+    </div>
+</div>
+
+<nav>
+    <button onclick="changeView('list', this)" class="active">ЗАКАЗЫ</button>
+    <button onclick="changeView('add', this)">СОЗДАТЬ</button>
+    <button onclick="changeView('archive', this)">АРХИВ</button>
+</nav>
+
+<script>
+    const MY_ID = localStorage.getItem('user_id_2026') || "GUEST";
+    document.getElementById('my-id-display').innerText = "ВАШ ID: " + MY_ID;
+
+    // Маска РФ
+    const phoneInput = document.getElementById('phone');
+    phoneInput.addEventListener('input', (e) => {
+        let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
+        if (!x[2]) { e.target.value = x[1] ? '+7 (' : ''; }
+        else { e.target.value = '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : ''); }
+    });
+
+    let orders = JSON.parse(localStorage.getItem('volt_orders_db')) || [];
+    let archive = JSON.parse(localStorage.getItem('volt_archive_db')) || [];
+    let currentRejId = null;
+
+    function render() {
+        const list = document.getElementById('orders-list');
+        list.innerHTML = orders.length ? '' : '<div style="text-align:center;color:#333;margin-top:50px;">Заказов нет</div>';
+        
+        orders.forEach(o => {
+            const isMe = o.author === MY_ID;
+            const isBusy = o.status === 'busy';
+            const card = document.createElement('div');
+            card.className = `card ${isMe ? 'my-order' : ''} ${isBusy ? 'status-taken' : ''}`;
+            
+            let html = `
+                <div class="card-header"><span class="tag-city">${o.city}</span><span style="color:#555">${o.date}</span></div>
+                <span class="badge-status ${isBusy ? 'bg-busy' : 'bg-free'}">${isBusy ? '⏳ Принял: '+o.worker : '🔘 Свободен'}</span>
+                <h3>${o.task}</h3><div class="addr">📍 ${o.addr}</div>
+            `;
+
+            if(o.rejections?.length) {
+                html += `<div class="rej-list">${o.rejections.map(r => `<div style="color:#ff9999">✘ ${r.user}: ${r.text}</div>`).join('')}</div>`;
+            }
+
+            if(!isBusy) {
+                html += `<button class="btn btn-main" onclick="takeOrder(${o.id})">ПРИНЯТЬ ЗАКАЗ</button>`;
+            } else if(o.worker === MY_ID) {
+                html += `
+                    <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:10px; text-align:center; margin-bottom:10px;">
+                        <a href="tel:${o.phone}" style="color:var(--main-gold); text-decoration:none; font-weight:bold;">${o.phone}</a>
+                    </div>
+                    <button class="btn btn-success" onclick="finishOrder(${o.id})">ЗАВЕРШИТЬ</button>
+                    <button class="btn btn-outline" onclick="openRej(${o.id})">ОТКАЗАТЬСЯ</button>
+                `;
+            }
+
+            if(isMe && !isBusy) {
+                html += `<div class="admin-tools"><button class="btn-small" onclick="deleteOrder(${o.id})">УДАЛИТЬ</button><button class="btn-small" onclick="editOrder(${o.id})">ИЗМЕНИТЬ</button></div>`;
+            }
+            card.innerHTML = html;
+            list.appendChild(card);
+        });
+    }
+
+    function renderArchive() {
+        const list = document.getElementById('archive-list');
+        list.innerHTML = archive.length ? '' : '<div style="text-align:center;color:#333;margin-top:50px;">Архив пуст</div>';
+        archive.forEach(o => {
+            const card = document.createElement('div');
+            card.className = `card`; card.style.opacity = '0.6';
+            card.innerHTML = `
+                <div class="card-header"><span class="tag-city">${o.city}</span><span>${o.closedAt}</span></div>
+                <div class="badge-status" style="background:rgba(76,175,80,0.2);color:var(--success)">✅ ВЫПОЛНЕНО</div>
+                <h3>${o.task}</h3><div class="addr">📍 ${o.addr}</div>
+                <div style="font-size:10px;color:var(--main-gold)">Мастер: ${o.worker}</div>
+            `;
+            list.appendChild(card);
+        });
+    }
+
+    function saveOrder() {
+        const id = document.getElementById('edit-id').value;
+        const task = document.getElementById('task').value;
+        const addr = document.getElementById('address').value;
+        const phone = document.getElementById('phone').value;
+        const city = document.getElementById('city-input').value;
+        if(!task || !addr || phone.length < 18) return alert("Заполните всё!");
+
+        const time = new Date().toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
+        if(id) {
+            orders = orders.map(o => o.id == id ? {...o, task, addr, phone, city} : o);
+        } else {
+            orders.unshift({ id: Date.now(), author: MY_ID, task, addr, phone, city, date: time, status: 'free', rejections: [] });
+        }
+        save(); location.reload();
+    }
+
+    function takeOrder(id) { orders = orders.map(o => o.id === id ? {...o, status:'busy', worker: MY_ID} : o); save(); render(); }
+    function finishOrder(id) {
+        const o = orders.find(x => x.id === id);
+        archive.unshift({...o, closedAt: new Date().toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit'}), status: 'done'});
+        orders = orders.filter(x => x.id !== id);
+        save(); render();
+    }
+
+    function openRej(id) { currentRejId = id; document.getElementById('modal-rej').style.display = 'flex'; }
+    function closeModal() { document.getElementById('modal-rej').style.display = 'none'; }
+    function submitRejection() {
+        const txt = document.getElementById('rej-text').value;
+        if(!txt) return alert("Причина?");
+        orders = orders.map(o => o.id === currentRejId ? {...o, status:'free', worker: null, rejections:[...(o.rejections||[]), {user:MY_ID, text:txt}]} : o);
+        closeModal(); save(); render();
+    }
+
+    function editOrder(id) {
+        const o = orders.find(x => x.id === id);
+        document.getElementById('edit-id').value = o.id;
+        document.getElementById('task').value = o.task;
+        document.getElementById('address').value = o.addr;
+        document.getElementById('phone').value = o.phone;
+        document.getElementById('city-input').value = o.city;
+        document.getElementById('save-btn').innerText = "СОХРАНИТЬ";
+        changeView('add', document.querySelectorAll('nav button')[1]);
+    }
+
+    function deleteOrder(id) { if(confirm("Удалить?")) { orders = orders.filter(o => o.id !== id); save(); render(); } }
+    
+    function changeView(view, btn) {
+        document.getElementById('view-list').classList.add('hidden');
+        document.getElementById('view-add').classList.add('hidden');
+        document.getElementById('view-archive').classList.add('hidden');
+        document.getElementById('view-' + view).classList.remove('hidden');
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if(view === 'list') render();
+        if(view === 'archive') renderArchive();
+    }
+
+    function save() { 
+        localStorage.setItem('volt_orders_db', JSON.stringify(orders)); 
+        localStorage.setItem('volt_archive_db', JSON.stringify(archive));
+    }
+
+    render();
+</script>
+</body>
+</html>
