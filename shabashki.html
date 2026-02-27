@@ -25,11 +25,12 @@
             margin: 0; background: var(--dark-bg);
             background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 100%);
             color: var(--text-main); 
-            padding-bottom: 120px; /* Увеличил отступ под новую панель */
+            padding-bottom: 120px;
             min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        header { padding: 20px; text-align: center; }
+        header { padding: 20px 20px 10px; text-align: center; }
         .logo { font-size: 24px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin: 0; }
         .logo span { color: var(--main-gold); }
         .sub-header { font-size: 10px; color: #444; letter-spacing: 3px; margin-top: 5px; text-transform: uppercase; }
@@ -41,7 +42,19 @@
             font-size: 11px; margin-top: 10px; border: 1px solid rgba(255, 193, 7, 0.2);
         }
 
-        /* КАРТОЧКИ */
+        .city-tabs {
+            display: flex; gap: 8px; overflow-x: auto; padding: 10px 15px 20px;
+            scrollbar-width: none;
+        }
+        .city-tabs::-webkit-scrollbar { display: none; }
+        
+        .tab {
+            background: rgba(255,255,255,0.05); border: 1px solid #333;
+            color: #888; padding: 8px 18px; border-radius: 20px;
+            font-size: 12px; font-weight: bold; white-space: nowrap; transition: 0.3s;
+        }
+        .tab.active { background: var(--main-gold); color: #000; border-color: var(--main-gold); }
+
         .card {
             background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 18px; padding: 18px; margin: 0 15px 12px; position: relative;
@@ -65,41 +78,42 @@
         h3 { margin: 5px 0; font-size: 17px; }
         .addr { color: var(--text-dim); font-size: 13px; margin-bottom: 12px; }
 
-        /* КНОПКИ */
+        /* ИСТОРИЯ ОТКАЗОВ */
+        .rejection-history {
+            background: rgba(255, 68, 68, 0.05);
+            border: 1px dashed rgba(255, 68, 68, 0.3);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        .rej-item {
+            font-size: 11px;
+            padding: 5px 0;
+            border-bottom: 1px dotted rgba(255, 68, 68, 0.2);
+        }
+        .rej-item:last-child { border-bottom: none; }
+        .rej-label { color: var(--danger); font-weight: bold; font-size: 9px; text-transform: uppercase; }
+
         .btn { border: none; padding: 14px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; font-size: 13px; transition: 0.2s; }
-        .btn:active { transform: scale(0.98); }
         .btn-main { background: var(--main-gold); color: #000; }
         .btn-success { background: var(--success); color: #fff; }
         .btn-outline { background: rgba(255,255,255,0.05); color: #fff; margin-top: 8px; border: 1px solid #333; }
+        .btn-disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
 
-        /* НИЖНЯЯ ПАНЕЛЬ */
         nav {
             position: fixed; bottom: 0; width: 100%; 
-            background: rgba(10, 10, 10, 0.85);
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(15px);
             border-top: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex; justify-content: space-around; 
-            padding: 15px 0 25px 0; /* Большая высота */
-            z-index: 1000;
-            box-shadow: 0 -5px 25px rgba(0,0,0,0.6);
+            display: flex; justify-content: space-around; padding: 15px 0 25px 0; z-index: 1000;
         }
-        nav button { 
-            background: none; border: none; color: #555; 
-            font-size: 10px; font-weight: bold; 
-            display: flex; flex-direction: column; align-items: center; gap: 6px;
-            flex: 1; transition: 0.3s;
-        }
+        nav button { background: none; border: none; color: #555; font-size: 10px; font-weight: bold; display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
         nav button.active { color: var(--main-gold); }
         nav button i { font-style: normal; font-size: 20px; }
 
-        /* МОДАЛКИ И ФОРМЫ */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 3000;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 3000; }
         .modal { background: #161616; padding: 25px; border-radius: 20px; width: 85%; border: 1px solid #333; }
         .hidden { display: none; }
-        input, select, textarea { background: rgba(0,0,0,0.3); border: 1px solid #333; border-radius: 12px; padding: 14px; color: #fff; width: 100%; margin-bottom: 10px; box-sizing: border-box; font-size: 16px; }
+        input, select, textarea { background: rgba(0,0,0,0.3); border: 1px solid #333; border-radius: 12px; padding: 14px; color: #fff; width: 100%; margin-bottom: 10px; font-size: 16px; box-sizing: border-box; }
         
         .admin-tools { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05); }
         .btn-small { padding: 6px; font-size: 9px; background: #222; color: #777; border-radius: 6px; flex: 1; border: none; }
@@ -112,6 +126,13 @@
     <div class="sub-header">CLOUD ШАБАШКИ</div>
     <div class="status-badge"><span id="my-id-display">ID...</span></div>
 </header>
+
+<div class="city-tabs" id="city-tabs-ui">
+    <div class="tab active" onclick="setFilter('Все', this)">ОБЩИЙ</div>
+    <div class="tab" onclick="setFilter('Махачкала', this)">МАХАЧКАЛА</div>
+    <div class="tab" onclick="setFilter('Каспийск', this)">КАСПИЙСК</div>
+    <div class="tab" onclick="setFilter('Буйнакск', this)">БУЙНАКСК</div>
+</div>
 
 <div id="view-list"><div id="orders-list"></div></div>
 <div id="view-archive" class="hidden"><div id="archive-list"></div></div>
@@ -154,29 +175,45 @@
     localStorage.setItem('user_id_2026', MY_ID);
     document.getElementById('my-id-display').innerText = "ВАШ ID: " + MY_ID;
 
-    // Маска телефона
+    const WAIT_TIME = 30 * 60 * 1000;
+    let currentFilter = 'Все';
+    let allOrders = [];
+    let currentRejId = null;
+
     document.getElementById('phone').addEventListener('input', (e) => {
         let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
         if (!x[2]) { e.target.value = x[1] ? '+7 (' : ''; }
         else { e.target.value = '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : ''); }
     });
 
-    let currentRejId = null;
-
     function initSync() {
         db.ref('shabashki/active').on('value', snap => {
             const data = snap.val() || {};
-            render(Object.values(data).sort((a,b) => b.id - a.id));
+            allOrders = Object.values(data).sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+            renderFiltered();
         });
         db.ref('shabashki/archive').limitToLast(20).on('value', snap => {
             const data = snap.val() || {};
             renderArchive(Object.values(data).sort((a,b) => b.timestamp - a.timestamp));
         });
+        setInterval(renderFiltered, 60000);
+    }
+
+    function setFilter(city, btn) {
+        currentFilter = city;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        renderFiltered();
+    }
+
+    function renderFiltered() {
+        const filtered = currentFilter === 'Все' ? allOrders : allOrders.filter(o => o.city === currentFilter);
+        render(filtered);
     }
 
     function render(orders) {
         const container = document.getElementById('orders-list');
-        container.innerHTML = orders.length ? '' : '<div style="text-align:center;color:#444;margin-top:50px;">Свободных заказов нет</div>';
+        container.innerHTML = orders.length ? '' : '<div style="text-align:center;color:#444;margin-top:50px;">Заказов нет</div>';
         
         orders.forEach(o => {
             const isMe = o.author === MY_ID;
@@ -184,19 +221,37 @@
             const card = document.createElement('div');
             card.className = `card ${isMe ? 'my-order' : ''} ${isBusy ? 'status-taken' : ''}`;
             
+            // ВЫВОД ВСЕХ ПРИЧИН ОТКАЗА
+            let rejectionsHtml = '';
+            if (o.rejections) {
+                let items = Object.values(o.rejections).map(r => `
+                    <div class="rej-item">
+                        <span class="rej-label">Отказ:</span> ${r.text}
+                    </div>
+                `).join('');
+                rejectionsHtml = `<div class="rejection-history">${items}</div>`;
+            }
+
             let html = `
                 <div class="card-header"><span class="tag-city">${o.city}</span><span style="color:#555">${o.date}</span></div>
                 <span class="badge-status ${isBusy ? 'bg-busy' : 'bg-free'}">${isBusy ? '⏳ В работе у: '+o.worker : '🔘 Свободен'}</span>
                 <h3>${o.task}</h3><div class="addr">📍 ${o.addr}</div>
+                ${rejectionsHtml}
             `;
 
             if(isBusy && o.worker === MY_ID) {
+                const now = Date.now();
+                const diff = now - (o.takenAt || 0);
+                const canFinish = diff >= WAIT_TIME;
+                const minLeft = Math.ceil((WAIT_TIME - diff) / 60000);
+
                 html += `
                     <div style="background:rgba(255,193,7,0.1); padding:15px; border-radius:12px; text-align:center; margin-bottom:12px; border: 1px solid rgba(255,193,7,0.2);">
-                        <div style="font-size:10px; color:var(--text-dim); margin-bottom:5px;">СВЯЗЬ С КЛИЕНТОМ</div>
                         <a href="tel:${o.phone}" style="color:var(--main-gold); text-decoration:none; font-weight:800; font-size:20px;">${o.phone}</a>
                     </div>
-                    <button class="btn btn-success" onclick="finishOrder('${o.id}')">ЗАВЕРШИТЬ ОБЪЕКТ</button>
+                    <button class="btn btn-success ${canFinish ? '' : 'btn-disabled'}" onclick="finishOrder('${o.id}')">
+                        ${canFinish ? 'ЗАВЕРШИТЬ ОБЪЕКТ' : `ЖДИТЕ ${minLeft} МИН`}
+                    </button>
                     <button class="btn btn-outline" onclick="openRej('${o.id}')">ОТКАЗАТЬСЯ</button>
                 `;
             } else if(!isBusy) {
@@ -228,31 +283,31 @@
     }
 
     function saveOrder() {
-        const id = document.getElementById('edit-id').value || Date.now().toString();
-        const task = document.getElementById('task').value;
-        const addr = document.getElementById('address').value;
-        const phone = document.getElementById('phone').value;
+        const editId = document.getElementById('edit-id').value;
+        const id = editId || Date.now().toString();
+        const task = document.getElementById('task').value.trim();
+        const addr = document.getElementById('address').value.trim();
+        const phone = document.getElementById('phone').value.trim();
         const city = document.getElementById('city-input').value;
-        if(!task || !addr || phone.length < 18) return alert("Заполните все данные!");
-
+        if(!task || !addr || phone.length < 18) return alert("Заполните данные!");
         const time = new Date().toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
-        
         db.ref('shabashki/active/' + id).update({
-            id, author: MY_ID, task, addr, phone, city, date: time, status: 'free'
+            id, author: MY_ID, task, addr, phone, city, date: time, 
+            status: 'free', timestamp: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
-            document.getElementById('edit-id').value = '';
-            document.getElementById('task').value = '';
-            document.getElementById('address').value = '';
-            document.getElementById('phone').value = '';
+            resetForm();
             changeView('list', document.querySelector('nav button:first-child'));
         });
     }
 
-    function takeOrder(id) { db.ref(`shabashki/active/${id}`).update({ status: 'busy', worker: MY_ID }); }
+    function takeOrder(id) { 
+        db.ref(`shabashki/active/${id}`).update({ status: 'busy', worker: MY_ID, takenAt: Date.now() }); 
+    }
 
     function finishOrder(id) {
         db.ref(`shabashki/active/${id}`).once('value', snap => {
             const o = snap.val();
+            if(!o || (o.takenAt && (Date.now() - o.takenAt < WAIT_TIME))) return alert("Время еще не прошло!");
             const closedAt = new Date().toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit'});
             db.ref('shabashki/archive').push({...o, closedAt, timestamp: firebase.database.ServerValue.TIMESTAMP});
             db.ref(`shabashki/active/${id}`).remove();
@@ -260,23 +315,43 @@
     }
 
     function changeView(view, btn) {
+        if(view === 'add' && !document.getElementById('edit-id').value) resetForm();
         document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
         document.getElementById('view-' + view).classList.remove('hidden');
         document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
         if(btn) btn.classList.add('active');
+        document.getElementById('city-tabs-ui').style.display = (view === 'list') ? 'flex' : 'none';
         window.scrollTo(0,0);
     }
 
+    function resetForm() {
+        document.getElementById('edit-id').value = '';
+        document.getElementById('task').value = '';
+        document.getElementById('address').value = '';
+        document.getElementById('phone').value = '';
+        document.getElementById('save-btn').innerText = 'ОПУБЛИКОВАТЬ';
+    }
+
     function openRej(id) { currentRejId = id; document.getElementById('modal-rej').style.display = 'flex'; }
-    function closeModal() { document.getElementById('modal-rej').style.display = 'none'; }
+    function closeModal() { document.getElementById('modal-rej').style.display = 'none'; document.getElementById('rej-text').value = ''; }
+    
     function submitRejection() {
-        const txt = document.getElementById('rej-text').value;
-        if(!txt) return alert("Причина?");
-        db.ref(`shabashki/active/${currentRejId}/rejections`).push({ user: MY_ID, text: txt });
-        db.ref(`shabashki/active/${currentRejId}`).update({ status: 'free', worker: null });
+        const txt = document.getElementById('rej-text').value.trim();
+        if(!txt) return alert("Укажите причину");
+        db.ref(`shabashki/active/${currentRejId}/rejections`).push({ 
+            user: MY_ID, 
+            text: txt,
+            time: Date.now()
+        });
+        db.ref(`shabashki/active/${currentRejId}`).update({ 
+            status: 'free', 
+            worker: null, 
+            takenAt: null 
+        });
         closeModal();
     }
-    function deleteOrder(id) { if(confirm("Удалить заявку?")) db.ref(`shabashki/active/${id}`).remove(); }
+
+    function deleteOrder(id) { if(confirm("Удалить?")) db.ref(`shabashki/active/${id}`).remove(); }
     function editOrder(id) {
         db.ref(`shabashki/active/${id}`).once('value', snap => {
             const o = snap.val();
@@ -285,6 +360,7 @@
             document.getElementById('address').value = o.addr;
             document.getElementById('phone').value = o.phone;
             document.getElementById('city-input').value = o.city;
+            document.getElementById('save-btn').innerText = 'СОХРАНИТЬ';
             changeView('add', document.querySelectorAll('nav button')[1]);
         });
     }
