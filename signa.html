@@ -22,19 +22,15 @@
         #app-container { display: flex; width: 200%; height: 100%; transition: transform 0.3s ease; }
         body.in-chat #app-container { transform: translateX(-50%); }
 
-        /* Sidebar */
         #contact-screen { width: 50%; height: 100%; background: #111b21; display: flex; flex-direction: column; border-right: 1px solid #222; }
         .header { padding: 15px; background: #202c33; }
-        .user-info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         
         #userList { flex: 1; overflow-y: auto; list-style: none; padding: 0; margin: 0; }
-        #userList li { padding: 12px 15px; border-bottom: 1px solid #222; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        #userList li { padding: 12px 15px; border-bottom: 1px solid #222; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         #userList li:hover { background: #2a3942; }
         
-        /* Бадж уведомлений */
         .unread-badge { background: var(--notify); color: #000; font-size: 11px; font-weight: bold; min-width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 2px; }
 
-        /* Chat Area */
         #chat-screen { width: 50%; height: 100%; background: var(--chat-bg); display: flex; flex-direction: column; position: relative; }
         #messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; }
         .chat-header { background: #202c33; padding: 10px 15px; display: flex; align-items: center; gap: 10px; }
@@ -45,7 +41,6 @@
         
         .msg-sender-link { color: var(--admin-gold); font-weight: bold; font-size: 12px; cursor: pointer; margin-bottom: 3px; }
         .msg-footer { align-self: flex-end; font-size: 10px; color: #8696a0; margin-top: 2px; display: flex; align-items: center; gap: 4px; }
-        .edited-label { font-size: 9px; font-style: italic; opacity: 0.7; }
         
         .input-panel { background: #202c33; padding: 8px 12px; display: flex; gap: 8px; align-items: center; }
         .input-panel input { flex: 1; border: none; padding: 10px 15px; border-radius: 20px; outline: none; background: #2a3942; color: white; }
@@ -59,8 +54,8 @@
 <div id="app-container">
     <div id="contact-screen">
         <div class="header">
-            <div class="user-info-row">
-                <div id="myIdDisplay" style="font-size: 14px; color: var(--ticks-gray);">Загрузка...</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div id="myIdDisplay" style="font-size: 14px; color: #8696a0;">Загрузка...</div>
                 <div style="color: var(--primary); font-size: 12px; font-weight: bold; cursor: pointer;" onclick="tryAdmin()">ВХОД</div>
             </div>
             <input type="text" id="searchInput" placeholder="Поиск по ID..." style="width:100%; padding:10px; border-radius:20px; border:none; background:#2a3942; color:white; outline:none;" onkeypress="if(event.key === 'Enter') searchUser()">
@@ -99,12 +94,13 @@
     let myId = localStorage.getItem('user_id_2026') || "ID-6460";
     let myName = localStorage.getItem('chat_user_name');
     let typingTimeout;
+    let globalUnreadCount = 0;
+    let lastSeenGlobal = parseInt(localStorage.getItem('last_seen_global') || "0");
 
     if (!myName) {
-        myName = prompt("Введите ваше имя:") || myId;
+        myName = prompt("Введите имя:") || myId;
         localStorage.setItem('chat_user_name', myName);
     }
-    localStorage.setItem('user_id_2026', myId);
 
     let isAdmin = false;
     let recentUsers = JSON.parse(localStorage.getItem('recent_chats') || "[]");
@@ -115,28 +111,26 @@
 
     const playSound = () => document.getElementById('notifSound').play().catch(()=>{});
 
-    // Статус онлайн
     set(ref(db, 'status/' + myId), { online: true, name: myName, typing: false });
     onDisconnect(ref(db, 'status/' + myId)).update({ online: false, typing: false });
 
-    // Индикатор печати
-    document.getElementById('msgInput').addEventListener('input', () => {
-        update(ref(db, `status/${myId}`), { typing: true });
-        clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => update(ref(db, `status/${myId}`), { typing: false }), 2000);
-    });
-
-    // Слушатель статусов и имен
-    onValue(ref(db, 'status'), (snap) => {
-        const data = snap.val() || {};
-        for (let id in data) {
-            userNamesCache[id] = data[id].name || id;
-            if (id !== myId) userTypingCache[id] = data[id].typing;
-        }
+    // Слушатель общего чата для счетчика
+    onValue(ref(db, 'global_messages'), (snap) => {
+        let count = 0;
+        let lastTs = lastSeenGlobal;
+        snap.forEach(m => {
+            const d = m.val();
+            if (d.sender !== myId && d.ts > lastSeenGlobal) {
+                count++;
+                lastTs = Math.max(lastTs, d.ts);
+            }
+        });
+        globalUnreadCount = count;
+        if (count > 0 && !isGlobal) playSound();
         render();
     });
 
-    // Слушатель непрочитанных сообщений
+    // Личные сообщения
     onValue(ref(db, 'private_messages'), (snap) => {
         const data = snap.val();
         let hasNew = false;
@@ -147,18 +141,31 @@
                 let count = 0;
                 for (let mId in data[cId]) {
                     const m = data[cId][mId];
-                    if (m.sender !== myId && m.status !== 'read') { count++; hasNew = true; }
+                    if (m.sender !== myId && m.status !== 'read') count++;
                 }
-                if (count > 0) unreadCounts[other] = count;
+                if (count > 0) { unreadCounts[other] = count; hasNew = true; }
             }
         }
-        if (hasNew) playSound();
+        if (hasNew && !isGlobal) playSound();
+        render();
+    });
+
+    onValue(ref(db, 'status'), (snap) => {
+        const data = snap.val() || {};
+        for (let id in data) {
+            userNamesCache[id] = data[id].name || id;
+            if (id !== myId) userTypingCache[id] = data[id].typing;
+        }
         render();
     });
 
     function render() {
         const list = document.getElementById('userList');
-        list.innerHTML = `<li onclick="openChat('GLOBAL_CHAT', true)" style="background:rgba(0,168,132,0.1)"><b>📢 ОБЩИЙ ЧАТ</b></li>`;
+        list.innerHTML = `
+            <li onclick="openChat('GLOBAL_CHAT', true)" style="background:rgba(0,168,132,0.1)">
+                <b>📢 ОБЩИЙ ЧАТ</b>
+                ${globalUnreadCount > 0 ? `<div class="unread-badge">${globalUnreadCount}</div>` : ''}
+            </li>`;
         
         let displayList = isAdmin ? Object.keys(userNamesCache) : recentUsers;
         displayList.forEach(uId => {
@@ -176,25 +183,23 @@
             list.appendChild(li);
         });
         document.getElementById('myIdDisplay').innerHTML = `Вы: <b>${myName}</b> (${myId})`;
-        updateSubtitle();
-    }
-
-    function updateSubtitle() {
-        const sub = document.getElementById('chatSubtitle');
-        if (isGlobal) {
-            const typers = Object.keys(userTypingCache).filter(id => userTypingCache[id]).map(id => userNamesCache[id]);
-            sub.innerText = typers.length > 0 ? typers.join(', ') + ' печатает...' : '';
-        } else {
-            const tid = currentChatId?.replace(myId, "").replace("_", "");
-            sub.innerText = userTypingCache[tid] ? 'печатает...' : '';
-        }
     }
 
     window.openChat = (targetId, global) => {
         isGlobal = global;
-        if(!isGlobal && !recentUsers.includes(targetId)) { recentUsers.unshift(targetId); localStorage.setItem('recent_chats', JSON.stringify(recentUsers)); }
+        if (isGlobal) {
+            globalUnreadCount = 0;
+            lastSeenGlobal = Date.now();
+            localStorage.setItem('last_seen_global', lastSeenGlobal);
+        }
+        
+        if(!isGlobal && !recentUsers.includes(targetId)) {
+            recentUsers.unshift(targetId);
+            localStorage.setItem('recent_chats', JSON.stringify(recentUsers));
+        }
+        
         currentChatId = isGlobal ? 'GLOBAL_CHAT' : [myId, targetId].sort().join("_");
-        document.getElementById('chatTitle').innerHTML = isGlobal ? "📢 Общий чат" : `${userNamesCache[targetId]} <small style="opacity:0.5">(${targetId})</small>`;
+        document.getElementById('chatTitle').innerHTML = isGlobal ? "📢 Общий чат" : `${userNamesCache[targetId]} <small>(${targetId})</small>`;
         document.body.classList.add('in-chat');
         
         const path = isGlobal ? 'global_messages' : 'private_messages/' + currentChatId;
@@ -203,17 +208,15 @@
             snap.forEach(m => {
                 const d = m.val();
                 if (!isGlobal && d.sender !== myId && d.status !== 'read') update(ref(db, path + '/' + m.key), { status: 'read' });
-                
+                if (isGlobal && d.ts > lastSeenGlobal) {
+                    lastSeenGlobal = d.ts;
+                    localStorage.setItem('last_seen_global', lastSeenGlobal);
+                }
                 const div = document.createElement('div');
                 div.className = `msg ${d.sender === myId ? 'my' : 'others'}`;
-                
-                // Редактирование своих сообщений
-                if (d.sender === myId && !d.file) div.ondblclick = () => editMsg(m.key, d.text, path);
-
-                let ticks = (d.sender === myId && !isGlobal) ? `<span style="color:${d.status === 'read' ? 'var(--ticks-blue)' : 'var(--ticks-gray)'}" class="ticks">${d.status === 'read' ? '✓✓' : '✓'}</span>` : "";
-                let head = (isGlobal && d.sender !== myId) ? `<div class="msg-sender-link" onclick="openChat('${d.sender}', false)">${userNamesCache[d.sender]} <small>(${d.sender})</small></div>` : "";
-                
-                div.innerHTML = `${head}${d.file ? `<img src="${d.file}" style="max-width:200px; border-radius:8px;">` : `<span>${d.text}</span>`}<div class="msg-footer">${d.isEdited?'<span class="edited-label">изм.</span> ':''}${new Date(d.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} ${ticks}</div>`;
+                let tks = (d.sender === myId && !isGlobal) ? `<span style="color:${d.status === 'read' ? 'var(--ticks-blue)' : 'var(--ticks-gray)'}">${d.status === 'read' ? '✓✓' : '✓'}</span>` : "";
+                let h = (isGlobal && d.sender !== myId) ? `<div class="msg-sender-link" onclick="openChat('${d.sender}', false)">${userNamesCache[d.sender]} <small>(${d.sender})</small></div>` : "";
+                div.innerHTML = `${h}${d.file ? `<img src="${d.file}" style="max-width:200px; border-radius:8px;">` : `<span>${d.text}</span>`}<div class="msg-footer">${new Date(d.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} ${tks}</div>`;
                 box.appendChild(div);
             });
             box.scrollTop = box.scrollHeight;
@@ -228,27 +231,20 @@
         i.value = "";
     };
 
-    window.editMsg = (id, old, path) => {
-        const n = prompt("Изменить сообщение:", old);
-        if (n && n !== old) update(ref(db, path + '/' + id), { text: n, isEdited: true });
-    };
-
-    window.closeChat = () => { document.body.classList.remove('in-chat'); isGlobal = false; };
+    window.closeChat = () => { document.body.classList.remove('in-chat'); isGlobal = false; render(); };
     window.removeContact = (id) => { recentUsers = recentUsers.filter(x => x !== id); localStorage.setItem('recent_chats', JSON.stringify(recentUsers)); render(); };
     window.tryAdmin = () => { if(prompt("Пароль:") === '6739218') { isAdmin = true; document.getElementById('adminDelBtn').style.display='block'; render(); } };
-    window.clearHistory = () => { if(confirm("Очистить историю?")) remove(ref(db, isGlobal ? 'global_messages' : 'private_messages/' + currentChatId)); };
-    
+    window.clearHistory = () => { if(confirm("Очистить?")) remove(ref(db, isGlobal ? 'global_messages' : 'private_messages/' + currentChatId)); };
     window.searchUser = async () => {
         const q = document.getElementById('searchInput').value.trim();
         const s = await get(child(ref(db), `status/${q}`));
         if (s.exists()) openChat(q, false); else alert("ID не найден");
     };
-
     window.sendFile = (inp) => {
         const f = inp.files[0]; if (f && f.size <= 1048576) {
             const r = new FileReader(); r.readAsDataURL(f);
             r.onload = () => push(ref(db, isGlobal ? 'global_messages' : 'private_messages/' + currentChatId), { sender: myId, file: r.result, status: 'sent', ts: serverTimestamp() });
-        } else alert("Максимальный размер файла — 1МБ");
+        } else alert("Макс 1МБ");
     };
 </script>
 </body>
