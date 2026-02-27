@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VOLT MASTER - Шабашки Full</title>
+    <title>VOLT MASTER - CLOUD ШАБАШКИ</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
     <style>
         :root {
             --main-gold: #ffc107;
@@ -38,7 +42,10 @@
         .card {
             background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 18px; padding: 18px; margin: 0 15px 12px; position: relative;
+            animation: fadeIn 0.3s ease;
         }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
         .my-order { border-left: 4px solid var(--main-gold); }
         .status-taken { border-color: var(--process); background: rgba(33, 150, 243, 0.05); }
 
@@ -60,7 +67,8 @@
             padding: 8px; margin-bottom: 12px; font-size: 10px; border: 1px dashed rgba(255, 68, 68, 0.2);
         }
 
-        .btn { border: none; padding: 14px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; font-size: 13px; }
+        .btn { border: none; padding: 14px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; font-size: 13px; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
         .btn-main { background: var(--main-gold); color: #000; }
         .btn-success { background: var(--success); color: #fff; }
         .btn-outline { background: rgba(255,255,255,0.05); color: #fff; margin-top: 8px; border: 1px solid #333; }
@@ -82,14 +90,14 @@
         .modal { background: #161616; padding: 25px; border-radius: 20px; width: 85%; border: 1px solid #333; }
 
         .hidden { display: none; }
-        input, select, textarea { background: rgba(0,0,0,0.3); border: 1px solid #333; border-radius: 12px; padding: 14px; color: #fff; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+        input, select, textarea { background: rgba(0,0,0,0.3); border: 1px solid #333; border-radius: 12px; padding: 14px; color: #fff; width: 100%; margin-bottom: 10px; box-sizing: border-box; font-size: 16px; }
     </style>
 </head>
 <body>
 
 <header>
     <div class="logo">VOLT<span>MASTER</span></div>
-    <div class="sub-header">ШАБАШКИ</div>
+    <div class="sub-header">CLOUD ШАБАШКИ</div>
     <div class="status-badge"><span id="my-id-display">ID...</span></div>
 </header>
 
@@ -97,14 +105,14 @@
 <div id="view-archive" class="hidden"><div id="archive-list"></div></div>
 
 <div id="view-add" class="hidden" style="padding: 20px;">
-    <h2 style="font-size: 18px;">Заявка</h2>
+    <h2 style="font-size: 18px;">Новая заявка</h2>
     <input type="hidden" id="edit-id">
     <select id="city-input">
         <option value="Махачкала">Махачкала</option>
         <option value="Каспийск">Каспийск</option>
         <option value="Буйнакск">Буйнакск</option>
     </select>
-    <input type="text" id="task" placeholder="Что сделать?">
+    <input type="text" id="task" placeholder="Тип работ">
     <input type="text" id="address" placeholder="Адрес">
     <input type="tel" id="phone" placeholder="+7 (___) ___-__-__" maxlength="18">
     <button class="btn btn-main" onclick="saveOrder()" id="save-btn">ОПУБЛИКОВАТЬ</button>
@@ -113,7 +121,7 @@
 <div id="modal-rej" class="modal-overlay">
     <div class="modal">
         <h3 style="color:var(--main-gold)">Причина отказа</h3>
-        <textarea id="rej-text" rows="4" placeholder="Почему отказываетесь?"></textarea>
+        <textarea id="rej-text" rows="4" placeholder="Почему?"></textarea>
         <button class="btn btn-main" onclick="submitRejection()">ОТПРАВИТЬ</button>
         <button class="btn btn-outline" onclick="closeModal()">ОТМЕНА</button>
     </div>
@@ -126,6 +134,11 @@
 </nav>
 
 <script>
+    // КОНФИГУРАЦИЯ FIREBASE (ваша база из основной панели)
+    const firebaseConfig = { databaseURL: "https://kalculator-8e345-default-rtdb.firebaseio.com/" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     const MY_ID = localStorage.getItem('user_id_2026') || "GUEST";
     document.getElementById('my-id-display').innerText = "ВАШ ID: " + MY_ID;
 
@@ -137,13 +150,25 @@
         else { e.target.value = '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : ''); }
     });
 
-    let orders = JSON.parse(localStorage.getItem('volt_orders_db')) || [];
-    let archive = JSON.parse(localStorage.getItem('volt_archive_db')) || [];
     let currentRejId = null;
 
-    function render() {
-        const list = document.getElementById('orders-list');
-        list.innerHTML = orders.length ? '' : '<div style="text-align:center;color:#333;margin-top:50px;">Заказов нет</div>';
+    // Слушаем базу данных в реальном времени
+    function initSync() {
+        db.ref('shabashki/active').on('value', snap => {
+            const data = snap.val() || {};
+            const list = Object.values(data).sort((a,b) => b.id - a.id);
+            render(list);
+        });
+        db.ref('shabashki/archive').on('value', snap => {
+            const data = snap.val() || {};
+            const list = Object.values(data).sort((a,b) => b.timestamp - a.timestamp);
+            renderArchive(list);
+        });
+    }
+
+    function render(orders) {
+        const container = document.getElementById('orders-list');
+        container.innerHTML = orders.length ? '' : '<div style="text-align:center;color:#333;margin-top:50px;">Заказов нет</div>';
         
         orders.forEach(o => {
             const isMe = o.author === MY_ID;
@@ -157,48 +182,49 @@
                 <h3>${o.task}</h3><div class="addr">📍 ${o.addr}</div>
             `;
 
-            if(o.rejections?.length) {
-                html += `<div class="rej-list">${o.rejections.map(r => `<div style="color:#ff9999">✘ ${r.user}: ${r.text}</div>`).join('')}</div>`;
+            if(o.rejections) {
+                const rejArr = Object.values(o.rejections);
+                html += `<div class="rej-list">${rejArr.map(r => `<div style="color:#ff9999">✘ ${r.user}: ${r.text}</div>`).join('')}</div>`;
             }
 
             if(!isBusy) {
-                html += `<button class="btn btn-main" onclick="takeOrder(${o.id})">ПРИНЯТЬ ЗАКАЗ</button>`;
+                html += `<button class="btn btn-main" onclick="takeOrder('${o.id}')">ПРИНЯТЬ ЗАКАЗ</button>`;
             } else if(o.worker === MY_ID) {
                 html += `
                     <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:10px; text-align:center; margin-bottom:10px;">
-                        <a href="tel:${o.phone}" style="color:var(--main-gold); text-decoration:none; font-weight:bold;">${o.phone}</a>
+                        <a href="tel:${o.phone}" style="color:var(--main-gold); text-decoration:none; font-weight:bold; font-size:18px;">${o.phone}</a>
                     </div>
-                    <button class="btn btn-success" onclick="finishOrder(${o.id})">ЗАВЕРШИТЬ</button>
-                    <button class="btn btn-outline" onclick="openRej(${o.id})">ОТКАЗАТЬСЯ</button>
+                    <button class="btn btn-success" onclick="finishOrder('${o.id}')">ЗАВЕРШИТЬ</button>
+                    <button class="btn btn-outline" onclick="openRej('${o.id}')">ОТКАЗАТЬСЯ</button>
                 `;
             }
 
             if(isMe && !isBusy) {
-                html += `<div class="admin-tools"><button class="btn-small" onclick="deleteOrder(${o.id})">УДАЛИТЬ</button><button class="btn-small" onclick="editOrder(${o.id})">ИЗМЕНИТЬ</button></div>`;
+                html += `<div class="admin-tools"><button class="btn-small" onclick="deleteOrder('${o.id}')">УДАЛИТЬ</button><button class="btn-small" onclick="editOrder('${o.id}')">ИЗМЕНИТЬ</button></div>`;
             }
             card.innerHTML = html;
-            list.appendChild(card);
+            container.appendChild(card);
         });
     }
 
-    function renderArchive() {
-        const list = document.getElementById('archive-list');
-        list.innerHTML = archive.length ? '' : '<div style="text-align:center;color:#333;margin-top:50px;">Архив пуст</div>';
-        archive.forEach(o => {
+    function renderArchive(archived) {
+        const container = document.getElementById('archive-list');
+        container.innerHTML = archived.length ? '' : '<div style="text-align:center;color:#333;margin-top:50px;">Архив пуст</div>';
+        archived.forEach(o => {
             const card = document.createElement('div');
             card.className = `card`; card.style.opacity = '0.6';
             card.innerHTML = `
                 <div class="card-header"><span class="tag-city">${o.city}</span><span>${o.closedAt}</span></div>
-                <div class="badge-status" style="background:rgba(76,175,80,0.2);color:var(--success)">✅ ВЫПОЛНЕНО</div>
+                <div class="badge-status" style="background:rgba(76, 175, 80, 0.2);color:var(--success)">✅ ВЫПОЛНЕНО</div>
                 <h3>${o.task}</h3><div class="addr">📍 ${o.addr}</div>
                 <div style="font-size:10px;color:var(--main-gold)">Мастер: ${o.worker}</div>
             `;
-            list.appendChild(card);
+            container.appendChild(card);
         });
     }
 
     function saveOrder() {
-        const id = document.getElementById('edit-id').value;
+        const id = document.getElementById('edit-id').value || Date.now().toString();
         const task = document.getElementById('task').value;
         const addr = document.getElementById('address').value;
         const phone = document.getElementById('phone').value;
@@ -206,44 +232,52 @@
         if(!task || !addr || phone.length < 18) return alert("Заполните всё!");
 
         const time = new Date().toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
-        if(id) {
-            orders = orders.map(o => o.id == id ? {...o, task, addr, phone, city} : o);
-        } else {
-            orders.unshift({ id: Date.now(), author: MY_ID, task, addr, phone, city, date: time, status: 'free', rejections: [] });
-        }
-        save(); location.reload();
+        
+        db.ref('shabashki/active/' + id).update({
+            id, author: MY_ID, task, addr, phone, city, date: time, status: 'free'
+        }).then(() => {
+            location.reload();
+        });
     }
 
-    function takeOrder(id) { orders = orders.map(o => o.id === id ? {...o, status:'busy', worker: MY_ID} : o); save(); render(); }
+    function takeOrder(id) { 
+        db.ref(`shabashki/active/${id}`).update({ status: 'busy', worker: MY_ID }); 
+    }
+
     function finishOrder(id) {
-        const o = orders.find(x => x.id === id);
-        archive.unshift({...o, closedAt: new Date().toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit'}), status: 'done'});
-        orders = orders.filter(x => x.id !== id);
-        save(); render();
+        db.ref(`shabashki/active/${id}`).once('value', snap => {
+            const o = snap.val();
+            const closedAt = new Date().toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+            db.ref('shabashki/archive').push({...o, closedAt, timestamp: firebase.database.ServerValue.TIMESTAMP});
+            db.ref(`shabashki/active/${id}`).remove();
+        });
     }
 
     function openRej(id) { currentRejId = id; document.getElementById('modal-rej').style.display = 'flex'; }
     function closeModal() { document.getElementById('modal-rej').style.display = 'none'; }
+    
     function submitRejection() {
         const txt = document.getElementById('rej-text').value;
         if(!txt) return alert("Причина?");
-        orders = orders.map(o => o.id === currentRejId ? {...o, status:'free', worker: null, rejections:[...(o.rejections||[]), {user:MY_ID, text:txt}]} : o);
-        closeModal(); save(); render();
+        db.ref(`shabashki/active/${currentRejId}/rejections`).push({ user: MY_ID, text: txt });
+        db.ref(`shabashki/active/${currentRejId}`).update({ status: 'free', worker: null });
+        closeModal();
     }
 
-    function editOrder(id) {
-        const o = orders.find(x => x.id === id);
-        document.getElementById('edit-id').value = o.id;
-        document.getElementById('task').value = o.task;
-        document.getElementById('address').value = o.addr;
-        document.getElementById('phone').value = o.phone;
-        document.getElementById('city-input').value = o.city;
-        document.getElementById('save-btn').innerText = "СОХРАНИТЬ";
-        changeView('add', document.querySelectorAll('nav button')[1]);
-    }
-
-    function deleteOrder(id) { if(confirm("Удалить?")) { orders = orders.filter(o => o.id !== id); save(); render(); } }
+    function deleteOrder(id) { if(confirm("Удалить?")) db.ref(`shabashki/active/${id}`).remove(); }
     
+    function editOrder(id) {
+        db.ref(`shabashki/active/${id}`).once('value', snap => {
+            const o = snap.val();
+            document.getElementById('edit-id').value = o.id;
+            document.getElementById('task').value = o.task;
+            document.getElementById('address').value = o.addr;
+            document.getElementById('phone').value = o.phone;
+            document.getElementById('city-input').value = o.city;
+            changeView('add', document.querySelectorAll('nav button')[1]);
+        });
+    }
+
     function changeView(view, btn) {
         document.getElementById('view-list').classList.add('hidden');
         document.getElementById('view-add').classList.add('hidden');
@@ -251,16 +285,9 @@
         document.getElementById('view-' + view).classList.remove('hidden');
         document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        if(view === 'list') render();
-        if(view === 'archive') renderArchive();
     }
 
-    function save() { 
-        localStorage.setItem('volt_orders_db', JSON.stringify(orders)); 
-        localStorage.setItem('volt_archive_db', JSON.stringify(archive));
-    }
-
-    render();
+    initSync();
 </script>
 </body>
 </html>
