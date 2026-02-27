@@ -22,19 +22,15 @@
         #app-container { display: flex; width: 200%; height: 100%; transition: transform 0.3s ease; }
         body.in-chat #app-container { transform: translateX(-50%); }
 
-        /* Sidebar */
         #contact-screen { width: 50%; height: 100%; background: #111b21; display: flex; flex-direction: column; border-right: 1px solid #222; }
         .header { padding: 15px; background: #202c33; }
-        .user-info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .admin-login-btn { color: var(--primary); cursor: pointer; font-size: 13px; font-weight: bold; }
         
         #userList { flex: 1; overflow-y: auto; list-style: none; padding: 0; margin: 0; }
-        #userList li { padding: 12px 15px; border-bottom: 1px solid #222; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        #userList li { padding: 12px 15px; border-bottom: 1px solid #222; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         #userList li:hover { background: #2a3942; }
         
-        .unread-badge { background: var(--notify); color: #000; font-size: 11px; font-weight: bold; min-width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 2px; }
+        .unread-badge { background: var(--notify); color: #000; font-size: 11px; font-weight: bold; min-width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
-        /* Chat Area */
         #chat-screen { width: 50%; height: 100%; background: var(--chat-bg); display: flex; flex-direction: column; position: relative; }
         #messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; }
         .chat-header { background: #202c33; padding: 10px 15px; display: flex; align-items: center; gap: 10px; }
@@ -58,9 +54,9 @@
 <div id="app-container">
     <div id="contact-screen">
         <div class="header">
-            <div class="user-info-row">
-                <div id="myIdDisplay" style="font-size: 14px; color: var(--ticks-gray);">Вход...</div>
-                <div class="admin-login-btn" onclick="tryAdminLogin()">ВХОД</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div id="myIdDisplay" style="font-size: 14px; color: #8696a0;">Загрузка...</div>
+                <div style="color: var(--primary); font-size: 12px; font-weight: bold; cursor: pointer;" onclick="tryAdmin()">ВХОД</div>
             </div>
             <input type="text" id="searchInput" placeholder="Поиск по ID..." style="width:100%; padding:10px; border-radius:20px; border:none; background:#2a3942; color:white; outline:none;" onkeypress="if(event.key === 'Enter') searchUser()">
         </div>
@@ -74,7 +70,7 @@
                 <div id="chatTitle" style="font-weight:600; font-size: 16px;">Чат</div>
                 <div id="chatSubtitle" style="font-size:11px; color:var(--primary); height: 14px;"></div>
             </div>
-            <button id="adminDelBtn" style="background:none; border:none; font-size:18px; display:none;" onclick="clearCurrentChat()">🗑️</button>
+            <button id="adminDelBtn" style="background:none; border:none; font-size:18px; display:none;" onclick="clearHistory()">🗑️</button>
         </div>
         <div id="messages"></div>
         <div class="input-panel">
@@ -95,190 +91,138 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Берем ID из локального хранилища панели VOLT MASTER
-    let myId = localStorage.getItem('user_id_2026');
+    let myId = localStorage.getItem('user_id_2026') || "ID-6460";
     let myName = localStorage.getItem('chat_user_name');
+    let typingTimeout;
 
-    // Если ID еще нет, создаем его (для первого входа)
-    if (!myId) {
-        myId = "ID-" + Math.floor(Math.random() * 1000);
-        localStorage.setItem('user_id_2026', myId);
+    if (!myName) {
+        myName = prompt("Введите ваше имя:") || myId;
+        localStorage.setItem('chat_user_name', myName);
     }
+    localStorage.setItem('user_id_2026', myId);
 
-    async function checkSecurity() {
-        try {
-            const excludedSnap = await get(ref(db, 'excluded_list'));
-            const excludedData = excludedSnap.val();
-            
-            // Если список существует, проверяем наличие нашего ID в нем
-            if (excludedData) {
-                const excludedIds = Object.values(excludedData);
-                if (excludedIds.includes(myId)) {
-                    document.body.innerHTML = "<div style='background:#111b21; color:#ff4444; height:100vh; display:flex; align-items:center; justify-content:center; font-family:sans-serif;'><h2>ДОСТУП ЗАБЛОКИРОВАН АДМИНОМ</h2></div>";
-                    return false;
-                }
-            }
-            
-            // Запрашиваем имя, если его нет
-            if (!myName) {
-                const nameSnap = await get(ref(db, `status/${myId}/name`));
-                myName = nameSnap.exists() ? nameSnap.val() : (prompt("Ваше имя для чата:") || myId);
-                localStorage.setItem('chat_user_name', myName);
-            }
-            return true;
-        } catch (e) {
-            console.error("Ошибка безопасности:", e);
-            return true; // Если база не ответила, пускаем (Master не должен ждать)
-        }
-    }
+    let isAdmin = false;
+    let recentUsers = JSON.parse(localStorage.getItem('recent_chats') || "[]");
+    let unreadCounts = {};
+    let currentChatId = null, isGlobal = false;
+    let userNamesCache = {};
+    let userTypingCache = {};
 
-    checkSecurity().then(allowed => {
-        if (allowed) startChatLogic();
+    const playSound = () => document.getElementById('notifSound').play().catch(()=>{});
+
+    set(ref(db, 'status/' + myId), { online: true, name: myName, typing: false });
+    onDisconnect(ref(db, 'status/' + myId)).update({ online: false, typing: false });
+
+    document.getElementById('msgInput').addEventListener('input', () => {
+        update(ref(db, `status/${myId}`), { typing: true });
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => update(ref(db, `status/${myId}`), { typing: false }), 2000);
     });
 
-    function startChatLogic() {
-        let isAdmin = false;
-        let recentUsers = JSON.parse(localStorage.getItem('recent_chats') || "[]");
-        let unreadCounts = {};
-        let currentChatId = null, isGlobal = false;
-        let userNamesCache = {};
-        let userTypingCache = {};
+    onValue(ref(db, 'status'), (snap) => {
+        const data = snap.val() || {};
+        for (let id in data) {
+            userNamesCache[id] = data[id].name || id;
+            if (id !== myId) userTypingCache[id] = data[id].typing;
+        }
+        render();
+    });
 
-        const playSound = () => document.getElementById('notifSound').play().catch(()=>{});
-
-        // Статус "В сети"
-        set(ref(db, 'status/' + myId), { online: true, name: myName, typing: false });
-        onDisconnect(ref(db, 'status/' + myId)).update({ online: false, typing: false });
-
-        // Обработка набора текста
-        document.getElementById('msgInput').addEventListener('input', () => {
-            update(ref(db, `status/${myId}`), { typing: true });
-            clearTimeout(typingTimeout);
-            typingTimeout = setTimeout(() => update(ref(db, `status/${myId}`), { typing: false }), 2000);
-        });
-
-        // Слушатель непрочитанных сообщений
-        onValue(ref(db, 'private_messages'), (snap) => {
-            const data = snap.val();
-            let hasNew = false;
-            unreadCounts = {};
-            for (let cId in data) {
-                if (cId.includes(myId)) {
-                    const other = cId.replace(myId, "").replace("_", "");
-                    let count = 0;
-                    for (let mId in data[cId]) {
-                        const m = data[cId][mId];
-                        if (m.sender !== myId && m.status !== 'read') {
-                            count++;
-                            hasNew = true;
-                        }
-                    }
-                    if (count > 0) unreadCounts[other] = count;
+    onValue(ref(db, 'private_messages'), (snap) => {
+        const data = snap.val();
+        let hasNew = false;
+        unreadCounts = {};
+        for (let cId in data) {
+            if (cId.includes(myId)) {
+                const other = cId.replace(myId, "").replace("_", "");
+                let count = 0;
+                for (let mId in data[cId]) {
+                    const m = data[cId][mId];
+                    if (m.sender !== myId && m.status !== 'read') { count++; hasNew = true; }
                 }
-            }
-            if (hasNew) playSound();
-            refreshList();
-        });
-
-        // Слушатель глобальных обновлений имен и печатания
-        onValue(ref(db, 'status'), (snap) => {
-            const data = snap.val() || {};
-            for (let id in data) {
-                userNamesCache[id] = data[id].name || id;
-                if (id !== myId) userTypingCache[id] = data[id].typing;
-            }
-            refreshList();
-        });
-
-        function refreshList() {
-            const list = document.getElementById('userList');
-            list.innerHTML = `<li onclick="openChat('GLOBAL_CHAT', true)" style="background:rgba(0,168,132,0.1)"><b>📢 ОБЩИЙ ЧАТ</b></li>`;
-
-            let listToDisplay = isAdmin ? Object.keys(userNamesCache) : recentUsers;
-            listToDisplay.forEach(uId => {
-                if (uId === myId || uId === 'GLOBAL_CHAT') return;
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <div onclick="openChat('${uId}', false)" style="flex:1">
-                        <b>${userNamesCache[uId] || uId}</b><br>
-                        <small style="color:${userTypingCache[uId]?'#00a884':'#8696a0'}">
-                            ${userTypingCache[uId] ? 'печатает...' : uId}
-                        </small>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        ${unreadCounts[uId] ? `<div class="unread-badge">${unreadCounts[uId]}</div>` : ''}
-                        <div style="color:#555; font-size:18px;" onclick="event.stopPropagation(); removeContact('${uId}')">×</div>
-                    </div>`;
-                list.appendChild(li);
-            });
-            document.getElementById('myIdDisplay').innerHTML = isAdmin ? `<b style="color:var(--admin-gold)">АДМИН: ${myName}</b>` : `ID: <b>${myId}</b>`;
-            updateSubtitle();
-        }
-
-        function updateSubtitle() {
-            const sub = document.getElementById('chatSubtitle');
-            if (isGlobal) {
-                const typers = Object.keys(userTypingCache).filter(id => userTypingCache[id]).map(id => userNamesCache[id]);
-                sub.innerText = typers.length > 0 ? typers.join(', ') + ' печатает...' : '';
-            } else {
-                const targetId = currentChatId?.replace(myId, "").replace("_", "");
-                sub.innerText = userTypingCache[targetId] ? 'печатает...' : '';
+                if (count > 0) unreadCounts[other] = count;
             }
         }
+        if (hasNew) playSound();
+        render();
+    });
 
-        window.openChat = (targetId, global) => {
-            isGlobal = global;
-            if(!isGlobal && !recentUsers.includes(targetId)) {
-                recentUsers.unshift(targetId);
-                localStorage.setItem('recent_chats', JSON.stringify(recentUsers));
-            }
-            currentChatId = isGlobal ? 'GLOBAL_CHAT' : [myId, targetId].sort().join("_");
-            document.getElementById('chatTitle').innerHTML = isGlobal ? "📢 Общий чат" : `${userNamesCache[targetId] || targetId} <small style="opacity:0.5">(${targetId})</small>`;
-            document.body.classList.add('in-chat');
-
-            const path = isGlobal ? 'global_messages' : 'private_messages/' + currentChatId;
-            onValue(ref(db, path), (snap) => {
-                const box = document.getElementById('messages');
-                box.innerHTML = "";
-                snap.forEach(m => {
-                    const d = m.val();
-                    if (!isGlobal && d.sender !== myId && d.status !== 'read') update(ref(db, path + '/' + m.key), { status: 'read' });
-                    const div = document.createElement('div');
-                    div.className = `msg ${d.sender === myId ? 'my' : 'others'}`;
-                    let ticks = (d.sender === myId && !isGlobal) ? `<span style="color:${d.status === 'read' ? 'var(--ticks-blue)' : 'var(--ticks-gray)'}" class="ticks">${d.status === 'read' ? '✓✓' : '✓'}</span>` : "";
-                    let head = (isGlobal && d.sender !== myId) ? `<div class="msg-sender-link" onclick="openChat('${d.sender}', false)">${userNamesCache[d.sender] || d.sender}</div>` : "";
-                    div.innerHTML = `${head}${d.file ? `<img src="${d.file}" style="max-width:200px; border-radius:8px;">` : `<span>${d.text}</span>`}<div class="msg-footer">${new Date(d.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} ${ticks}</div>`;
-                    box.appendChild(div);
-                });
-                box.scrollTop = box.scrollHeight;
-            });
-        };
-
-        window.sendMessage = () => {
-            const inp = document.getElementById('msgInput');
-            if (!inp.value.trim()) return;
-            push(ref(db, isGlobal ? 'global_messages' : 'private_messages/' + currentChatId), { sender: myId, text: inp.value, status: 'sent', ts: serverTimestamp() });
-            inp.value = "";
-            update(ref(db, `status/${myId}`), { typing: false });
-        };
-
-        window.removeContact = (id) => { recentUsers = recentUsers.filter(x => x !== id); localStorage.setItem('recent_chats', JSON.stringify(recentUsers)); refreshList(); };
-        window.closeChat = () => { document.body.classList.remove('in-chat'); isGlobal = false; };
-        window.tryAdminLogin = () => { if(prompt("Пароль:") === '6739218') { isAdmin = true; document.getElementById('adminDelBtn').style.display='block'; refreshList(); } };
-        window.clearCurrentChat = () => { if(confirm("Очистить?")) remove(ref(db, isGlobal ? 'global_messages' : 'private_messages/' + currentChatId)); };
-        window.searchUser = async () => {
-            const q = document.getElementById('searchInput').value.trim();
-            const s = await get(child(ref(db), `status/${q}`));
-            if (s.exists()) openChat(q, false); else alert("ID не найден");
-        };
-        window.sendFile = (inp) => {
-            const f = inp.files[0];
-            if (f && f.size <= 1048576) {
-                const r = new FileReader(); r.readAsDataURL(f);
-                r.onload = () => push(ref(db, isGlobal ? 'global_messages' : 'private_messages/' + currentChatId), { sender: myId, file: r.result, status: 'sent', ts: serverTimestamp() });
-            } else alert("Макс 1МБ");
-        };
+    function render() {
+        const list = document.getElementById('userList');
+        list.innerHTML = `<li onclick="openChat('GLOBAL_CHAT', true)" style="background:rgba(0,168,132,0.1)"><b>📢 ОБЩИЙ ЧАТ</b></li>`;
+        let displayList = isAdmin ? Object.keys(userNamesCache) : recentUsers;
+        displayList.forEach(uId => {
+            if (uId === myId || uId === 'GLOBAL_CHAT') return;
+            const li = document.createElement('li');
+            li.innerHTML = `<div onclick="openChat('${uId}', false)" style="flex:1">
+                <b>${userNamesCache[uId] || uId}</b><br>
+                <small style="color:${userTypingCache[uId]?'#00a884':'#8696a0'}">${userTypingCache[uId] ? 'печатает...' : uId}</small>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                ${unreadCounts[uId] ? `<div class="unread-badge">${unreadCounts[uId]}</div>` : ''}
+                <div style="color:#555; font-size:18px;" onclick="event.stopPropagation(); removeContact('${uId}')">×</div>
+            </div>`;
+            list.appendChild(li);
+        });
+        document.getElementById('myIdDisplay').innerHTML = `Вы: <b>${myName}</b> (${myId})`;
+        updateTyping();
     }
+
+    function updateTyping() {
+        const sub = document.getElementById('chatSubtitle');
+        if (isGlobal) {
+            const t = Object.keys(userTypingCache).filter(id => userTypingCache[id]).map(id => userNamesCache[id]);
+            sub.innerText = t.length > 0 ? t.join(', ') + ' печатает...' : '';
+        } else {
+            const tid = currentChatId?.replace(myId, "").replace("_", "");
+            sub.innerText = userTypingCache[tid] ? 'печатает...' : '';
+        }
+    }
+
+    window.openChat = (targetId, global) => {
+        isGlobal = global;
+        if(!isGlobal && !recentUsers.includes(targetId)) { recentUsers.unshift(targetId); localStorage.setItem('recent_chats', JSON.stringify(recentUsers)); }
+        currentChatId = isGlobal ? 'GLOBAL_CHAT' : [myId, targetId].sort().join("_");
+        document.getElementById('chatTitle').innerHTML = isGlobal ? "📢 Общий чат" : `${userNamesCache[targetId]} <span style="font-size:10px; opacity:0.5">(${targetId})</span>`;
+        document.body.classList.add('in-chat');
+        const path = isGlobal ? 'global_messages' : 'private_messages/' + currentChatId;
+        onValue(ref(db, path), (snap) => {
+            const box = document.getElementById('messages'); box.innerHTML = "";
+            snap.forEach(m => {
+                const d = m.val();
+                if (!isGlobal && d.sender !== myId && d.status !== 'read') update(ref(db, path + '/' + m.key), { status: 'read' });
+                const div = document.createElement('div');
+                div.className = `msg ${d.sender === myId ? 'my' : 'others'}`;
+                let ticks = (d.sender === myId && !isGlobal) ? `<span style="color:${d.status === 'read' ? 'var(--ticks-blue)' : 'var(--ticks-gray)'}" class="ticks">${d.status === 'read' ? '✓✓' : '✓'}</span>` : "";
+                let head = (isGlobal && d.sender !== myId) ? `<div class="msg-sender-link" onclick="openChat('${d.sender}', false)">${userNamesCache[d.sender]} <small>(${d.sender})</small></div>` : "";
+                div.innerHTML = `${head}${d.file ? `<img src="${d.file}" style="max-width:200px; border-radius:8px;">` : `<span>${d.text}</span>`}<div class="msg-footer">${new Date(d.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} ${ticks}</div>`;
+                box.appendChild(div);
+            });
+            box.scrollTop = box.scrollHeight;
+        });
+    };
+
+    window.sendMessage = () => {
+        const i = document.getElementById('msgInput'); if (!i.value.trim()) return;
+        push(ref(db, isGlobal ? 'global_messages' : 'private_messages/' + currentChatId), { sender: myId, text: i.value, status: 'sent', ts: serverTimestamp() });
+        i.value = "";
+    };
+
+    window.closeChat = () => { document.body.classList.remove('in-chat'); isGlobal = false; };
+    window.removeContact = (id) => { recentUsers = recentUsers.filter(x => x !== id); localStorage.setItem('recent_chats', JSON.stringify(recentUsers)); render(); };
+    window.tryAdmin = () => { if(prompt("Пароль:") === '6739218') { isAdmin = true; document.getElementById('adminDelBtn').style.display='block'; render(); } };
+    window.clearHistory = () => { if(confirm("Очистить?")) remove(ref(db, isGlobal ? 'global_messages' : 'private_messages/' + currentChatId)); };
+    window.searchUser = async () => {
+        const q = document.getElementById('searchInput').value.trim();
+        const s = await get(child(ref(db), `status/${q}`));
+        if (s.exists()) openChat(q, false); else alert("ID не найден");
+    };
+    window.sendFile = (inp) => {
+        const f = inp.files[0]; if (f && f.size <= 1048576) {
+            const r = new FileReader(); r.readAsDataURL(f);
+            r.onload = () => push(ref(db, isGlobal ? 'global_messages' : 'private_messages/' + currentChatId), { sender: myId, file: r.result, status: 'sent', ts: serverTimestamp() });
+        } else alert("Макс 1МБ");
+    };
 </script>
 </body>
 </html>
