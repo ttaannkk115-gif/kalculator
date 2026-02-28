@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VOLT MASTER</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+    <style>
+        :root { --gold: #ffc107; --bg: #0f0f0f; --card: rgba(255,255,255,0.07); --danger: #ff4444; }
+        body { font-family: sans-serif; background: var(--bg); color: #fff; margin: 0; padding: 0; }
+        .site-stats { background: #000; color: #777; font-size: 10px; text-align: center; padding: 8px; border-bottom: 1px solid #222; display: flex; justify-content: center; gap: 15px; }
+        .tabs { display: flex; background: #161616; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
+        .tab { flex: 1; padding: 18px; text-align: center; font-weight: bold; color: #888; cursor: pointer; font-size: 13px; }
+        .tab.active { color: var(--gold); border-bottom: 3px solid var(--gold); }
+        .search-container { padding: 10px 15px; background: #111; }
+        .search-input { width: 100%; padding: 12px; background: #000; border: 1px solid #333; border-radius: 10px; color: #fff; outline: none; }
+        .container { padding: 15px; max-width: 500px; margin: auto; }
+        .section { display: none; }
+        .active { display: block; }
+        .card { background: var(--card); border-radius: 18px; overflow: hidden; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08); position: relative; }
+        .card img { width: 100%; height: auto; max-height: 400px; object-fit: contain; background: #000; display: block; }
+        .info { padding: 15px; }
+        .price { color: var(--gold); font-size: 22px; font-weight: 900; }
+        .title { font-size: 17px; font-weight: 600; margin: 5px 0; }
+        .desc { font-size: 13px; color: #aaa; white-space: pre-wrap; }
+        .timer-bottom { text-align: center; padding: 8px; font-size: 11px; font-family: monospace; border-top: 1px solid rgba(255,255,255,0.05); }
+        .actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; }
+        .btn-sm { width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer; font-weight: bold; }
+        .form { background: #161616; padding: 20px; border-radius: 20px; border: 1px solid #333; }
+        input, textarea, select { width: 100%; margin-bottom: 12px; padding: 14px; border: 1px solid #333; border-radius: 12px; background: #000; color: #fff; box-sizing: border-box; }
+        .btn-main { width: 100%; padding: 16px; background: var(--gold); border: none; border-radius: 12px; font-weight: 800; cursor: pointer; }
+        .tag-item { background: rgba(255,193,7,0.1); border: 1px solid var(--gold); color: var(--gold); padding: 4px 10px; border-radius: 8px; font-size: 12px; display: flex; align-items: center; gap: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="site-stats">
+    <span id="site-counter">ВИЗИТЫ: ...</span>
+    <span id="my-id-display">ID: ...</span>
+</div>
+
+<div class="tabs">
+    <div id="t-view" class="tab active" onclick="tab('view')">📢 СТЕНА</div>
+    <div id="t-create" class="tab" onclick="handleAdminAuth()">➕ ПОДАТЬ</div>
+</div>
+
+<div id="search-bar" class="search-container">
+    <input type="text" id="searchInput" class="search-input" placeholder="Поиск..." oninput="render()">
+</div>
+
+<div class="container">
+    <div id="view" class="section active"><div id="feed"></div></div>
+    <div id="create" class="section">
+        <div id="admin-area"></div>
+        <form id="adForm" class="form">
+            <input type="text" id="inp-t" placeholder="Название" required>
+            <input type="number" id="inp-p" placeholder="Цена" required>
+            <textarea id="inp-d" rows="3" placeholder="Описание"></textarea>
+            <input type="file" id="inp-f" accept="image/*" style="display:none" onchange="prepImg()">
+            <button type="button" class="btn-main" style="background:#333; color:var(--gold); margin-bottom:10px" onclick="document.getElementById('inp-f').click()">📸 ФОТО</button>
+            <div id="img-st" style="text-align:center; font-size:12px; margin-bottom:10px"></div>
+            <button type="button" id="btn-save" class="btn-main" onclick="save()">ОПУБЛИКОВАТЬ</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    firebase.initializeApp({ databaseURL: "https://kalculator-8e345-default-rtdb.firebaseio.com/" });
+    const database = firebase.database();
+    const DB_PATH = "marketplace_ads", ADMIN_PATH = "marketplace_settings", MS_IN_24H = 86400000, ETERNAL_VAL = 999;
+    
+    let MY_ID = localStorage.getItem('user_id_2026') || "ID-" + Math.floor(Math.random() * 1000);
+    localStorage.setItem('user_id_2026', MY_ID);
+    document.getElementById('my-id-display').innerHTML = `ID: <b>${MY_ID}</b>`;
+
+    let ads = [], whitelist = {}, curImg = "", editId = null, isAdmin = false, clickCount = 0, timerInt = null;
+
+    function handleAdminAuth() {
+        clickCount++;
+        if (clickCount === 3) {
+            if (prompt("Пароль:") === "Gazik0303") { isAdmin = !isAdmin; render(); alert(isAdmin ? "АДМИН: ВКЛ" : "АДМИН: ВЫКЛ"); }
+            clickCount = 0;
+        } else { setTimeout(() => clickCount = 0, 1000); }
+        tab('create');
+    }
+
+    function tab(n) {
+        document.querySelectorAll('.tab, .section').forEach(el => el.classList.remove('active'));
+        document.getElementById('t-'+n).classList.add('active');
+        document.getElementById(n).classList.add('active');
+        document.getElementById('search-bar').style.display = (n === 'view') ? 'block' : 'none';
+        if(n === 'view') { load(); startTick(); } else { stopTick(); }
+    }
+
+    async function load() {
+        database.ref(DB_PATH).on('value', snap => {
+            const data = snap.val(), now = Date.now();
+            ads = (data ? Object.keys(data).map(k => ({...data[k], id: k})) : []).filter(a => {
+                if (a.ts !== ETERNAL_VAL && (now - a.ts) >= MS_IN_24H) { database.ref(`${DB_PATH}/${a.id}`).remove(); return false; }
+                return true;
+            });
+            render();
+        });
+        database.ref(`${ADMIN_PATH}/whitelist`).on('value', snap => { whitelist = snap.val() || {}; if(isAdmin) renderWhitelist(); });
+    }
+
+    function render() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const adminArea = document.getElementById('admin-area');
+        adminArea.innerHTML = isAdmin ? `
+            <div class="form" style="margin-bottom:20px; border:1px solid var(--gold)">
+                <div id="whitelist-tags" style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px"></div>
+                <div style="display:flex; gap:5px"><input type="text" id="w-id" placeholder="ID" style="margin:0"><button class="btn-main" style="width:50px; padding:0" onclick="addW()">+</button></div>
+                <select id="p-type" style="margin-top:10px"><option value="n">Обычный</option><option value="e">ВЕЧНЫЙ</option></select>
+            </div>` : '';
+
+        document.getElementById('feed').innerHTML = ads.filter(a => a.title.toLowerCase().includes(query) || a.desc.toLowerCase().includes(query))
+            .sort((a,b) => (a.ts === ETERNAL_VAL ? -1 : b.ts === ETERNAL_VAL ? 1 : b.ts - a.ts)).map(a => `
+                <div class="card">
+                    ${(isAdmin || a.owner === MY_ID) ? `<div class="actions">
+                        ${isAdmin ? `<button class="btn-sm" style="background:#2196f3" onclick="up('${a.id}')">TOP</button>` : ''}
+                        <button class="btn-sm" style="background:var(--gold)" onclick="edit('${a.id}')">✎</button>
+                        <button class="btn-sm" style="background:var(--danger); color:#fff" onclick="del('${a.id}')">×</button>
+                    </div>` : ''}
+                    ${a.img ? `<img src="${a.img}">` : ''}
+                    <div class="info">
+                        <div style="display:flex; justify-content:space-between"><span class="price">${Number(a.price).toLocaleString()} ₽</span><span style="color:#777; font-size:12px">👁 ${a.views || 0}</span></div>
+                        <div class="title">${a.title}</div>
+                        <div class="desc">${a.desc}</div>
+                    </div>
+                    <div class="timer-bottom" id="timer-${a.id}" style="color:${a.ts === ETERNAL_VAL ? 'var(--gold)' : '#555'}">
+                        ${a.ts === ETERNAL_VAL ? 'ВЕЧНОЕ ОБЪЯВЛЕНИЕ' : '...'}
+                    </div>
+                </div>`).join('');
+        tick();
+    }
+
+    function tick() {
+        const now = Date.now();
+        ads.forEach(a => {
+            const el = document.getElementById(`timer-${a.id}`);
+            if(!el || a.ts === ETERNAL_VAL) return;
+            const diff = MS_IN_24H - (now - a.ts);
+            if(diff <= 0) { el.innerText = "УДАЛЕНИЕ..."; return; }
+            const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
+            el.innerText = `УДАЛЕНИЕ ЧЕРЕЗ: ${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        });
+    }
+
+    function startTick() { stopTick(); timerInt = setInterval(tick, 1000); }
+    function stopTick() { clearInterval(timerInt); }
+
+    async function addW() { const id = document.getElementById('w-id').value; if(id) await database.ref(`${ADMIN_PATH}/whitelist/${id}`).set(true); }
+    async function delW(id) { if(confirm("Забрать безлимит?")) await database.ref(`${ADMIN_PATH}/whitelist/${id}`).remove(); }
+    function renderWhitelist() { 
+        const c = document.getElementById('whitelist-tags'); if(!c) return; c.innerHTML = '';
+        Object.keys(whitelist).forEach(id => c.innerHTML += `<div class="tag-item">${id}<b style="cursor:pointer; color:var(--danger)" onclick="delW('${id}')">×</b></div>`);
+    }
+
+    function prepImg() {
+        const file = document.getElementById('inp-f').files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX = 800; let w = img.width, h = img.height;
+                if (w > MAX) { h *= MAX/w; w = MAX; }
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                curImg = canvas.toDataURL('image/jpeg', 0.7);
+                document.getElementById('img-st').innerText = "ФОТО ГОТОВО ✅";
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function save() {
+        const now = Date.now();
+        const lastPost = localStorage.getItem('last_post_time_2026') || 0;
+        
+        // ПРОВЕРКА ЛИМИТА: и по базе, и по локальной памяти
+        if (!editId && !isAdmin && !whitelist[MY_ID]) {
+            const hasInDb = ads.find(a => a.owner === MY_ID);
+            const isTooSoon = (now - lastPost) < MS_IN_24H;
+            
+            if (hasInDb || isTooSoon) {
+                const wait = isTooSoon ? Math.ceil((MS_IN_24H - (now - lastPost)) / 3600000) : "24";
+                return alert(`Лимит 24 часа! Нужно подождать.`);
+            }
+        }
+
+        const data = { title: document.getElementById('inp-t').value, price: document.getElementById('inp-p').value, desc: document.getElementById('inp-d').value, img: curImg, owner: MY_ID, views: 0,
+            ts: editId ? ads.find(x => x.id === editId).ts : (isAdmin && document.getElementById('p-type').value === 'e' ? ETERNAL_VAL : now) };
+        
+        await (editId ? database.ref(`${DB_PATH}/${editId}`) : database.ref(DB_PATH).push()).update(data);
+        
+        // Запоминаем время поста локально
+        if(!editId && !isAdmin) localStorage.setItem('last_post_time_2026', now);
+
+        document.getElementById('adForm').reset(); curImg = ""; editId = null; tab('view');
+    }
+
+    async function up(id) { if(ads.find(x => x.id === id).ts !== ETERNAL_VAL) await database.ref(`${DB_PATH}/${id}/ts`).set(Date.now()); }
+    async function del(id) { if(confirm("Удалить?")) await database.ref(`${DB_PATH}/${id}`).remove(); }
+    function edit(id) { 
+        const a = ads.find(x => x.id === id); editId = id;
+        document.getElementById('inp-t').value = a.title; document.getElementById('inp-p').value = a.price; document.getElementById('inp-d').value = a.desc;
+        curImg = a.img; tab('create');
+    }
+
+    database.ref(`${ADMIN_PATH}/totalVisits`).transaction(c => (c || 0) + 1);
+    database.ref(`${ADMIN_PATH}/totalVisits`).on('value', s => document.getElementById('site-counter').innerHTML = `ВИЗИТЫ: <b>${s.val()}</b>`);
+    document.getElementById('t-view').onclick = () => { ads.forEach(a => database.ref(`${DB_PATH}/${a.id}/views`).transaction(c => (c || 0) + 1)); tab('view'); };
+    load(); startTick();
+</script>
+</body>
+</html>
