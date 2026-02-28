@@ -229,7 +229,6 @@
         if(id) { await database.ref(`${ADMIN_PATH}/whitelist/${id}`).set(status); document.getElementById('w-id').value = ""; }
     }
     
-    // --- ВОССТАНОВЛЕННАЯ ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ (🔄) ---
     async function toggleW(id, cur) { 
         await database.ref(`${ADMIN_PATH}/whitelist/${id}`).set(cur === 'eternal' ? 'temporary' : 'eternal'); 
     }
@@ -265,7 +264,8 @@
         const userStatus = whitelist[MY_ID];
         if(!title) return alert("Введите название!");
 
-        if (!editId && !isAdmin && userStatus !== 'eternal') {
+        // ИСПРАВЛЕННАЯ ЛОГИКА ЛИМИТОВ: статус temporary теперь снимает лимит на количество постов
+        if (!editId && !isAdmin && !userStatus) { 
             const hasActive = ads.some(a => a.owner === MY_ID);
             const lastPost = localStorage.getItem('last_post_time_2026') || 0;
             if (hasActive || (now - lastPost) < MS_IN_24H) return alert("Лимит: 1 активный пост в 24ч.");
@@ -279,12 +279,13 @@
         } else {
             if (isAdmin) finalTs = document.getElementById('p-type').value === 'e' ? ETERNAL_VAL : now;
             else if (userStatus === 'eternal') finalTs = ETERNAL_VAL;
+            // Если temporary, ts остается обычным (now), но проверка лимита выше была пройдена
         }
 
         const data = { title, price, desc, contact, img: curImg, owner: editId ? ads.find(x => x.id === editId).owner : MY_ID, views: editId ? (ads.find(x => x.id === editId).views || 0) : 0, ts: finalTs };
         try {
             if (editId) await database.ref(`${DB_PATH}/${editId}`).set(data);
-            else { await database.ref(DB_PATH).push(data); if (!isAdmin && userStatus !== 'eternal') localStorage.setItem('last_post_time_2026', now); }
+            else { await database.ref(DB_PATH).push(data); if (!isAdmin && !userStatus) localStorage.setItem('last_post_time_2026', now); }
             resetForm(); tab('view');
         } catch(e) { alert("Ошибка!"); }
     }
