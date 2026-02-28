@@ -22,16 +22,28 @@
             --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        body {
-            margin: 0; padding: 0;
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background: var(--dark-bg);
-            color: var(--text-main);
-            display: flex; justify-content: center; align-items: center;
-            min-height: 100vh;
-            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 100%);
-            overflow: hidden;
-        }
+body {
+    margin: 0; padding: 0;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    background: var(--dark-bg);
+    color: var(--text-main);
+    display: flex; 
+    justify-content: center; 
+    align-items: flex-start; /* Изменено с center на flex-start для корректного скролла */
+    min-height: 100vh;
+    background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 100%);
+    overflow-y: auto; /* Разрешаем вертикальный скролл */
+    -webkit-overflow-scrolling: touch; /* Плавный скролл на iPhone */
+}
+
+/* Обнови этот блок, чтобы добавить отступ снизу */
+.app-container { 
+    width: 90%; 
+    max-width: 380px; 
+    animation: fadeIn 0.5s ease; 
+    padding: 20px 0 100px 0; /* Добавлен отступ 100px снизу, чтобы кнопки не прятались под WhatsApp */
+}
+
 
         .app-container { width: 90%; max-width: 380px; animation: fadeIn 0.5s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
