@@ -1,10 +1,12 @@
 {
   "name": "VOLT MASTER Panel",
   "short_name": "VoltMaster",
-  "start_url": "index.html",
+  "description": "Панель управления Volt Master",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f0f0f",
   "theme_color": "#ffc107",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "logo.png",
@@ -15,7 +17,8 @@
     {
       "src": "logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
