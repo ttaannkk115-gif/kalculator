@@ -1,6 +1,5 @@
-importScripts('https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.1.3/firebase-messaging-compat.js');
-
+importscripts('https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js');
+importscripts('https://www.gstatic.com/firebasejs/9.1.3/firebase-messaging-compat.js');
 
 const firebaseConfig = {
     apiKey: "AIzaSyD-dIC8bm8y4kay7RXmMrys2wOMLA5o8vY",
@@ -15,9 +14,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// Фоновая обработка уведомлений
 messaging.onBackgroundMessage((payload) => {
-  console.log('Получено фоновое сообщение: ', payload);
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
