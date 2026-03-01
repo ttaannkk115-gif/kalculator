@@ -206,9 +206,16 @@
     const messaging = firebase.messaging();
 
         if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./firebase-messaging-sw.js')
-        .then(() => console.log("SW найден и работает"))
-        .catch(err => console.log("Ошибка пути:", err));
+    // Мы явно указываем путь с учетом твоей папки /kalculator/
+    navigator.serviceWorker.register('/kalculator/firebase-messaging-sw.js', {
+        scope: '/kalculator/'
+    })
+    .then((reg) => {
+        console.log("Сервис-воркер найден в папке kalculator!");
+    })
+    .catch((err) => {
+        console.error("Ошибка регистрации:", err);
+    });
 }
 
     let myId = localStorage.getItem('user_id_2026') || "ID-" + Math.floor(Math.random() * 1000);
