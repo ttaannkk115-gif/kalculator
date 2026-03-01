@@ -260,7 +260,7 @@
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
             // ВСТАВЬ ТУТ СВОЙ ДЛИННЫЙ VAPID KEY ИЗ CLOUD MESSAGING
-            const vapidKey = "ВСТАВЬ_СВОЙ_ДЛИННЫЙ_VAPID_КЛЮЧ"; 
+            const vapidKey = "BGNQzlvGewOuQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKkYekWNL-3tgN_cQ"; 
             
             messaging.getToken({ vapidKey }).then((token) => {
                 if (token) {
