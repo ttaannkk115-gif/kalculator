@@ -8,7 +8,8 @@ const firebaseConfig = {
     projectId: "voltmaster-332c0",
     storageBucket: "voltmaster-332c0.firebasestorage.app",
     messagingSenderId: "312337098429",
-    appId: "1:312337098429:web:663e0f6787bd62d19bf9d4"
+    appId: "1:312337098429:web:663e0f6787bd62d19bf9d4",
+    measurementId: "G-C8LKVE96DW"
 };
 
 firebase.initializeApp(firebaseConfig);
