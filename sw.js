@@ -1,66 +1,38 @@
-// 1. Подключаем библиотеки Firebase (версия compat для стабильности)
 importScripts('https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.1.3/firebase-messaging-compat.js');
 
-// 2. Твои настройки Firebase (обязательно заполни своими данными из Console)
 const firebaseConfig = {
-    apiKey: "ТВОЙ_API_KEY",
-    authDomain: "kalculator-8e345.firebaseapp.com",
-    databaseURL: "https://kalculator-8e345-default-rtdb.firebaseio.com/",
-    projectId: "kalculator-8e345",
-    storageBucket: "kalculator-8e345.appspot.com",
-    messagingSenderId: "ТВОЙ_SENDER_ID",
-    appId: "ТВОЙ_APP_ID"
+    apiKey: "AIzaSyD-dIC8bm8y4kay7RXmMrys2wOMLA5o8vY",
+    authDomain: "voltmaster-332c0.firebaseapp.com",
+    databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com",
+    projectId: "voltmaster-332c0",
+    storageBucket: "voltmaster-332c0.firebasestorage.app",
+    messagingSenderId: "312337098429",
+    appId: "1:312337098429:web:663e0f6787bd62d19bf9d4"
 };
 
-// Инициализация
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// 3. Установка и активация воркера
-self.addEventListener('install', () => {
-    self.skipWaiting();
-});
-
-self.addEventListener('activate', () => {
-    self.clients.claim();
-});
-
-// 4. Обработка фоновых уведомлений (чтобы приходили, когда приложение закрыто)
 messaging.onBackgroundMessage((payload) => {
-    console.log('Получено фоновое сообщение:', payload);
-    const notificationTitle = payload.notification.title || 'VOLT MASTER';
-    const notificationOptions = {
+    const options = {
         body: payload.notification.body,
         icon: 'logo.png',
         badge: 'logo.png',
-        sound: 'default',
-        vibrate: [200, 100, 200]
+        sound: 'default'
     };
-
-    self.registration.showNotification(notificationTitle, notificationOptions);
+    self.registration.showNotification(payload.notification.title, options);
 });
 
-// 5. Исправление ошибки 404 при клике
 self.addEventListener('notificationclick', function(event) {
     event.notification.close();
-
-    // Определяем текущий базовый URL (папку на GitHub), чтобы не было 404
-    const rootUrl = new URL('./', location).href;
-
+    const folderUrl = new URL('./', location).href;
     event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
-            // Если вкладка уже открыта — переключаем фокус на неё
-            for (let i = 0; i < windowClients.length; i++) {
-                let client = windowClients[i];
-                if (client.url === rootUrl && 'focus' in client) {
-                    return client.focus();
-                }
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientsList => {
+            for (let client of clientsList) {
+                if (client.url.startsWith(folderUrl) && 'focus' in client) return client.focus();
             }
-            // Если закрыта — открываем правильный путь (не корень домена, а папку проекта)
-            if (clients.openWindow) {
-                return clients.openWindow(rootUrl);
-            }
+            if (clients.openWindow) return clients.openWindow(folderUrl);
         })
     );
 });
