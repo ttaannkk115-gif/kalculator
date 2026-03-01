@@ -2,7 +2,7 @@
   "name": "VOLT MASTER Panel",
   "short_name": "VoltMaster",
   "description": "Панель управления Volt Master",
-  "start_url": "index.html",
+  "start_url": "/kalculator/index.html",
   "display": "standalone",
   "background_color": "#0f0f0f",
   "theme_color": "#ffc107",
