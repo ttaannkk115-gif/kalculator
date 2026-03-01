@@ -206,7 +206,7 @@
     const messaging = firebase.messaging();
 
         if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('firebase-messaging-sw.js')
+        navigator.serviceWorker.register('./firebase-messaging-sw.js')
             .then(() => console.log("Service Worker зарегистрирован"))
             .catch(err => console.log("Ошибка SW:", err));
     }
