@@ -206,10 +206,10 @@
     const messaging = firebase.messaging();
 
         if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./firebase-messaging-sw.js')
-            .then(() => console.log("Service Worker зарегистрирован"))
-            .catch(err => console.log("Ошибка SW:", err));
-    }
+    navigator.serviceWorker.register('./firebase-messaging-sw.js')
+        .then(() => console.log("SW найден и работает"))
+        .catch(err => console.log("Ошибка пути:", err));
+}
 
     let myId = localStorage.getItem('user_id_2026') || "ID-" + Math.floor(Math.random() * 1000);
     localStorage.setItem('user_id_2026', myId);
