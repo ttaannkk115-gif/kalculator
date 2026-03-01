@@ -257,20 +257,24 @@
 
     // --- 3. ПУШ-УВЕДОМЛЕНИЯ ---
     async function activatePush() {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            // ВСТАВЬ ТУТ СВОЙ ДЛИННЫЙ VAPID KEY ИЗ CLOUD MESSAGING
-            const vapidKey = "BGNQzlvGewOuQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKkYekWNL-3tgN_cQ"; 
-            
-            messaging.getToken({ vapidKey }).then((token) => {
-                if (token) {
-                    database.ref('user_tokens/master').set({ token: token, updated: new Date().toLocaleString() });
-                    document.getElementById('notify-trigger').classList.add('hidden');
-                    alert("Master, уведомления активированы!");
-                }
-            }).catch(err => alert("Ошибка: " + err));
-        }
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+        // Твой ключ со скриншота №9
+        const vapidKey = "BGNQzlvGewOuQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKkYekWNL-3tgN_cQ"; 
+        
+        messaging.getToken({ vapidKey: vapidKey }).then((token) => {
+            if (token) {
+                database.ref('user_tokens/master').set({ 
+                    token: token, 
+                    updated: new Date().toLocaleString() 
+                });
+                alert("Уведомления успешно привязаны!");
+            }
+        }).catch(err => {
+            alert("Ошибка регистрации: " + err);
+        });
     }
+}
 
     function initAppCounters() {
         database.ref('shabashki/active').on('value', snap => {
