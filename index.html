@@ -5,28 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>VOLT MASTER Panel</title>
     
+    <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="logo.png">
-    <link rel="manifest" href="/kalculator/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-messaging-compat.js"></script>
 
     <style>
         :root {
-            --main-gold: #ffc107; --chat-blue: #2196f3; --break-green: #4caf50;
-            --note-purple: #9c27b0; --shabash-orange: #ff9800; --dark-bg: #0f0f0f;
-            --card-bg: rgba(255, 255, 255, 0.07); --text-main: #ffffff;
+            --main-gold: #ffc107;
+            --chat-blue: #2196f3;
+            --break-green: #4caf50;
+            --note-purple: #9c27b0;
+            --shabash-orange: #ff9800;
+            --dark-bg: #0f0f0f;
+            --card-bg: rgba(255, 255, 255, 0.07);
+            --text-main: #ffffff;
+            --text-dim: #999999;
             --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         body {
-            margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif;
-            background: var(--dark-bg); color: var(--text-main);
+            margin: 0; padding: 0;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-main);
             display: flex; justify-content: center; align-items: flex-start;
-            min-height: 100vh; background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 100%);
+            min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 100%);
             overflow-y: auto; -webkit-overflow-scrolling: touch;
         }
 
@@ -34,10 +42,14 @@
 
         /* Кнопка уведомлений */
         .notification-btn {
-            position: absolute; top: 0; right: 0; width: 42px; height: 42px;
-            background: rgba(255, 193, 7, 0.1); border: 1px solid var(--main-gold);
-            border-radius: 12px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 100; transition: var(--transition);
+            position: absolute; top: 0; right: 0;
+            width: 42px; height: 42px;
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid var(--main-gold);
+            border-radius: 12px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; z-index: 100;
+            transition: var(--transition);
             animation: pulse-gold 2s infinite;
         }
         .notification-btn.hidden { opacity: 0; pointer-events: none; transform: scale(0.8); }
@@ -53,9 +65,13 @@
         .header span { color: var(--main-gold); }
 
         .status-badge {
-            display: inline-flex; align-items: center; background: rgba(255, 193, 7, 0.08);
-            padding: 6px 18px; border-radius: 20px; font-size: 11px; margin-top: 8px;
-            border: 1px solid rgba(255, 193, 7, 0.2); min-width: 180px; justify-content: center; gap: 8px;
+            display: inline-flex; align-items: center;
+            background: rgba(255, 193, 7, 0.08);
+            padding: 6px 18px; border-radius: 20px;
+            font-size: 11px; margin-top: 8px;
+            border: 1px solid rgba(255, 193, 7, 0.2);
+            min-width: 180px; justify-content: center; gap: 8px;
+            font-family: monospace;
         }
         .status-dot { width: 7px; height: 7px; border-radius: 50%; }
 
@@ -85,23 +101,34 @@
 
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark-bg); z-index: 2000; display: none; flex-direction: column; }
         .overlay-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: #161616; border-bottom: 1px solid #333; }
-        iframe { width: 100%; height: 100%; border: none; }
-        .close-btn { background: none; border: none; color: #ff4444; font-size: 30px; }
+        .overlay-body { flex-grow: 1; position: relative; overflow: hidden; }
+        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        .close-btn { background: none; border: none; color: #ff4444; font-size: 30px; cursor: pointer; }
 
+        /* Админ-панель стили */
         .admin-controls { background: #1a1a1a; padding: 18px; border-radius: 16px; margin-bottom: 15px; border: 1px solid #333; }
-        .admin-input { background: #000; border: 1px solid #333; border-radius: 8px; color: #fff; padding: 10px; width: 70%; }
-        .tag { background: rgba(255,255,255,0.05); border: 1px solid #444; color: #ff4444; padding: 5px 10px; border-radius: 6px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; margin: 3px; }
+        .admin-input-group { display: flex; gap: 8px; margin: 10px 0; }
+        .admin-input { flex: 1; background: #000; border: 1px solid #333; border-radius: 8px; color: #fff; padding: 10px; font-size: 14px; }
+        .admin-add-btn { background: var(--main-gold); border: none; width: 45px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-danger { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 8px; width: 100%; font-size: 14px; }
+        .btn-orange { background: #f57c00; }
+        .tag { background: rgba(255,255,255,0.05); border: 1px solid #444; color: #ff4444; padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .date-divider { background: #111; color: var(--main-gold); padding: 10px; font-size: 12px; font-weight: bold; margin-top: 20px; text-align: center; border-radius: 8px; }
         .log-item { padding: 15px 5px; border-bottom: 1px solid #1a1a1a; }
-        .date-divider { background: #111; color: var(--main-gold); padding: 10px; font-size: 12px; font-weight: bold; text-align: center; border-radius: 8px; margin: 10px 0; }
-
-        .whatsapp-float { position: fixed; width: 56px; height: 56px; bottom: 20px; right: 20px; background-color: #25d366; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 1500; }
         .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #444; letter-spacing: 2px; }
+
+        .whatsapp-float {
+            position: fixed; width: 56px; height: 56px; bottom: 20px; right: 20px;
+            background-color: #25d366; border-radius: 50%; display: flex;
+            justify-content: center; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            z-index: 1500; text-decoration: none;
+        }
     </style>
 </head>
 <body>
 
 <div class="app-container">
-    <div id="notify-trigger" class="notification-btn" onclick="activatePush()">🔔</div>
+    <div id="notify-trigger" class="notification-btn" onclick="requestNotifications()">🔔</div>
 
     <div class="header" id="main-logo">
         <h1>VOLT<span>MASTER</span></h1>
@@ -161,7 +188,7 @@
         <span id="overlay-title" style="color:var(--main-gold); font-weight:bold;">App</span>
         <button class="close-btn" onclick="closeApp()">&times;</button>
     </div>
-    <div style="flex-grow:1;"><iframe id="app-frame"></iframe></div>
+    <div class="overlay-body"><iframe id="app-frame"></iframe></div>
 </div>
 
 <div id="admin-overlay" class="overlay">
@@ -169,16 +196,16 @@
         <span style="color:var(--main-gold); font-weight:bold;">ADMIN PANEL</span>
         <button class="close-btn" onclick="closeAdmin()">&times;</button>
     </div>
-    <div style="padding: 15px; overflow-y: auto; background: #0a0a0a; flex-grow:1;">
+    <div class="overlay-body" style="padding: 15px; overflow-y: auto; background: #0a0a0a;">
         <div class="admin-controls">
             <div id="admin-summary" style="font-size:16px; color:var(--main-gold); margin-bottom:15px; font-weight:bold;">СЕГОДНЯ ЗАШЛИ: <span id="today-count">0</span></div>
-            <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <div class="admin-input-group">
                 <input type="text" id="exclude-input" class="admin-input" placeholder="ID">
-                <button onclick="addExclusion()" style="background:var(--main-gold); border:none; padding:10px; border-radius:8px;">+</button>
+                <button class="admin-add-btn" onclick="addExclusion()">+</button>
             </div>
-            <div id="excluded-tags"></div>
-            <button onclick="clearOnlyLogs()" style="background:#f57c00; color:white; border:none; padding:12px; border-radius:10px; width:100%; font-weight:bold; margin-top:10px;">ОЧИСТИТЬ ЛОГИ</button>
-            <button onclick="fullReset()" style="background:#ff4444; color:white; border:none; padding:12px; border-radius:10px; width:100%; font-weight:bold; margin-top:8px;">ПОЛНЫЙ СБРОС</button>
+            <div id="excluded-tags" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;"></div>
+            <button class="btn-danger btn-orange" onclick="clearOnlyLogs()">ОЧИСТИТЬ ЛОГИ</button>
+            <button class="btn-danger" onclick="fullReset()">ПОЛНЫЙ СБРОС БАЗЫ</button>
         </div>
         <div id="log-container"></div>
     </div>
@@ -189,35 +216,20 @@
 </a>
 
 <script>
-    // --- 1. ТВОЙ НОВЫЙ КОНФИГ FIREBASE ---
-    const firebaseConfig = {
-    apiKey: "AIzaSyD-dIC8bm8y4kay7RXmMrys2wOMLA5o8vY",
-    authDomain: "voltmaster-332c0.firebaseapp.com",
-    databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com",
-    projectId: "voltmaster-332c0",
-    storageBucket: "voltmaster-332c0.firebasestorage.app",
-    messagingSenderId: "312337098429",
-    appId: "1:312337098429:web:663e0f6787bd62d19bf9d4",
-    measurementId: "G-C8LKVE96DW"
-};
-
+    const firebaseConfig = { databaseURL: "https://kalculator-8e345-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-    const messaging = firebase.messaging();
 
-        if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('firebase-messaging-sw.js')
-        .then(() => console.log("Service Worker зарегистрирован!"))
-        .catch(err => console.log("Ошибка регистрации SW:", err));
-}
-}
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+    }
 
     let myId = localStorage.getItem('user_id_2026') || "ID-" + Math.floor(Math.random() * 1000);
     localStorage.setItem('user_id_2026', myId);
+
     let excludedIds = [];
     let lastShabashCount = -1;
 
-    // --- 2. ЛОГИКА ТРЕКЕРА И ВИЗИТОВ ---
     async function initTracker() {
         const statsEl = document.getElementById('stats-display');
         const dot = document.getElementById('online-dot');
@@ -225,10 +237,12 @@
         const dateKey = now.toISOString().split('T')[0];
         const timeString = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
-        if (Notification.permission === 'granted') {
+        // Проверка прав на уведомления
+        if (Notification.permission === 'granted' || Notification.permission === 'denied') {
             document.getElementById('notify-trigger').classList.add('hidden');
         }
 
+        // Загрузка исключений и логирование (Твой оригинал)
         database.ref('excluded_list').on('value', snap => {
             excludedIds = Object.values(snap.val() || {});
             renderExclusionTags();
@@ -258,36 +272,34 @@
         initAppCounters();
     }
 
-    // --- 3. ПУШ-УВЕДОМЛЕНИЯ ---
-    async function activatePush() {
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-        // Твой ключ со скриншота №9
-        const vapidKey = "BGNQzlvGewOuQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKkYekWNL-3tgN_cQ"; 
-        
-        messaging.getToken({ vapidKey: vapidKey }).then((token) => {
-            if (token) {
-                database.ref('user_tokens/master').set({ 
-                    token: token, 
-                    updated: new Date().toLocaleString() 
-                });
-                alert("Уведомления успешно привязаны!");
-            }
-        }).catch(err => {
-            alert("Ошибка регистрации: " + err);
-        });
+    // УВЕДОМЛЕНИЯ
+    async function requestNotifications() {
+        const p = await Notification.requestPermission();
+        if (p === 'granted') {
+            document.getElementById('notify-trigger').classList.add('hidden');
+            sendNotification("VOLT MASTER", "Уведомления включены!");
+        }
     }
-}
+
+    function sendNotification(title, body) {
+        if (Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification(title, { body: body, icon: 'logo.png', vibrate: [200, 100, 200] });
+            });
+        }
+    }
 
     function initAppCounters() {
         database.ref('shabashki/active').on('value', snap => {
             const count = snap.numChildren();
+            if (lastShabashCount !== -1 && count > lastShabashCount) sendNotification("⚡ VOLT MASTER", "Новая шабашка!");
+            lastShabashCount = count;
             const el = document.getElementById('shabash-counter');
             el.innerText = count; el.style.display = count > 0 ? 'inline-flex' : 'none';
         });
     }
 
-    // --- 4. АДМИНКА И ЛОГИ ---
+    // АДМИНКА (Твой оригинал)
     function loadLogs() {
         const dateKey = new Date().toISOString().split('T')[0];
         database.ref(`visits/${dateKey}`).on('value', snap => {
@@ -326,7 +338,7 @@
 
     function renderExclusionTags() {
         const container = document.getElementById('excluded-tags');
-        container.innerHTML = '';
+        if(!container) return; container.innerHTML = '';
         excludedIds.forEach(id => {
             const tag = document.createElement('div'); tag.className = 'tag';
             tag.innerHTML = `${id} <span>&times;</span>`;
@@ -336,9 +348,9 @@
     }
 
     function clearOnlyLogs() { if(confirm("Удалить историю?")) database.ref('visits').remove(); }
-    function fullReset() { if(confirm("Удалить ВСЕ данные базы?")) database.ref().remove(); }
+    function fullReset() { if(confirm("Удалить ВСЕ данные?")) database.ref().remove(); }
 
-    // --- 5. УПРАВЛЕНИЕ ОКНАМИ ---
+    // ОВЕРЛЕИ И ЛОГО
     let clicks = 0;
     document.getElementById('main-logo').onclick = () => {
         clicks++; if(clicks === 3) { if(prompt("Пароль:") === "Gazik0303") openAdmin(); clicks = 0; }
