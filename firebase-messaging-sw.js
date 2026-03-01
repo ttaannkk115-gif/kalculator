@@ -17,5 +17,5 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
     const title = payload.notification.title;
     const options = { body: payload.notification.body, icon: 'logo.png' };
-    self.registration.showNotification(title, options);
+        self.registration.showNotification(title, options);
 });
