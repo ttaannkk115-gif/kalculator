@@ -205,8 +205,10 @@
     const database = firebase.database();
     const messaging = firebase.messaging();
 
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js').then(() => console.log("SW Ready"));
+        if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('firebase-messaging-sw.js')
+            .then(() => console.log("Service Worker зарегистрирован"))
+            .catch(err => console.log("Ошибка SW:", err));
     }
 
     let myId = localStorage.getItem('user_id_2026') || "ID-" + Math.floor(Math.random() * 1000);
