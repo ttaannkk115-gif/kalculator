@@ -278,6 +278,7 @@
         if(!data.task || !data.addr || data.phone.length < 18) return alert("Заполните всё!");
         
         db.ref('shabashki/active/' + id).update(data).then(() => { 
+            sendPushTrigger(data.task, data.city);
             resetForm(); 
             changeView('list', document.querySelector('nav button')); 
         });
@@ -350,6 +351,22 @@
     }
 
     window.onload = initSync;
+function sendPushTrigger(taskName, city) {
+    // Вместо сложной отправки через ключи, мы просто пишем в базу
+    // специальную метку. Облачная функция увидит её и сама отправит пуш.
+    const pushData = {
+        title: "НОВАЯ ШАБАШКА! 🔥",
+        body: city + ": " + taskName,
+        icon: "https://voltmaster-332c0.web.app/logo.png",
+        click_action: "https://voltmaster-332c0.web.app/",
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    // Создаем запись в новой папке 'push_queue'
+    database.ref('push_queue').push(pushData)
+        .then(() => console.log("Сигнал на пуш отправлен!"))
+        .catch((err) => console.error("Ошибка сигнала:", err));
+}
 </script>
 </body>
 </html>
