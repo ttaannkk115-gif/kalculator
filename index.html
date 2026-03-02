@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VOLT MASTER Panel</title>
+    <title>VOLT MASTER PRO</title>
     
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="logo.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIlZPTFQgTUFTVEVSIiwKICAic2hvcnRfbmFtZSI6ICJWLU1BU1RFUiIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMGYwZjBmIiwKICAidGhlbWVfY29sb3ciOiAiI2ZmYzEwNyIsCiAgImljb25zIjogW3siInNyYyI6ICJodHRwczovL2Nkbi1pY29ucy1wbmcuZnJlZXBpay5jb20vNTEyLzI5MDUvMjkwNTIxMy5wbmciLCAic2l6ZXMiOiAiNTEyeDUxMiIsICJ0eXBlIjogImltYWdlL3BuZyJ9XQp9">
 
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
@@ -16,357 +13,228 @@
     <style>
         :root {
             --main-gold: #ffc107;
-            --chat-blue: #2196f3;
-            --break-green: #4caf50;
-            --note-purple: #9c27b0;
-            --shabash-orange: #ff9800;
             --dark-bg: #0f0f0f;
             --card-bg: rgba(255, 255, 255, 0.07);
             --text-main: #ffffff;
-            --text-dim: #999999;
-            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         body {
-            margin: 0; padding: 0;
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background: var(--dark-bg);
-            color: var(--text-main);
-            display: flex; justify-content: center; align-items: flex-start;
-            min-height: 100vh;
+            margin: 0; font-family: 'Segoe UI', Roboto, sans-serif;
+            background: var(--dark-bg); color: var(--text-main);
+            display: flex; justify-content: center; min-height: 100vh;
             background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 100%);
-            overflow-y: auto; -webkit-overflow-scrolling: touch;
+            overflow-x: hidden;
         }
 
-        .app-container { width: 90%; max-width: 380px; padding: 20px 0 100px 0; position: relative; }
+        .app-container { width: 92%; max-width: 380px; padding: 10px 0 100px 0; }
 
-        /* Кнопка уведомлений */
-        .notification-btn {
-            position: absolute; top: 0; right: 0;
-            width: 42px; height: 42px;
-            background: rgba(255, 193, 7, 0.1);
-            border: 1px solid var(--main-gold);
-            border-radius: 12px;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 100;
-            transition: var(--transition);
-            animation: pulse-gold 2s infinite;
-        }
-        .notification-btn.hidden { opacity: 0; pointer-events: none; transform: scale(0.8); }
-
-        @keyframes pulse-gold {
-            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
-        }
-
-        .header { text-align: center; margin-bottom: 25px; cursor: pointer; user-select: none; }
-        .header h1 { font-size: 26px; font-weight: 800; margin: 0; letter-spacing: 1px; }
-        .header span { color: var(--main-gold); }
-
-        .status-badge {
-            display: inline-flex; align-items: center;
-            background: rgba(255, 193, 7, 0.08);
-            padding: 6px 18px; border-radius: 20px;
-            font-size: 11px; margin-top: 8px;
+        /* Верхние маленькие кнопки */
+        .top-nav { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .mini-btn {
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 193, 7, 0.2);
-            min-width: 180px; justify-content: center; gap: 8px;
-            font-family: monospace;
+            color: var(--main-gold);
+            padding: 5px 10px; border-radius: 8px; font-size: 10px;
+            font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;
         }
-        .status-dot { width: 7px; height: 7px; border-radius: 50%; }
 
-        .menu-grid { display: grid; gap: 12px; }
+        /* Шапка */
+        .header { text-align: center; margin-bottom: 20px; cursor: pointer; }
+        .header h1 { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: 1px; }
+        .header span { color: var(--main-gold); }
+        
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(255, 193, 7, 0.05); padding: 5px 15px;
+            border-radius: 20px; font-size: 10px; margin-top: 5px;
+            border: 1px solid rgba(255, 193, 7, 0.1);
+        }
+
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+        .online { background: var(--main-gold); box-shadow: 0 0 8px var(--main-gold); }
+        .offline { background: #ff4444; box-shadow: 0 0 10px #ff4444; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* Сетка меню */
+        .menu-grid { display: grid; gap: 10px; }
         .menu-item {
             background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 18px; padding: 18px; display: flex; align-items: center;
-            cursor: pointer; transition: var(--transition);
+            border-radius: 15px; padding: 15px; display: flex; align-items: center;
+            cursor: pointer; transition: 0.2s;
         }
-        .menu-item:hover { background: rgba(255, 255, 255, 0.12); border-color: var(--main-gold); transform: translateY(-3px); }
+        .menu-item:active { transform: scale(0.98); background: rgba(255,255,255,0.1); }
+        .icon-box { width: 42px; height: 42px; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-right: 15px; font-size: 18px; background: rgba(255,193,7,0.1); color: var(--main-gold); }
+        .menu-item h3 { margin: 0; font-size: 16px; font-weight: 600; }
 
-        .icon-box { width: 48px; height: 48px; border-radius: 14px; display: flex; justify-content: center; align-items: center; margin-right: 16px; flex-shrink: 0; font-size: 20px; }
-        .icon-price { background: rgba(255, 193, 7, 0.15); color: var(--main-gold); }
-        .icon-shabash { background: rgba(255, 152, 0, 0.15); color: var(--shabash-orange); }
-        .icon-calc { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
-        .icon-note { background: rgba(156, 39, 176, 0.15); color: var(--note-purple); }
-        .icon-chat { background: rgba(33, 150, 243, 0.15); color: var(--chat-blue); }
-        .icon-break { background: rgba(76, 175, 80, 0.15); color: var(--break-green); }
+        /* Оверлеи */
+        .overlay { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; }
+        #admin-overlay { z-index: 2000; }
+        #app-overlay { z-index: 3000; }
+        .overlay-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; }
+        iframe { width: 100%; height: 100%; border: none; }
+        .close-btn { background: none; border: none; color: #ff4444; font-size: 32px; cursor: pointer; line-height: 1; font-weight: bold; }
 
-        .counter-badge {
-            display: none; justify-content: center; align-items: center;
-            font-size: 11px; font-weight: 900; min-width: 18px; height: 18px;
-            padding: 0 5px; border-radius: 10px; margin-left: auto;
-        }
-        #shabash-counter { background: var(--shabash-orange); color: #000; }
-        #chat-counter { background: var(--chat-blue); color: #fff; }
+        /* Админка */
+        .admin-stats { padding: 15px 20px; font-size: 20px; font-weight: 800; color: var(--main-gold); border-bottom: 1px solid #1a1a1a; }
+        .admin-nav-btn { background: #111; border: 1px solid #333; color: var(--main-gold); padding: 12px; border-radius: 12px; margin: 10px 15px; text-align: center; cursor: pointer; font-weight: bold; font-size: 13px; text-transform: uppercase; }
+        .date-divider { background: #111; color: var(--main-gold); padding: 10px; font-size: 12px; text-align: center; margin: 15px 15px 5px; border-radius: 8px; border: 1px solid #222; }
+        .date-count { color: #000; background: var(--main-gold); padding: 2px 8px; border-radius: 10px; margin-left: 10px; font-size: 10px; }
+        .log-item { padding: 12px 20px; border-bottom: 1px solid #111; display: flex; justify-content: space-between; align-items: center; }
 
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark-bg); z-index: 2000; display: none; flex-direction: column; }
-        .overlay-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: #161616; border-bottom: 1px solid #333; }
-        .overlay-body { flex-grow: 1; position: relative; overflow: hidden; }
-        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
-        .close-btn { background: none; border: none; color: #ff4444; font-size: 30px; cursor: pointer; }
-
-        /* Админ-панель стили */
-        .admin-controls { background: #1a1a1a; padding: 18px; border-radius: 16px; margin-bottom: 15px; border: 1px solid #333; }
-        .admin-input-group { display: flex; gap: 8px; margin: 10px 0; }
-        .admin-input { flex: 1; background: #000; border: 1px solid #333; border-radius: 8px; color: #fff; padding: 10px; font-size: 14px; }
-        .admin-add-btn { background: var(--main-gold); border: none; width: 45px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .btn-danger { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 8px; width: 100%; font-size: 14px; }
-        .btn-orange { background: #f57c00; }
-        .tag { background: rgba(255,255,255,0.05); border: 1px solid #444; color: #ff4444; padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-        .date-divider { background: #111; color: var(--main-gold); padding: 10px; font-size: 12px; font-weight: bold; margin-top: 20px; text-align: center; border-radius: 8px; }
-        .log-item { padding: 15px 5px; border-bottom: 1px solid #1a1a1a; }
-        .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #444; letter-spacing: 2px; }
-
-        .whatsapp-float {
-            position: fixed; width: 56px; height: 56px; bottom: 20px; right: 20px;
-            background-color: #25d366; border-radius: 50%; display: flex;
-            justify-content: center; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            z-index: 1500; text-decoration: none;
-        }
+        .footer { text-align: center; margin-top: 30px; font-size: 9px; color: #333; letter-spacing: 2px; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
-    <div id="notify-trigger" class="notification-btn" onclick="requestNotifications()">🔔</div>
+    <div class="top-nav">
+        <button class="mini-btn" id="installBtn" onclick="installApp()">📲 Установить</button>
+        <button class="mini-btn" onclick="enableNotif()">🔔 Уведомления</button>
+    </div>
 
     <div class="header" id="main-logo">
         <h1>VOLT<span>MASTER</span></h1>
         <div class="status-badge">
-            <div class="status-dot" id="online-dot" style="background: #444;"></div>
-            <span id="stats-display">ЗАГРУЗКА...</span>
+            <div class="status-dot online" id="online-dot"></div>
+            <span id="stats-display">ID: 0000 | ВСЕГО: 0</span>
         </div>
     </div>
 
     <div class="menu-grid">
-        <div class="menu-item" onclick="openApp('Прайс-лист', 'prais.html')">
-            <div class="icon-box icon-price">💸</div>
-            <h3>Прайс-лист</h3>
-        </div>
-        
-        <div class="menu-item" onclick="openApp('Шабашки', 'shabashki.html')">
-            <div class="icon-box icon-shabash">🛠</div>
-            <div style="display:flex; align-items:center; flex-grow:1;">
-                <h3 style="margin:0">Шабашки</h3>
-                <span id="shabash-counter" class="counter-badge">0</span>
-            </div>
-        </div>
-
-        <div class="menu-item" onclick="openApp('Расчеты', 'izmerenie.html')">
-            <div class="icon-box icon-calc">⚡</div>
-            <h3>Расчеты</h3>
-        </div>
-        
-        <div class="menu-item" onclick="openApp('Доска объявлений', 'avito.html')">
-            <div class="icon-box icon-shabash">📢</div>
-            <h3>Доска объявлений</h3>
-        </div>
-
-        <div class="menu-item" onclick="openApp('Заметки', 'zametka.html')">
-            <div class="icon-box icon-note">📝</div>
-            <h3>Заметки</h3>
-        </div>
-
-        <div class="menu-item" onclick="openApp('Чат-помощник', 'signa.html')">
-            <div class="icon-box icon-chat">💬</div>
-            <div style="display:flex; align-items:center; flex-grow:1;">
-                <h3 style="margin:0">Чат-помощник</h3>
-                <span id="chat-counter" class="counter-badge">0</span>
-            </div>
-        </div>
-
-        <div class="menu-item" onclick="openApp('Перекур', 'igri.html')">
-            <div class="icon-box icon-break">☕</div>
-            <h3>Перекур</h3>
-        </div>
+        <div class="menu-item" onclick="openApp('Прайс-лист', 'prais.html')"><div class="icon-box">💸</div><h3>Прайс-лист</h3></div>
+        <div class="menu-item" onclick="openApp('Шабашки', 'shabashki.html')"><div class="icon-box">🛠</div><h3>Шабашки</h3></div>
+        <div class="menu-item" onclick="openApp('Расчеты', 'izmerenie.html')"><div class="icon-box">⚡</div><h3>Расчеты</h3></div>
+        <div class="menu-item" onclick="openApp('Объявления', 'avito.html')"><div class="icon-box">📢</div><h3>Объявления</h3></div>
+        <div class="menu-item" onclick="openApp('Заметки', 'zametka.html')"><div class="icon-box">📝</div><h3>Заметки</h3></div>
+        <div class="menu-item" onclick="openApp('Помощник', 'signa.html')"><div class="icon-box">💬</div><h3>Помощник</h3></div>
+        <div class="menu-item" onclick="openApp('Перекур', 'igri.html')"><div class="icon-box">☕</div><h3>Перекур</h3></div>
     </div>
     <div class="footer">VOLT MASTER CLOUD 2026</div>
 </div>
 
 <div id="app-overlay" class="overlay">
     <div class="overlay-header">
-        <span id="overlay-title" style="color:var(--main-gold); font-weight:bold;">App</span>
+        <span id="overlay-title" style="color:var(--main-gold); font-weight:bold; font-size:14px;">App</span>
         <button class="close-btn" onclick="closeApp()">&times;</button>
     </div>
-    <div class="overlay-body"><iframe id="app-frame"></iframe></div>
+    <div style="flex-grow:1; position:relative;"><iframe id="app-frame" name="app-frame"></iframe></div>
 </div>
 
 <div id="admin-overlay" class="overlay">
     <div class="overlay-header">
-        <span style="color:var(--main-gold); font-weight:bold;">ADMIN PANEL</span>
+        <h2 style="color:var(--main-gold); margin:0; font-size:16px;">ADMIN PANEL</h2>
         <button class="close-btn" onclick="closeAdmin()">&times;</button>
     </div>
-    <div class="overlay-body" style="padding: 15px; overflow-y: auto; background: #0a0a0a;">
-        <div class="admin-controls">
-            <div id="admin-summary" style="font-size:16px; color:var(--main-gold); margin-bottom:15px; font-weight:bold;">СЕГОДНЯ ЗАШЛИ: <span id="today-count">0</span></div>
-            <div class="admin-input-group">
-                <input type="text" id="exclude-input" class="admin-input" placeholder="ID">
-                <button class="admin-add-btn" onclick="addExclusion()">+</button>
-            </div>
-            <div id="excluded-tags" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;"></div>
-            <button class="btn-danger btn-orange" onclick="clearOnlyLogs()">ОЧИСТИТЬ ЛОГИ</button>
-            <button class="btn-danger" onclick="fullReset()">ПОЛНЫЙ СБРОС БАЗЫ</button>
-        </div>
-        <div id="log-container"></div>
-    </div>
+    <div class="admin-stats" id="today-visitors">СЕГОДНЯ ЗАШЛИ: 0</div>
+    <div class="admin-nav-btn" onclick="openApp('Управление шабашками', 'admin.html')">🛠 УПРАВЛЕНИЕ ШАБАШКАМИ</div>
+    <div id="log-container" style="flex-grow:1; overflow-y:auto;"></div>
 </div>
-
-<a href="https://chat.whatsapp.com/E10FzUdV9YLHem5KCVAQtQ?mode=gi_t" class="whatsapp-float" target="_blank">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="32" height="32">
-</a>
 
 <script>
     const firebaseConfig = { databaseURL: "https://kalculator-8e345-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js');
+    let myID = localStorage.getItem('volt_master_uid') || "ID-" + Math.floor(1000 + Math.random() * 9000);
+    localStorage.setItem('volt_master_uid', myID);
+
+    // Логика установки для Android
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        document.getElementById('installBtn').style.border = '1px solid #ffc107';
+    });
+
+    async function installApp() {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+        } else {
+            alert("Для установки:\n1. Нажмите 'Поделиться' или 'Три точки'\n2. Выберите 'На экран Домой'");
+        }
     }
 
-    let myId = localStorage.getItem('user_id_2026') || "ID-" + Math.floor(Math.random() * 1000);
-    localStorage.setItem('user_id_2026', myId);
+    function enableNotif() {
+        Notification.requestPermission().then(p => {
+            if(p === 'granted') alert("Уведомления включены!");
+            else alert("Разрешите уведомления в настройках браузера");
+        });
+    }
 
-    let excludedIds = [];
-    let lastShabashCount = -1;
-
-    async function initTracker() {
-        const statsEl = document.getElementById('stats-display');
-        const dot = document.getElementById('online-dot');
+    function initApp() {
         const now = new Date();
         const dateKey = now.toISOString().split('T')[0];
-        const timeString = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        const timeStr = now.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
 
-        // Проверка прав на уведомления
-        if (Notification.permission === 'granted' || Notification.permission === 'denied') {
-            document.getElementById('notify-trigger').classList.add('hidden');
-        }
-
-        // Загрузка исключений и логирование (Твой оригинал)
-        database.ref('excluded_list').on('value', snap => {
-            excludedIds = Object.values(snap.val() || {});
-            renderExclusionTags();
-            
-            if (!excludedIds.includes(myId)) {
-                database.ref(`registered_users/${myId}`).set({ last_seen: firebase.database.ServerValue.TIMESTAMP });
-                const visitRef = database.ref(`visits/${dateKey}/${myId}`);
-                visitRef.transaction((curr) => {
-                    if (curr) {
-                        let h = curr.allTimes || curr.time || "";
-                        if (!h.includes(timeString)) h += `, ${timeString}`;
-                        return { ...curr, time: timeString, allTimes: h, count: (curr.count || 1) + 1, timestamp: firebase.database.ServerValue.TIMESTAMP };
-                    }
-                    return { userId: myId, time: timeString, allTimes: timeString, count: 1, timestamp: firebase.database.ServerValue.TIMESTAMP };
-                });
-            }
+        // Логи посещения
+        database.ref(`visits/${dateKey}/${myID}`).update({
+            userId: myID, lastTime: timeStr, timestamp: firebase.database.ServerValue.TIMESTAMP
         });
+        database.ref(`visits/${dateKey}/${myID}/count`).transaction(c => (c || 0) + 1);
+        database.ref(`registered_users/${myID}`).set(true);
 
         database.ref('registered_users').on('value', snap => {
-            statsEl.innerHTML = `<span style="color:var(--main-gold)">${myId}</span> <span style="opacity:0.2;">|</span> ВСЕГО: ${snap.numChildren()}`;
+            document.getElementById('stats-display').innerText = `ID: ${myID} | ВСЕГО: ${snap.numChildren()}`;
         });
 
-        database.ref(".info/connected").on("value", (snap) => {
-            dot.style.background = snap.val() ? "var(--main-gold)" : "#ff4444";
-        });
-
-        initAppCounters();
-    }
-
-    // УВЕДОМЛЕНИЯ
-    async function requestNotifications() {
-        const p = await Notification.requestPermission();
-        if (p === 'granted') {
-            document.getElementById('notify-trigger').classList.add('hidden');
-            sendNotification("VOLT MASTER", "Уведомления включены!");
-        }
-    }
-
-    function sendNotification(title, body) {
-        if (Notification.permission === 'granted' && 'serviceWorker' in navigator) {
-            navigator.serviceWorker.ready.then(reg => {
-                reg.showNotification(title, { body: body, icon: 'logo.png', vibrate: [200, 100, 200] });
-            });
-        }
-    }
-
-    function initAppCounters() {
-        database.ref('shabashki/active').on('value', snap => {
-            const count = snap.numChildren();
-            if (lastShabashCount !== -1 && count > lastShabashCount) sendNotification("⚡ VOLT MASTER", "Новая шабашка!");
-            lastShabashCount = count;
-            const el = document.getElementById('shabash-counter');
-            el.innerText = count; el.style.display = count > 0 ? 'inline-flex' : 'none';
+        database.ref(".info/connected").on("value", s => {
+            document.getElementById('online-dot').className = s.val() ? "status-dot online" : "status-dot offline";
         });
     }
 
-    // АДМИНКА (Твой оригинал)
-    function loadLogs() {
-        const dateKey = new Date().toISOString().split('T')[0];
-        database.ref(`visits/${dateKey}`).on('value', snap => {
-            let count = 0;
-            snap.forEach(child => { if (!excludedIds.includes(child.key)) count++; });
-            document.getElementById('today-count').innerText = count;
-        });
-
-        database.ref('visits').limitToLast(5).on('value', snap => {
+    function loadAdminLogs() {
+        const todayKey = new Date().toISOString().split('T')[0];
+        database.ref('visits').on('value', snap => {
             const container = document.getElementById('log-container');
             container.innerHTML = '';
-            const all = snap.val() || {};
-            Object.keys(all).sort().reverse().forEach(date => {
-                const dayVisits = Object.values(all[date]).filter(v => !excludedIds.includes(v.userId)).sort((a,b) => b.timestamp - a.timestamp);
-                if(dayVisits.length > 0) {
-                    container.innerHTML += `<div class="date-divider">--- ${date} ---</div>`;
-                    dayVisits.forEach(v => {
-                        container.innerHTML += `
-                            <div class="log-item">
-                                <div style="display:flex; justify-content:space-between; font-size:14px;">
-                                    <b>${v.userId} <span style="color:var(--main-gold); font-size:11px;">x${v.count || 1}</span></b>
-                                    <span style="color:var(--main-gold); font-size:12px;">${v.time}</span>
-                                </div>
-                                <div style="color:#555; font-size:10px; margin-top:5px;">• ${v.allTimes}</div>
-                            </div>`;
-                    });
-                }
+            const data = snap.val() || {};
+            document.getElementById('today-visitors').innerText = `СЕГОДНЯ ЗАШЛИ: ${data[todayKey] ? Object.keys(data[todayKey]).length : 0}`;
+
+            Object.keys(data).sort().reverse().forEach(date => {
+                const dayCount = Object.keys(data[date]).length;
+                container.innerHTML += `<div class="date-divider">--- ${date} --- <span class="date-count">ЛЮДЕЙ: ${dayCount}</span></div>`;
+                Object.values(data[date]).forEach(v => {
+                    container.innerHTML += `<div class="log-item">
+                        <span><b>${v.userId}</b> <small style="color:#555">x${v.count || 1}</small></span>
+                        <span style="color:var(--main-gold); font-weight:bold;">${v.lastTime || '--:--'}</span>
+                    </div>`;
+                });
             });
         });
     }
 
-    function addExclusion() {
-        const val = document.getElementById('exclude-input').value.trim();
-        if (val) { database.ref('excluded_list').push(val); document.getElementById('exclude-input').value = ''; }
-    }
-
-    function renderExclusionTags() {
-        const container = document.getElementById('excluded-tags');
-        if(!container) return; container.innerHTML = '';
-        excludedIds.forEach(id => {
-            const tag = document.createElement('div'); tag.className = 'tag';
-            tag.innerHTML = `${id} <span>&times;</span>`;
-            tag.onclick = () => { database.ref('excluded_list').once('value', s => { s.forEach(c => { if(c.val() === id) c.ref.remove(); }); }); };
-            container.appendChild(tag);
-        });
-    }
-
-    function clearOnlyLogs() { if(confirm("Удалить историю?")) database.ref('visits').remove(); }
-    function fullReset() { if(confirm("Удалить ВСЕ данные?")) database.ref().remove(); }
-
-    // ОВЕРЛЕИ И ЛОГО
-    let clicks = 0;
-    document.getElementById('main-logo').onclick = () => {
-        clicks++; if(clicks === 3) { if(prompt("Пароль:") === "Gazik0303") openAdmin(); clicks = 0; }
-        setTimeout(() => clicks = 0, 1000);
-    };
-
-    function openAdmin() { document.getElementById('admin-overlay').style.display = 'flex'; loadLogs(); }
-    function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; }
     function openApp(name, url) { 
         document.getElementById('overlay-title').innerText = name; 
         document.getElementById('app-frame').src = url + "?v=" + Date.now(); 
         document.getElementById('app-overlay').style.display = 'flex'; 
     }
     function closeApp() { document.getElementById('app-overlay').style.display = 'none'; document.getElementById('app-frame').src = 'about:blank'; }
+    function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; }
 
-    document.addEventListener('DOMContentLoaded', initTracker);
+    let clicks = 0;
+    document.getElementById('main-logo').onclick = () => {
+        clicks++;
+        if(clicks === 3) {
+            if(prompt("Пароль:") === "Gazik0303") {
+                document.getElementById('admin-overlay').style.display = 'flex';
+                loadAdminLogs();
+            }
+            clicks = 0;
+        }
+        setTimeout(() => clicks = 0, 1000);
+    };
+
+    document.addEventListener('DOMContentLoaded', initApp);
+
+    // Service Worker для Офлайн-работы
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('data:text/javascript;base64,' + btoa(`
+            self.addEventListener('install', e => self.skipWaiting());
+            self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
+        `));
+    }
 </script>
 </body>
 </html>
