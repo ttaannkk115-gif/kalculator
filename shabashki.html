@@ -78,7 +78,7 @@
 
 <header>
     <div class="logo">VOLT<span>MASTER</span></div>
-    <div class="user-id-badge">ID: <span id="display-id">0000</span></div>
+    <div class="user-id-badge"><span id="display-id">0000</span></div>
 </header>
 
 <div class="city-tabs" id="city-tabs-ui">
@@ -226,7 +226,7 @@
                     </div>
                     <button id="btn-finish-${o.id}" class="btn btn-disabled" onclick="finishOrder('${o.id}', ${o.startTime})">ЗАВЕРШИТЬ (30:00)</button>
                     <button class="btn btn-outline" onclick="openRej('${o.id}')">ОТКАЗАТЬСЯ</button>` 
-                    : `<div class="accepted-by">Работу принял: ${o.workerID}</div>`)
+                    : `<div class="accepted-by">Работу принял:ID-${o.workerID}</div>`)
                 }
             `;
             container.appendChild(card);
