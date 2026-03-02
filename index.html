@@ -148,7 +148,7 @@
 </div>
 
 <script>
-    // 1. ПОЛНЫЙ КОНФИГ (теперь он видит всё)
+    // 1. ПОЛНЫЙ КОНФИГ
     const firebaseConfig = {
         apiKey: "AIzaSyD-dIC8bm8y4kaY7RXmMrys2wOMLA5o8vY",
         authDomain: "voltmaster-332c0.firebaseapp.com",
@@ -162,7 +162,6 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
     
-    // Генерация или получение ID
     let userID = localStorage.getItem('volt_master_uid');
     if (!userID) {
         userID = Math.floor(1000 + Math.random() * 9000).toString();
@@ -170,29 +169,31 @@
     }
 
     function initApp() {
-        // Регистрация в базе при входе
+        // Регистрация в базе
         database.ref('registered_users/ID-' + userID).update({
             id: userID,
             last_entry: firebase.database.ServerValue.TIMESTAMP
         });
 
-        // Слушаем количество пользователей
+        // Регистрация воркеров (ОСТАВИЛ ТОЛЬКО ОДИН ПРАВИЛЬНЫЙ БЛОК)
+        if ('serviceWorker' in navigator) {
+            const v = Date.now(); // Уникальная версия для обхода кэша
+            navigator.serviceWorker.register('sw.js?v=' + v);
+            navigator.serviceWorker.register('firebase-messaging-sw.js?v=' + v)
+                .then(() => console.log("Воркер уведомлений готов"))
+                .catch((err) => console.error("Ошибка воркера:", err));
+        }
+
+        // Счетчик пользователей
         database.ref('registered_users').on('value', snap => {
             const count = snap.numChildren();
             document.getElementById('stats-display').innerText = `ID: ${userID} | ВСЕГО: ${count}`;
         });
 
         watchShabashki();
-
-        // Регистрация воркеров
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js?v=7');
-            navigator.serviceWorker.register('firebase-messaging-sw.js');
-        }
     }
 
     function initNotifications() {
-        // Проверка поддержки уведомлений
         if (!("Notification" in window)) {
             alert("Ваш браузер не поддерживает уведомления");
             return;
@@ -213,14 +214,66 @@
                             alert("Уведомления успешно настроены! ID-" + userID);
                         });
                     }
-                }).catch((err) => alert("Ошибка токена: " + err));
+                }).catch((err) => alert("Ошибка получения токена. Попробуйте очистить кэш Safari."));
             } else {
-                alert("Вы запретили уведомления. Сбросьте настройки сайта.");
+                alert("Доступ к уведомлениям заблокирован.");
             }
         });
     }
 
-    // Остальные твои функции (openApp, watchShabashki и т.д.) оставляешь ниже...
+    // --- Функции интерфейса ---
+    function openApp(name, url) {
+        document.getElementById('overlay-title').innerText = name.toUpperCase();
+        document.getElementById('app-frame').src = url + "?v=" + Date.now();
+        document.getElementById('app-overlay').style.display = 'flex';
+    }
+
+    function closeApp() {
+        document.getElementById('app-overlay').style.display = 'none';
+        document.getElementById('app-frame').src = '';
+    }
+
+    function watchShabashki() {
+        database.ref('shabashki/active').on('value', snap => {
+            const count = Object.keys(snap.val() || {}).length;
+            const lastSeen = parseInt(localStorage.getItem('shabash_seen') || 0);
+            const badge = document.getElementById('shabash-count');
+            if (count > lastSeen) {
+                badge.innerText = "+" + (count - lastSeen);
+                badge.style.display = 'inline-block';
+            } else badge.style.display = 'none';
+        });
+    }
+
+    function handleShabashkiClick() {
+        database.ref('shabashki/active').once('value', snap => {
+            localStorage.setItem('shabash_seen', Object.keys(snap.val() || {}).length);
+            document.getElementById('shabash-count').style.display = 'none';
+            openApp('Шабашки', 'shabashki.html');
+        });
+    }
+
+    // Админка по 3 кликам на лого
+    let clicks = 0;
+    document.getElementById('main-logo').onclick = () => {
+        clicks++;
+        if(clicks === 3) {
+            if(prompt("Пароль:") === "Gazik0303") {
+                document.getElementById('admin-overlay').style.display = 'flex';
+                // Здесь можно вызвать загрузку логов
+            }
+            clicks = 0;
+        }
+        setTimeout(() => clicks = 0, 1000);
+    };
+
+    function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; }
+    
+    function handleInstall() {
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) document.getElementById('ios-instruction').style.display = 'block';
+        else alert("Используйте меню браузера 'На экран Домой'");
+    }
+
     window.onload = initApp;
 </script>
 </body>
