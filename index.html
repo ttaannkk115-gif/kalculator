@@ -207,7 +207,7 @@
         database.ref(`visits/${dateKey}/${myID}/count`).transaction(c => (c || 0) + 1);
         
         database.ref('registered_users').on('value', snap => {
-            document.getElementById('stats-display').innerText = `ID: ${myID} | ВСЕГО: ${snap.numChildren()}`;
+            document.getElementById('stats-display').innerText = `ID-${myID} | ВСЕГО: ${snap.numChildren()}`;
         });
         watchShabashki();
     }
