@@ -72,13 +72,11 @@
         .icon-box { width: 42px; height: 42px; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-right: 15px; font-size: 18px; background: rgba(255,193,7,0.1); color: var(--main-gold); }
         .menu-item h3 { margin: 0; font-size: 16px; font-weight: 600; flex: 1; }
 
-        /* Оверлеи */
         .overlay { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; z-index: 2000; }
         .overlay-header { padding: 15px; display: flex; justify-content: flex-end; align-items: center; border-bottom: 1px solid #222; background: #000; }
         .close-btn { background: none; border: none; color: #ff4444; font-size: 32px; cursor: pointer; line-height: 1; padding: 0 10px; }
         iframe { width: 100%; height: 100%; border: none; flex-grow: 1; }
 
-        /* Стили админ-контента */
         #admin-content { overflow-y: auto; flex-grow: 1; padding-bottom: 30px; }
         .admin-stats-big { color: var(--main-gold); padding: 20px 20px; font-size: 22px; font-weight: 800; text-transform: uppercase; }
         .admin-nav-btn { background: #111; border: 1px solid #333; color: var(--main-gold); padding: 18px; border-radius: 12px; margin: 0 15px 20px; text-align: center; cursor: pointer; font-weight: bold; font-size: 14px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -165,7 +163,12 @@
         const dateKey = now.toISOString().split('T')[0];
         const timeStr = now.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
         
-        // Запись посещения
+        // 1. РЕГИСТРАЦИЯ: Принудительно добавляем ID в общий список пользователей
+        database.ref('registered_users/ID-' + userID).update({
+            last_entry: firebase.database.ServerValue.TIMESTAMP
+        });
+
+        // 2. ЛОГИ ПОСЕЩЕНИЙ
         const userRef = database.ref(`visits/${dateKey}/ID-${userID}`);
         userRef.once('value').then(s => {
             let data = s.val() || { allTimes: "" };
@@ -178,21 +181,20 @@
         });
         database.ref(`visits/${dateKey}/ID-${userID}/count`).transaction(c => (c || 0) + 1);
 
-        // Общий счетчик
+        // 3. СЧЕТЧИК: Слушаем количество уникальных ID в папке registered_users
         database.ref('registered_users').on('value', snap => {
-            document.getElementById('stats-display').innerText = `ID: ${userID} | ВСЕГО: ${snap.numChildren()}`;
+            const count = snap.numChildren();
+            document.getElementById('stats-display').innerText = `ID: ${userID} | ВСЕГО: ${count}`;
         });
 
         watchShabashki();
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
     }
 
-    // Универсальное открытие окон
     function openApp(name, url) {
         document.getElementById('overlay-title').innerText = name.toUpperCase();
         document.getElementById('app-frame').src = url + "?v=" + Date.now();
         document.getElementById('app-overlay').style.display = 'flex';
-        // Устанавливаем z-index выше админки, чтобы volt.html был сверху
         document.getElementById('app-overlay').style.zIndex = "3500";
     }
 
@@ -221,7 +223,6 @@
         });
     }
 
-    // Секретный вход в Админку (3 клика)
     let clicks = 0;
     document.getElementById('main-logo').onclick = () => {
         clicks++;
