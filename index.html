@@ -10,7 +10,8 @@
     <link rel="apple-touch-icon" href="logo.png">
 
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-messaging-compat.js"></script>
 
     <style>
         :root {
@@ -109,7 +110,7 @@
 <div class="app-container">
     <div class="top-nav">
         <button class="mini-btn" onclick="handleInstall()">📲 Установить</button>
-        <button class="mini-btn" onclick="alert('Уведомления включены!')">🔔 Уведомления</button>
+        <button class="mini-btn" onclick="initNotifications()">🔔Уведомления</button>
     </div>
 
     <div class="header" id="main-logo">
@@ -147,11 +148,21 @@
 </div>
 
 <script>
-    const firebaseConfig = { databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com" };
+    // 1. ПОЛНЫЙ КОНФИГ (теперь он видит всё)
+    const firebaseConfig = {
+        apiKey: "AIzaSyD-dIC8bm8y4kaY7RXmMrys2wOMLA5o8vY",
+        authDomain: "voltmaster-332c0.firebaseapp.com",
+        databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com",
+        projectId: "voltmaster-332c0",
+        storageBucket: "voltmaster-332c0.firebasestorage.app",
+        messagingSenderId: "312337098429",
+        appId: "1:312337098429:web:663e0f6787bd62d19bf9d4"
+    };
+
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-
-    // Синхронизация ID с памятью браузера
+    
+    // Генерация или получение ID
     let userID = localStorage.getItem('volt_master_uid');
     if (!userID) {
         userID = Math.floor(1000 + Math.random() * 9000).toString();
@@ -159,177 +170,58 @@
     }
 
     function initApp() {
-        const now = new Date();
-        const dateKey = now.toISOString().split('T')[0];
-        const timeStr = now.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
-        
-        // 1. РЕГИСТРАЦИЯ: Принудительно добавляем ID в общий список пользователей
+        // Регистрация в базе при входе
         database.ref('registered_users/ID-' + userID).update({
+            id: userID,
             last_entry: firebase.database.ServerValue.TIMESTAMP
         });
 
-        // 2. ЛОГИ ПОСЕЩЕНИЙ
-        const userRef = database.ref(`visits/${dateKey}/ID-${userID}`);
-        userRef.once('value').then(s => {
-            let data = s.val() || { allTimes: "" };
-            let times = data.allTimes || "";
-            if (!times.includes(timeStr)) times += (times ? ", " : "") + timeStr;
-            userRef.update({ 
-                id: userID, lastTime: timeStr, allTimes: times, 
-                timestamp: firebase.database.ServerValue.TIMESTAMP 
-            });
-        });
-        database.ref(`visits/${dateKey}/ID-${userID}/count`).transaction(c => (c || 0) + 1);
-
-        // 3. СЧЕТЧИК: Слушаем количество уникальных ID в папке registered_users
+        // Слушаем количество пользователей
         database.ref('registered_users').on('value', snap => {
             const count = snap.numChildren();
             document.getElementById('stats-display').innerText = `ID: ${userID} | ВСЕГО: ${count}`;
         });
 
         watchShabashki();
-            // Регистрируем воркеры
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js?v=6');
-        navigator.serviceWorker.register('firebase-messaging-sw.js');
-    }
 
-    // Запускаем получение токена
-    initNotifications();
-} // закрывающая скобка функции initApp
-
-function initNotifications() {
-    const messaging = firebase.messaging();
-    messaging.getToken({ 
-        vapidKey: 'BGNQzlvGewOuQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKKkYekWNL-3tgN_cQ' 
-    }).then((currentToken) => {
-        if (currentToken) {
-            // Записываем ТОЛЬКО в ветку registered_users
-            database.ref('registered_users/ID-' + userID).set({
-                id: userID,
-                fcm_token: currentToken,
-                last_seen: firebase.database.ServerValue.TIMESTAMP
-            });
-            console.log('Токен получен и записан в registered_users');
+        // Регистрация воркеров
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js?v=7');
+            navigator.serviceWorker.register('firebase-messaging-sw.js');
         }
-    }).catch((err) => console.log('Ошибка уведомлений:', err));
-}
-
-    function openApp(name, url) {
-        document.getElementById('overlay-title').innerText = name.toUpperCase();
-        document.getElementById('app-frame').src = url + "?v=" + Date.now();
-        document.getElementById('app-overlay').style.display = 'flex';
-        document.getElementById('app-overlay').style.zIndex = "3500";
     }
 
-    function closeApp() {
-        document.getElementById('app-overlay').style.display = 'none';
-        document.getElementById('app-frame').src = '';
-    }
+    function initNotifications() {
+        // Проверка поддержки уведомлений
+        if (!("Notification" in window)) {
+            alert("Ваш браузер не поддерживает уведомления");
+            return;
+        }
 
-    function watchShabashki() {
-        database.ref('shabashki/active').on('value', snap => {
-            const count = Object.keys(snap.val() || {}).length;
-            const lastSeen = parseInt(localStorage.getItem('shabash_seen') || 0);
-            const badge = document.getElementById('shabash-count');
-            if (count > lastSeen) {
-                badge.innerText = "+" + (count - lastSeen);
-                badge.style.display = 'inline-block';
-            } else badge.style.display = 'none';
-        });
-    }
+        const messaging = firebase.messaging();
 
-    function handleShabashkiClick() {
-        database.ref('shabashki/active').once('value', snap => {
-            localStorage.setItem('shabash_seen', Object.keys(snap.val() || {}).length);
-            document.getElementById('shabash-count').style.display = 'none';
-            openApp('Шабашки', 'shabashki.html');
-        });
-    }
-
-    let clicks = 0;
-    document.getElementById('main-logo').onclick = () => {
-        clicks++;
-        if(clicks === 3) {
-            if(prompt("Пароль:") === "Gazik0303") {
-                document.getElementById('admin-overlay').style.display = 'flex';
-                loadLogs();
+        Notification.requestPermission().then((permission) => {
+            if (permission === 'granted') {
+                messaging.getToken({ 
+                    vapidKey: 'BGNQzlvGewOuQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKKkYekWNL-3tgN_cQ' 
+                }).then((token) => {
+                    if (token) {
+                        database.ref('registered_users/ID-' + userID).update({
+                            fcm_token: token,
+                            notifications: true
+                        }).then(() => {
+                            alert("Уведомления успешно настроены! ID-" + userID);
+                        });
+                    }
+                }).catch((err) => alert("Ошибка токена: " + err));
+            } else {
+                alert("Вы запретили уведомления. Сбросьте настройки сайта.");
             }
-            clicks = 0;
-        }
-        setTimeout(() => clicks = 0, 1000);
-    };
-
-    function loadLogs() {
-        database.ref('visits').on('value', snap => {
-            const container = document.getElementById('admin-content');
-            const data = snap.val() || {};
-            const today = new Date().toISOString().split('T')[0];
-            const todayCount = data[today] ? Object.keys(data[today]).length : 0;
-
-            let html = `
-                <div class="admin-stats-big">СЕГОДНЯ ЗАШЛИ: ${todayCount}</div>
-                <div class="admin-nav-btn" onclick="openApp('Управление', 'volt.html')">🛠 УПРАВЛЕНИЕ ШАБАШКАМИ</div>
-            `;
-
-            Object.keys(data).sort().reverse().forEach(date => {
-                const dayData = data[date];
-                html += `<div class="date-divider">--- ${date} --- (${Object.keys(dayData).length})</div>`;
-                Object.values(dayData).sort((a,b) => b.timestamp - a.timestamp).forEach(v => {
-                    html += `
-                        <div class="log-item">
-                            <div class="log-row-top">
-                                <div><span class="log-id">${v.id}</span><span class="log-count">x${v.count || 1}</span></div>
-                                <span class="log-time-last">${v.lastTime}</span>
-                            </div>
-                            <div class="log-history">| • ${v.allTimes}</div>
-                        </div>`;
-                });
-            });
-            html += `<button class="clear-btn" onclick="clearLogs()">ОЧИСТИТЬ ВСЕ ЛОГИ</button>`;
-            container.innerHTML = html;
         });
     }
 
-    function clearLogs() { if(confirm("Удалить все логи?")) database.ref('visits').remove(); }
-    function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; }
-    
-    function handleInstall() {
-        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) document.getElementById('ios-instruction').style.display = 'block';
-        else alert("Нажмите 'Установить' или 'На экран Домой' в меню вашего браузера.");
-    }
-
+    // Остальные твои функции (openApp, watchShabashki и т.д.) оставляешь ниже...
     window.onload = initApp;
-// Функция регистрации уведомлений
-function initNotifications() {
-    const messaging = firebase.messaging();
-
-    // 1. Запрашиваем разрешение
-    Notification.requestPermission().then((permission) => {
-        if (permission === 'granted') {
-            console.log('Разрешение получено.');
-            
-            // 2. Получаем уникальный токен устройства
-            // ВАЖНО: Замени 'ВАШ_VAPID_КЛЮЧ' на ключ из консоли Firebase
-            messaging.getToken({ 
-                vapidKey: 'BGNQzlvGewOuQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKKkYekWNL-3tgN_cQ' 
-            }).then((currentToken) => {
-                if (currentToken) {
-                    // 3. Сохраняем токен в базу к пользователю
-                    database.ref('registered_users/ID-' + userID).update({
-                        fcm_token: currentToken,
-                        notifications_enabled: true
-                    });
-                    console.log('Токен сохранен в Firebase');
-                }
-            }).catch((err) => console.log('Ошибка токена:', err));
-        }
-    });
-}
-
-// Вызови эту функцию внутри своей основной функции initApp()
-// чтобы она срабатывала при входе
-
 </script>
 </body>
 </html>
