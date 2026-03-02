@@ -1,5 +1,4 @@
-const CACHE_NAME = 'voltmaster-v1';
-// Список файлов для офлайн-доступа
+const CACHE_NAME = 'voltmaster-v6'; // Обновили версию для сброса старых данных
 const ASSETS = [
     './',
     './index.html',
@@ -12,29 +11,26 @@ self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
     );
+    self.skipWaiting(); // Принудительно активируем новый воркер
 });
 
-// ОБЯЗАТЕЛЬНО для установки PWA: обработка запросов
+// Активация: удаляем старые версии кэша
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then((keys) => {
+            return Promise.all(
+                keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+            );
+        })
+    );
+});
+
+// Стратегия: Сначала сеть, если нет сети — кэш
 self.addEventListener('fetch', (event) => {
     event.respondWith(
         fetch(event.request).catch(() => caches.match(event.request))
     );
 });
 
-// Твои уведомления
-self.addEventListener('push', function(event) {
-    const options = {
-        body: 'Появилась новая работа!',
-        icon: 'logo.png',
-        badge: 'logo.png',
-        vibrate: [200, 100, 200],
-        tag: 'new-job',
-        renotify: true
-    };
-    event.waitUntil(self.registration.showNotification('VoltMaster', options));
-});
-
-self.addEventListener('notificationclick', function(event) {
-    event.notification.close();
-    event.waitUntil(clients.openWindow('/'));
-});
+// Удаляем обработку push отсюда, так как она теперь в firebase-messaging-sw.js
+// Это освободит "канал" для Firebase сообщений.
