@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VOLT MASTER ULTIMATE</title>
+    <title>VoltMaster</title>
     
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIlZPTFQgTUFTVEVSIiwKICAic2hvcnRfbmFtZSI6ICJWLU1BU1RFUiIsCi2ic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwZjBmMGYiLAogICJ0aGVtZV9jb2xvciI6ICIjZmZjMTA3IiwKICAiaWNvbnMiOiBbeyJzcmMiOiAiaHR0cHM6Ly9jZG4taWNvbnMtcG5nLmZyZWVwaWsuY29tLzUxMi8yOTA1LzI5MDUyMTMucG5nIiwgInNpemVzIjogIjUxMng1MTIiLCAidHlwZSI6ICJpbWFnZS9wbmcifV0KfQ==">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="logo.png">
 
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-messaging-compat.js"></script>
 
     <style>
         :root {
@@ -67,7 +69,6 @@
         iframe { width: 100%; height: 100%; border: none; }
         .close-btn { background: none; border: none; color: #ff4444; font-size: 32px; cursor: pointer; }
 
-        /* Стили админки как на скрине */
         .admin-stats { padding: 15px 20px; font-size: 18px; font-weight: 800; color: var(--main-gold); border-bottom: 1px solid #1a1a1a; }
         .admin-nav-btn { background: #111; border: 1px solid #333; color: var(--main-gold); padding: 15px; border-radius: 12px; margin: 10px 15px; text-align: center; cursor: pointer; font-weight: bold; font-size: 14px; text-transform: uppercase; }
         .date-divider { background: #111; color: var(--main-gold); padding: 8px; font-size: 11px; text-align: center; margin: 15px 15px 5px; border-radius: 8px; font-weight: bold; border: 1px solid #222; }
@@ -110,7 +111,7 @@
 
 <div id="app-overlay" class="overlay">
     <div class="overlay-header">
-        <span id="overlay-title" style="color:var(--main-gold); font-weight:bold;">App</span>
+        <span id="overlay-title" style="color:var(--main-gold); font-weight:bold;">VoltMaster</span>
         <button class="close-btn" onclick="closeApp()">&times;</button>
     </div>
     <iframe id="app-frame"></iframe>
@@ -128,9 +129,19 @@
 </div>
 
 <script>
-    const firebaseConfig = { databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com" };
+    // --- Инициализация Firebase ---
+    const firebaseConfig = { 
+        databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com" 
+    };
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
+
+    // --- Регистрация Service Worker для работы в фоне ---
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('SW активен'))
+            .catch(err => console.log('SW ошибка', err));
+    }
 
     let myID = localStorage.getItem('volt_master_uid') || "ID-" + Math.floor(1000 + Math.random() * 9000);
     localStorage.setItem('volt_master_uid', myID);
@@ -142,14 +153,18 @@
 
     async function installApp() {
         if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; } 
-        else { alert("Меню -> Добавить на главный экран"); }
+        else { alert("Нажмите 'Добавить на главный экран' в меню браузера"); }
     }
 
     function enableNotif() {
-        Notification.requestPermission().then(p => alert(p === "granted" ? "Включено!" : "Запрещено"));
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                alert("Уведомления включены!");
+                // Здесь в будущем можно добавить подписку на Push-токен
+            }
+        });
     }
 
-    // История заходов
     function initApp() {
         const now = new Date();
         const dateKey = now.toISOString().split('T')[0];
@@ -163,13 +178,13 @@
             userRef.update({ id: myID, lastTime: timeStr, allTimes: times, timestamp: firebase.database.ServerValue.TIMESTAMP });
         });
         database.ref(`visits/${dateKey}/${myID}/count`).transaction(c => (c || 0) + 1);
+        
         database.ref('registered_users').on('value', snap => {
             document.getElementById('stats-display').innerText = `ID: ${myID} | ВСЕГО: ${snap.numChildren()}`;
         });
         watchShabashki();
     }
 
-    // ОБНОВЛЕННАЯ ЗАГРУЗКА ЛОГОВ (СТИЛЬ СКРИНШОТА)
     function loadLogs() {
         database.ref('visits').on('value', snap => {
             const container = document.getElementById('log-container');
@@ -179,38 +194,25 @@
             Object.keys(data).sort().reverse().forEach(date => {
                 const dayData = data[date];
                 const usersCount = Object.keys(dayData).length;
-                container.innerHTML += `<div class="date-divider">--- ${date} --- (Человек: ${usersCount})</div>`;
+                container.innerHTML += `<div class="date-divider">--- ${date} --- (${usersCount})</div>`;
                 
                 Object.values(dayData).forEach(v => {
-                    const dId = v.id || v.userId || "Unknown";
-                    const dTime = v.lastTime || v.time || "--:--";
-                    const history = v.allTimes || dTime;
-                    
                     container.innerHTML += `
                         <div class="log-item">
-                            <span class="log-time-main">${dTime}</span>
-                            <span class="log-id">${dId}</span>
+                            <span class="log-time-main">${v.lastTime || '--:--'}</span>
+                            <span class="log-id">${v.id || 'User'}</span>
                             <span class="log-count">x${v.count || 1}</span>
-                            <div class="log-history">• ${history}</div>
+                            <div class="log-history">• ${v.allTimes || ''}</div>
                         </div>`;
                 });
             });
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('today-visitors').innerText = `СЕГОДНЯ ЗАШЛИ: ${data[today] ? Object.keys(data[today]).length : 0}`;
         });
     }
 
-    // Навигация
     function openApp(name, url) {
         document.getElementById('overlay-title').innerText = name;
         document.getElementById('app-frame').src = url + "?v=" + Date.now();
         document.getElementById('app-overlay').style.display = 'flex';
-    }
-
-    function openAdminWork() {
-        isAdminWorkActive = true;
-        document.getElementById('admin-overlay').style.display = 'none';
-        openApp('Управление', 'admin.html');
     }
 
     function closeApp() {
@@ -222,21 +224,35 @@
         }
     }
 
-    function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; isAdminWorkActive = false; }
-    function clearLogs() { if(confirm("Очистить историю?")) database.ref('visits').remove(); }
+    function openAdminWork() {
+        isAdminWorkActive = true;
+        document.getElementById('admin-overlay').style.display = 'none';
+        openApp('Управление', 'admin.html');
+    }
+
+    function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; }
+    function clearLogs() { if(confirm("Очистить?")) database.ref('visits').remove(); }
 
     let lastSeenCount = localStorage.getItem('shabash_seen_total') || 0;
+    
     function watchShabashki() {
         database.ref('shabashki/active').on('value', (snap) => {
             const orders = snap.val() || {};
             const total = Object.keys(orders).length;
             const badge = document.getElementById('shabash-count');
+            
             if (total > lastSeenCount) {
                 badge.innerText = "+" + (total - lastSeenCount);
                 badge.style.display = 'inline-block';
-            } else { badge.style.display = 'none'; }
+                
+                // Вибрация при новом заказе, если открыто
+                if (navigator.vibrate) navigator.vibrate(200);
+            } else { 
+                badge.style.display = 'none'; 
+            }
         });
     }
+
     function handleShabashkiClick() {
         database.ref('shabashki/active').once('value', snap => {
             lastSeenCount = Object.keys(snap.val() || {}).length;
