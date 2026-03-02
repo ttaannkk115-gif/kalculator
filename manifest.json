@@ -1,10 +1,12 @@
 {
   "name": "VoltMaster",
   "short_name": "VoltMaster",
+  "description": "Система управления для электромонтажников",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f0f0f",
   "theme_color": "#ffc107",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "logo.png",
