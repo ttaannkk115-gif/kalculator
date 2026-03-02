@@ -188,8 +188,32 @@
         });
 
         watchShabashki();
-        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+            // Регистрируем воркеры
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js?v=6');
+        navigator.serviceWorker.register('firebase-messaging-sw.js');
     }
+
+    // Запускаем получение токена
+    initNotifications();
+} // закрывающая скобка функции initApp
+
+function initNotifications() {
+    const messaging = firebase.messaging();
+    messaging.getToken({ 
+        vapidKey: 'BGNQzlvGewOuQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKKkYekWNL-3tgN_cQ' 
+    }).then((currentToken) => {
+        if (currentToken) {
+            // Записываем ТОЛЬКО в ветку registered_users
+            database.ref('registered_users/ID-' + userID).set({
+                id: userID,
+                fcm_token: currentToken,
+                last_seen: firebase.database.ServerValue.TIMESTAMP
+            });
+            console.log('Токен получен и записан в registered_users');
+        }
+    }).catch((err) => console.log('Ошибка уведомлений:', err));
+}
 
     function openApp(name, url) {
         document.getElementById('overlay-title').innerText = name.toUpperCase();
