@@ -234,7 +234,7 @@
 
             let html = `
                 <div class="card-header"><span class="tag-city">${o.city}</span><span style="color:#555">${o.date}</span></div>
-                <span class="badge-status ${isBusy ? 'bg-busy' : 'bg-free'}">${isBusy ? '⏳ В работе у: '+o.worker : '🔘 Свободен'}</span>
+                <span class="badge-status ${isBusy ? 'bg-busy' : 'bg-free'}">${isBusy ? '⏳ Работу принял: '+o.worker : '🔘 Свободен'}</span>
                 <h3>${o.task}</h3><div class="addr">📍 ${o.addr}</div>
                 ${rejectionsHtml}
             `;
