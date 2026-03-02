@@ -276,6 +276,36 @@
     }
 
     window.onload = initApp;
+// Функция регистрации уведомлений
+function initNotifications() {
+    const messaging = firebase.messaging();
+
+    // 1. Запрашиваем разрешение
+    Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+            console.log('Разрешение получено.');
+            
+            // 2. Получаем уникальный токен устройства
+            // ВАЖНО: Замени 'ВАШ_VAPID_КЛЮЧ' на ключ из консоли Firebase
+            messaging.getToken({ 
+                vapidKey: 'BGNQzlvGewOuQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKKkYekWNL-3tgN_cQ' 
+            }).then((currentToken) => {
+                if (currentToken) {
+                    // 3. Сохраняем токен в базу к пользователю
+                    database.ref('registered_users/ID-' + userID).update({
+                        fcm_token: currentToken,
+                        notifications_enabled: true
+                    });
+                    console.log('Токен сохранен в Firebase');
+                }
+            }).catch((err) => console.log('Ошибка токена:', err));
+        }
+    });
+}
+
+// Вызови эту функцию внутри своей основной функции initApp()
+// чтобы она срабатывала при входе
+
 </script>
 </body>
 </html>
