@@ -245,7 +245,7 @@
         });
     }
 
-    function handleShabashkiClick() {
+        function handleShabashkiClick() {
         database.ref('shabashki/active').once('value', snap => {
             localStorage.setItem('shabash_seen', Object.keys(snap.val() || {}).length);
             document.getElementById('shabash-count').style.display = 'none';
@@ -253,25 +253,49 @@
         });
     }
 
-    // Админка по 3 кликам на лого
+    // --- ИСПРАВЛЕННАЯ АДМИНКА ---
     let clicks = 0;
     document.getElementById('main-logo').onclick = () => {
         clicks++;
         if(clicks === 3) {
-            if(prompt("Пароль:") === "Gazik0303") {
+            const pass = prompt("Пароль:");
+            if(pass === "Gazik0303") {
                 document.getElementById('admin-overlay').style.display = 'flex';
-                // Здесь можно вызвать загрузку логов
+                loadLogs(); // Вызываем логи
             }
             clicks = 0;
         }
         setTimeout(() => clicks = 0, 1000);
     };
 
+    function loadLogs() {
+        database.ref('visits').on('value', snap => {
+            const container = document.getElementById('admin-content');
+            const data = snap.val() || {};
+            let html = '<div class="admin-stats-big">ЛОГИ ПОСЕЩЕНИЙ</div>';
+            html += '<div class="admin-nav-btn" onclick="openApp(\'Управление\', \'volt.html\')">🛠 УПРАВЛЕНИЕ ШАБАШКАМИ</div>';
+            
+            Object.keys(data).sort().reverse().forEach(date => {
+                html += `<div class="date-divider">--- ${date} ---</div>`;
+                Object.values(data[date]).forEach(v => {
+                    html += `
+                        <div class="log-item">
+                            <span class="log-id">${v.id}</span> | <span class="log-time-last">${v.lastTime}</span>
+                        </div>`;
+                });
+            });
+            container.innerHTML = html;
+        });
+    }
+
     function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; }
     
     function handleInstall() {
-        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) document.getElementById('ios-instruction').style.display = 'block';
-        else alert("Используйте меню браузера 'На экран Домой'");
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+            document.getElementById('ios-instruction').style.display = 'block';
+        } else {
+            alert("Используйте меню браузера 'На экран Домой'");
+        }
     }
 
     window.onload = initApp;
