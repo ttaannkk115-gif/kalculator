@@ -33,7 +33,6 @@
         .logo { font-size: 24px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin: 0; }
         .logo span { color: var(--main-gold); }
         
-        /* Фирменный стиль ID Master */
         .user-id-badge {
             display: inline-flex; align-items: center; gap: 8px;
             background: rgba(255, 193, 7, 0.05); padding: 5px 15px;
@@ -64,24 +63,16 @@
         .bg-free { background: rgba(255,255,255,0.1); color: #fff; }
         .bg-busy { background: rgba(33, 150, 243, 0.2); color: var(--process); }
 
-        .rej-box { background: rgba(255, 68, 68, 0.05); border: 1px dashed rgba(255, 68, 68, 0.3); border-radius: 10px; padding: 10px; margin-bottom: 10px; font-size: 11px; }
-
         .btn { border: none; padding: 14px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; font-size: 13px; margin-top: 5px; transition: 0.3s; }
         .btn-main { background: var(--main-gold); color: #000; }
         .btn-success { background: var(--success); color: #fff; }
         .btn-disabled { background: #333 !important; color: #666 !important; cursor: not-allowed; }
         .btn-outline { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid #333; }
-        .btn-small { padding: 8px; font-size: 9px; background: #222; color: #aaa; border-radius: 8px; flex: 1; border: 1px solid #444; }
-
-        .accepted-by { text-align: center; padding: 12px; color: var(--process); font-size: 12px; background: rgba(33, 150, 243, 0.05); border-radius: 12px; margin-top: 10px; border: 1px solid rgba(33, 150, 243, 0.1); }
 
         nav { position: fixed; bottom: 0; width: 100%; background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; padding: 15px 0 25px; z-index: 1000; }
         nav button { background: none; border: none; color: #555; font-size: 10px; font-weight: bold; display: flex; flex-direction: column; align-items: center; flex: 1; gap: 5px; outline: none; }
         nav button.active { color: var(--main-gold); }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 3000; }
-        .modal { background: #161616; padding: 25px; border-radius: 20px; width: 85%; border: 1px solid #333; }
-        
         .hidden { display: none; }
         input, select, textarea { background: rgba(0,0,0,0.3); border: 1px solid #333; border-radius: 12px; padding: 14px; color: #fff; width: 100%; margin-bottom: 10px; font-size: 16px; box-sizing: border-box; outline: none; }
     </style>
@@ -119,15 +110,6 @@
     <button class="btn btn-main" onclick="saveOrder()" id="save-btn">ОПУБЛИКОВАТЬ</button>
 </div>
 
-<div id="modal-rej" class="modal-overlay">
-    <div class="modal">
-        <h3 style="color:var(--main-gold)">Причина отказа</h3>
-        <textarea id="rej-text" rows="4" placeholder="Укажите причину..."></textarea>
-        <button class="btn btn-main" onclick="submitRejection()">ОТПРАВИТЬ</button>
-        <button class="btn btn-outline" onclick="closeModal()">ОТМЕНА</button>
-    </div>
-</div>
-
 <nav>
     <button onclick="changeView('list', this)" class="active"><i>📋</i>ЗАКАЗЫ</button>
     <button onclick="changeView('add', this)"><i>➕</i>СОЗДАТЬ</button>
@@ -153,7 +135,7 @@
     let userID = localStorage.getItem('volt_master_uid') || "0000";
     document.getElementById('display-id').innerText = "ID: " + userID;
 
-    let currentFilter = 'Все', allOrders = [], currentRejId = null;
+    let currentFilter = 'Все', allOrders = [];
 
     // Маска телефона
     document.getElementById('phone').addEventListener('input', (e) => {
@@ -167,10 +149,6 @@
             allOrders = Object.values(snap.val() || {}).sort((a,b) => b.timestamp - a.timestamp);
             renderFiltered();
         });
-        db.ref('shabashki/archive').limitToLast(20).on('value', snap => {
-            renderArchive(Object.values(snap.val() || {}).sort((a,b) => b.timestamp - a.timestamp));
-        });
-        setInterval(updateTimers, 1000);
     }
 
     function renderFiltered() {
@@ -179,13 +157,7 @@
         container.innerHTML = filtered.length ? '' : '<div style="text-align:center;padding:50px;color:#444">Нет активных заказов</div>';
         
         filtered.forEach(o => {
-            const isBusy = o.status === 'busy';
             const isMyOrder = o.ownerID == userID; 
-            const isWorker = o.workerID == userID; 
-            
-            let rejectionsHtml = o.rejections ? 
-                `<div class="rej-box">${Object.values(o.rejections).map(r => `• ${r.text}`).join('<br>')}</div>` : '';
-
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
@@ -193,73 +165,18 @@
                     <div><span class="tag-city">${o.city}</span> ${isMyOrder ? '<span class="tag-owner">ВАШ</span>' : ''}</div>
                     <span style="color:#555">${o.date}</span>
                 </div>
-                <span class="badge-status ${isBusy ? 'bg-busy' : 'bg-free'}">${isBusy ? '⏳ В работе' : '🔘 Свободен'}</span>
-                <h3>${o.task}</h3><div class="addr">📍 ${o.addr}</div>
-                ${rejectionsHtml}
-                
-                ${!isBusy ? 
-                    `<button class="btn btn-main" onclick="takeOrder('${o.id}')">ВЗЯТЬ В РАБОТУ</button>
-                     ${isMyOrder ? `
-                     <div style="display:flex;gap:8px;margin-top:10px">
-                        <button class="btn-small" onclick="editOrder('${o.id}')">ИЗМЕНИТЬ</button>
-                        <button class="btn-small" onclick="deleteOrder('${o.id}')">УДАЛИТЬ</button>
-                     </div>` : ''}` 
-                    : 
-                    (isWorker ? `
-                    <div style="background:rgba(255,193,7,0.1);padding:15px;border-radius:12px;text-align:center;margin:10px 0; border: 1px solid rgba(255,193,7,0.2)">
-                        <a href="tel:${o.phone}" style="color:var(--main-gold);text-decoration:none;font-weight:bold;font-size:18px">${o.phone}</a>
-                    </div>
-                    <button id="btn-finish-${o.id}" class="btn btn-disabled" onclick="finishOrder('${o.id}', ${o.startTime})">ЗАВЕРШИТЬ (30:00)</button>
-                    <button class="btn btn-outline" onclick="openRej('${o.id}')">ОТКАЗАТЬСЯ</button>` 
-                    : `<div class="accepted-by">Работу принял: ID-${o.workerID}</div>`)
-                }
+                <h3>${o.task}</h3>
+                <div class="addr">📍 ${o.addr}</div>
+                ${isMyOrder ? `
+                <div style="display:flex;gap:8px;margin-top:10px">
+                    <button class="btn btn-outline" style="padding:8px;font-size:11px" onclick="deleteOrder('${o.id}')">УДАЛИТЬ</button>
+                </div>` : ''}
             `;
             container.appendChild(card);
         });
-        updateTimers(); 
     }
 
-    function updateTimers() {
-        const now = Date.now();
-        allOrders.forEach(o => {
-            if (o.status === 'busy' && o.startTime && o.workerID == userID) {
-                const btn = document.getElementById(`btn-finish-${o.id}`);
-                if (!btn) return;
-                const diff = now - o.startTime;
-                const waitTime = 30 * 60 * 1000;
-                if (diff < waitTime) {
-                    const remaining = waitTime - diff;
-                    const mins = Math.floor(remaining / 60000);
-                    const secs = Math.floor((remaining % 60000) / 1000);
-                    btn.innerText = `ЗАВЕРШИТЬ (${mins}:${secs < 10 ? '0' : ''}${secs})`;
-                    btn.disabled = true;
-                } else {
-                    btn.innerText = `ЗАВЕРШИТЬ ОБЪЕКТ`;
-                    btn.classList.replace('btn-disabled', 'btn-success');
-                    btn.disabled = false;
-                }
-            }
-        });
-    }
-
-    function takeOrder(id) { 
-        db.ref(`shabashki/active/${id}`).update({ 
-            status: 'busy', 
-            startTime: firebase.database.ServerValue.TIMESTAMP,
-            workerID: userID 
-        }); 
-    }
-    
-    function finishOrder(id, startTime) {
-        if (Date.now() - startTime < 30 * 60 * 1000) return;
-        db.ref(`shabashki/active/${id}`).once('value', snap => {
-            const o = snap.val();
-            if(o.workerID != userID) return; 
-            db.ref('shabashki/archive').push({...o, closedAt: new Date().toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit'})});
-            db.ref(`shabashki/active/${id}`).remove();
-        });
-    }
-
+    // ГЛАВНАЯ ФУНКЦИЯ СОХРАНЕНИЯ
     function saveOrder() {
         const editId = document.getElementById('edit-id').value;
         const id = editId || Date.now().toString();
@@ -278,9 +195,24 @@
         if(!data.task || !data.addr || data.phone.length < 18) return alert("Заполните всё!");
         
         db.ref('shabashki/active/' + id).update(data).then(() => { 
-            sendPushTrigger(data.task, data.city);
+            
+            // ВЫЗОВ СИГНАЛА УВЕДОМЛЕНИЯ
+            sendPushTrigger(data.task, data.city); 
+            
             resetForm(); 
             changeView('list', document.querySelector('nav button')); 
+            alert("Заказ опубликован!");
+        });
+    }
+
+    // ФУНКЦИЯ-ОБРАБОТЧИК (СОЗДАЕТ ПАПКУ В БАЗЕ)
+    function sendPushTrigger(taskName, city) {
+        db.ref('push_queue').push({
+            title: "НОВАЯ ШАБАШКА! 🔥",
+            body: city + ": " + taskName,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            console.log("Сигнал на пуш успешно отправлен в базу!");
         });
     }
 
@@ -288,44 +220,6 @@
         if(confirm("Удалить этот заказ?")) {
             db.ref(`shabashki/active/${id}`).remove(); 
         }
-    }
-
-    function editOrder(id) {
-        const o = allOrders.find(x => x.id === id);
-        if(!o) return;
-        document.getElementById('edit-id').value = o.id;
-        document.getElementById('task').value = o.task;
-        document.getElementById('address').value = o.addr;
-        document.getElementById('phone').value = o.phone;
-        document.getElementById('city-input').value = o.city;
-        document.getElementById('save-btn').innerText = 'СОХРАНИТЬ ИЗМЕНЕНИЯ';
-        changeView('add', document.querySelectorAll('nav button')[1]);
-    }
-
-    function openRej(id) { currentRejId = id; document.getElementById('modal-rej').style.display = 'flex'; }
-    function closeModal() { document.getElementById('modal-rej').style.display = 'none'; document.getElementById('rej-text').value = ''; }
-    
-    function submitRejection() {
-        const text = document.getElementById('rej-text').value.trim();
-        if(!text) return;
-        db.ref(`shabashki/active/${currentRejId}`).once('value', snap => {
-            const o = snap.val();
-            if(o.workerID != userID) return; 
-            db.ref(`shabashki/active/${currentRejId}/rejections`).push({ text });
-            db.ref(`shabashki/active/${currentRejId}`).update({ 
-                status: 'free', 
-                startTime: null,
-                workerID: null 
-            });
-            closeModal();
-        });
-    }
-
-    function renderArchive(archived) {
-        document.getElementById('archive-list').innerHTML = archived.map(o => `
-            <div class="card" style="opacity:0.6"><div class="card-header"><span>${o.city}</span><span>${o.closedAt || ''}</span></div>
-            <div class="badge-status" style="background:rgba(76,175,80,0.2);color:var(--success)">✅ ВЫПОЛНЕНО</div>
-            <h3>${o.task}</h3><div class="addr">📍 ${o.addr}</div></div>`).join('') || '<div style="text-align:center;padding:50px;color:#444">Архив пуст</div>';
     }
 
     function changeView(view, btn) {
@@ -347,26 +241,9 @@
         document.getElementById('task').value = '';
         document.getElementById('address').value = '';
         document.getElementById('phone').value = '';
-        document.getElementById('save-btn').innerText = 'ОПУБЛИКОВАТЬ';
     }
 
     window.onload = initSync;
-function sendPushTrigger(taskName, city) {
-    // Вместо сложной отправки через ключи, мы просто пишем в базу
-    // специальную метку. Облачная функция увидит её и сама отправит пуш.
-    const pushData = {
-        title: "НОВАЯ ШАБАШКА! 🔥",
-        body: city + ": " + taskName,
-        icon: "https://voltmaster-332c0.web.app/logo.png",
-        click_action: "https://voltmaster-332c0.web.app/",
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    };
-
-    // Создаем запись в новой папке 'push_queue'
-    database.ref('push_queue').push(pushData)
-        .then(() => console.log("Сигнал на пуш отправлен!"))
-        .catch((err) => console.error("Ошибка сигнала:", err));
-}
 </script>
 </body>
 </html>
