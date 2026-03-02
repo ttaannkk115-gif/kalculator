@@ -115,7 +115,7 @@
         <h1>VOLT<span>MASTER</span></h1>
         <div class="status-badge">
             <div class="status-dot"></div>
-            <span id="stats-display">ID-.... | ВСЕГО: 0</span>
+            <span id="stats-display">ID-6260 | ВСЕГО: 0</span>
         </div>
     </div>
 
@@ -155,13 +155,9 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // 2. Генерация ID с префиксом ID-
-    let rawID = localStorage.getItem('volt_master_uid_raw');
-    if (!rawID) {
-        rawID = Math.floor(1000 + Math.random() * 9000).toString();
-        localStorage.setItem('volt_master_uid_raw', rawID);
-    }
-    const myID = "ID-" + rawID;
+    // 2. Установка фиксированного ID из файла
+    const myID = "ID-6260"; 
+    localStorage.setItem('volt_master_uid_raw', "6260");
 
     // 3. Главная функция инициализации
     function initApp() {
@@ -169,14 +165,14 @@
         const dateKey = now.toISOString().split('T')[0];
         const timeStr = now.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
         
-        // РЕГИСТРАЦИЯ (для счетчика "ВСЕГО")
+        // РЕГИСТРАЦИЯ
         database.ref(`registered_users/${myID}`).update({
             id: myID,
             lastVisit: timeStr,
             lastDate: dateKey
         });
 
-        // ЗАПИСЬ ВИЗИТА (для логов админки)
+        // ЗАПИСЬ ВИЗИТА
         const userRef = database.ref(`visits/${dateKey}/${myID}`);
         userRef.once('value', s => {
             let data = s.val() || { allTimes: "" };
@@ -186,7 +182,7 @@
         });
         database.ref(`visits/${dateKey}/${myID}/count`).transaction(c => (c || 0) + 1);
         
-        // СЧЕТЧИК ВСЕГО
+        // ОБНОВЛЕНИЕ СЧЕТЧИКА
         database.ref('registered_users').on('value', snap => {
             const total = snap.numChildren();
             document.getElementById('stats-display').innerText = `${myID} | ВСЕГО: ${total}`;
@@ -198,7 +194,7 @@
         }
     }
 
-    // 4. Установка PWA
+    // 4. Остальная логика PWA и интерфейса
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
@@ -216,14 +212,6 @@
         }
     }
 
-    function enableNotif() {
-        Notification.requestPermission().then(p => {
-            if(p === "granted") alert("Уведомления включены! ⚡");
-            else alert("Разрешите уведомления в настройках.");
-        });
-    }
-
-    // 5. Управление окнами
     function openApp(name, url) {
         document.getElementById('overlay-title').innerText = name;
         document.getElementById('app-frame').src = url + "?v=" + Date.now();
@@ -235,7 +223,6 @@
         document.getElementById('app-frame').src = '';
     }
 
-    // 6. Шабашки
     function watchShabashki() {
         database.ref('shabashki/active').on('value', snap => {
             const count = Object.keys(snap.val() || {}).length;
