@@ -207,7 +207,7 @@
             navigator.serviceWorker.ready.then((registration) => {
                                 messaging.getToken({ 
                     serviceWorkerRegistration: registration, 
-                    vapidKey: 'BGNQzlvGewOuQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKKkYekWNL-3tgN_cQ' 
+                                        vapidKey:'BGNQzlvGewOuQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKKkYekWNL-3tgN_cQ' 
                 }).then((token) => {
                     if (token) {
                         database.ref('registered_users/ID-' + userID).update({
