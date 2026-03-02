@@ -26,6 +26,7 @@
             background: var(--dark-bg); color: var(--text-main);
             display: flex; justify-content: center; min-height: 100vh;
             background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 100%);
+            overflow-x: hidden;
         }
 
         .app-container { width: 92%; max-width: 380px; padding: 10px 0 100px 0; }
@@ -71,27 +72,30 @@
         .icon-box { width: 42px; height: 42px; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-right: 15px; font-size: 18px; background: rgba(255,193,7,0.1); color: var(--main-gold); }
         .menu-item h3 { margin: 0; font-size: 16px; font-weight: 600; flex: 1; }
 
+        /* Оверлеи */
         .overlay { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; z-index: 2000; }
-        .overlay-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; }
-        iframe { width: 100%; height: 100%; border: none; }
-        .close-btn { background: none; border: none; color: #ff4444; font-size: 32px; cursor: pointer; }
+        .overlay-header { padding: 15px; display: flex; justify-content: flex-end; align-items: center; border-bottom: 1px solid #222; background: #000; }
+        .close-btn { background: none; border: none; color: #ff4444; font-size: 32px; cursor: pointer; line-height: 1; padding: 0 10px; }
+        iframe { width: 100%; height: 100%; border: none; flex-grow: 1; }
 
-        /* Админка */
-        .admin-stats { padding: 15px 20px; font-size: 18px; font-weight: 800; color: var(--main-gold); border-bottom: 1px solid #1a1a1a; }
-        .admin-nav-btn { background: #111; border: 1px solid #333; color: var(--main-gold); padding: 15px; border-radius: 12px; margin: 10px 15px; text-align: center; cursor: pointer; font-weight: bold; font-size: 14px; text-transform: uppercase; }
-        .date-divider { background: #111; color: var(--main-gold); padding: 8px; font-size: 11px; text-align: center; margin: 15px 15px 5px; border-radius: 8px; font-weight: bold; border: 1px solid #222; }
-        .log-item { padding: 12px 20px; border-bottom: 1px solid #111; position: relative; }
-        .log-id { font-size: 15px; font-weight: bold; color: #fff; }
-        .log-count { color: var(--main-gold); font-size: 13px; margin-left: 5px; }
-        .log-time-main { float: right; color: var(--main-gold); font-size: 14px; }
-        .log-history { color: #666; font-size: 11px; margin-top: 6px; line-height: 1.4; padding-left: 10px; border-left: 1px solid #333; }
-        .clear-btn { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 12px; width: 90%; margin: 20px auto; font-weight: bold; cursor: pointer; display: block; }
+        /* Стили админ-контента */
+        #admin-content { overflow-y: auto; flex-grow: 1; padding-bottom: 30px; }
+        .admin-stats-big { color: var(--main-gold); padding: 20px 20px; font-size: 22px; font-weight: 800; text-transform: uppercase; }
+        .admin-nav-btn { background: #111; border: 1px solid #333; color: var(--main-gold); padding: 18px; border-radius: 12px; margin: 0 15px 20px; text-align: center; cursor: pointer; font-weight: bold; font-size: 14px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .date-divider { color: var(--main-gold); padding: 10px; font-size: 12px; text-align: center; margin: 15px 0 5px; font-weight: bold; border-top: 1px solid #1a1a1a; background: rgba(255,193,7,0.02); }
+        .log-item { padding: 15px 20px; border-bottom: 1px solid #111; }
+        .log-row-top { display: flex; justify-content: space-between; align-items: baseline; }
+        .log-id { font-size: 18px; font-weight: bold; color: #fff; }
+        .log-count { color: var(--main-gold); font-size: 14px; margin-left: 8px; }
+        .log-time-last { color: var(--main-gold); font-size: 16px; font-weight: bold; }
+        .log-history { color: #666; font-size: 12px; line-height: 1.6; margin-top: 4px; }
+        .clear-btn { background: #ff4444; color: white; border: none; padding: 18px; border-radius: 15px; width: 92%; margin: 20px auto; font-weight: bold; cursor: pointer; display: block; font-size: 14px; text-transform: uppercase; }
 
         #ios-instruction {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             background: #fff; color: #000; padding: 20px; border-radius: 15px;
-            width: 85%; max-width: 320px; display: none; z-index: 3000; text-align: center;
-            box-shadow: 0 0 30px rgba(0,0,0,0.7); font-size: 15px;
+            width: 85%; max-width: 320px; display: none; z-index: 4000; text-align: center;
+            box-shadow: 0 0 30px rgba(0,0,0,0.7);
         }
     </style>
 </head>
@@ -99,23 +103,22 @@
 
 <div id="ios-instruction">
     <div style="font-size: 24px; margin-bottom: 10px;">📲</div>
-    Чтобы установить <b>VoltMaster</b> на iPhone:<br><br>
-    Нажми на иконку <b>«Поделиться»</b> <img src="https://img.icons8.com/ios/50/000000/export.png" width="18" style="vertical-align:middle"> и выбери <b>«На экран „Домой“»</b>.
+    Для iPhone: Нажми <b>«Поделиться»</b> и выбери <b>«На экран „Домой“»</b>.
     <br><br>
-    <button onclick="this.parentElement.style.display='none'" style="border:none; background:var(--main-gold); padding:8px 20px; border-radius:8px; font-weight:bold;">ПОНЯТНО</button>
+    <button onclick="this.parentElement.style.display='none'" style="border:none; background:var(--main-gold); padding:8px 20px; border-radius:8px; font-weight:bold;">ОК</button>
 </div>
 
 <div class="app-container">
     <div class="top-nav">
-        <button class="mini-btn" id="installBtn" onclick="handleInstall()">📲 Установить</button>
-        <button class="mini-btn" onclick="enableNotif()">🔔 Уведомления</button>
+        <button class="mini-btn" onclick="handleInstall()">📲 Установить</button>
+        <button class="mini-btn" onclick="alert('Уведомления включены!')">🔔 Уведомления</button>
     </div>
 
     <div class="header" id="main-logo">
         <h1>VOLT<span>MASTER</span></h1>
         <div class="status-badge">
             <div class="status-dot"></div>
-            <span id="stats-display">ID-6260 | ВСЕГО: 0</span>
+            <span id="stats-display">ID: ---- | ВСЕГО: 0</span>
         </div>
     </div>
 
@@ -132,7 +135,7 @@
 
 <div id="app-overlay" class="overlay">
     <div class="overlay-header">
-        <span id="overlay-title" style="color:var(--main-gold); font-weight:bold;">VoltMaster</span>
+        <span id="overlay-title" style="color:var(--main-gold); font-weight:bold; font-size:14px; margin-right: auto;"></span>
         <button class="close-btn" onclick="closeApp()">&times;</button>
     </div>
     <iframe id="app-frame"></iframe>
@@ -140,82 +143,57 @@
 
 <div id="admin-overlay" class="overlay">
     <div class="overlay-header">
-        <h2 style="color:var(--main-gold); margin:0; font-size:16px;">ADMIN PANEL</h2>
         <button class="close-btn" onclick="closeAdmin()">&times;</button>
     </div>
-    <div class="admin-stats" id="today-visitors">СЕГОДНЯ ЗАШЛИ: 0</div>
-    <div class="admin-nav-btn" onclick="openAdminWork()">🛠 УПРАВЛЕНИЕ ШАБАШКАМИ</div>
-    <div id="log-container" style="flex-grow:1; overflow-y:auto;"></div>
-    <button class="clear-btn" onclick="clearLogs()">ОЧИСТИТЬ ВСЕ ЛОГИ</button>
+    <div id="admin-content"></div>
 </div>
 
 <script>
-    // 1. Конфигурация Firebase
     const firebaseConfig = { databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // 2. Установка фиксированного ID из файла
-    const myID = "ID-6260"; 
-    localStorage.setItem('volt_master_uid_raw', "6260");
+    // Синхронизация ID с памятью браузера
+    let userID = localStorage.getItem('volt_master_uid');
+    if (!userID) {
+        userID = Math.floor(1000 + Math.random() * 9000).toString();
+        localStorage.setItem('volt_master_uid', userID);
+    }
 
-    // 3. Главная функция инициализации
     function initApp() {
         const now = new Date();
         const dateKey = now.toISOString().split('T')[0];
         const timeStr = now.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
         
-        // РЕГИСТРАЦИЯ
-        database.ref(`registered_users/${myID}`).update({
-            id: myID,
-            lastVisit: timeStr,
-            lastDate: dateKey
-        });
-
-        // ЗАПИСЬ ВИЗИТА
-        const userRef = database.ref(`visits/${dateKey}/${myID}`);
-        userRef.once('value', s => {
+        // Запись посещения
+        const userRef = database.ref(`visits/${dateKey}/ID-${userID}`);
+        userRef.once('value').then(s => {
             let data = s.val() || { allTimes: "" };
             let times = data.allTimes || "";
             if (!times.includes(timeStr)) times += (times ? ", " : "") + timeStr;
-            userRef.update({ id: myID, lastTime: timeStr, allTimes: times, timestamp: firebase.database.ServerValue.TIMESTAMP });
+            userRef.update({ 
+                id: userID, lastTime: timeStr, allTimes: times, 
+                timestamp: firebase.database.ServerValue.TIMESTAMP 
+            });
         });
-        database.ref(`visits/${dateKey}/${myID}/count`).transaction(c => (c || 0) + 1);
-        
-        // ОБНОВЛЕНИЕ СЧЕТЧИКА
+        database.ref(`visits/${dateKey}/ID-${userID}/count`).transaction(c => (c || 0) + 1);
+
+        // Общий счетчик
         database.ref('registered_users').on('value', snap => {
-            const total = snap.numChildren();
-            document.getElementById('stats-display').innerText = `${myID} | ВСЕГО: ${total}`;
+            document.getElementById('stats-display').innerText = `ID: ${userID} | ВСЕГО: ${snap.numChildren()}`;
         });
 
         watchShabashki();
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
     }
 
-    // 4. Остальная логика PWA и интерфейса
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-    });
-
-    function handleInstall() {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        if (isIOS) {
-            document.getElementById('ios-instruction').style.display = 'block';
-        } else if (deferredPrompt) {
-            deferredPrompt.prompt();
-        } else {
-            alert("Используйте меню браузера: 'Добавить на главный экран'");
-        }
-    }
-
+    // Универсальное открытие окон
     function openApp(name, url) {
-        document.getElementById('overlay-title').innerText = name;
+        document.getElementById('overlay-title').innerText = name.toUpperCase();
         document.getElementById('app-frame').src = url + "?v=" + Date.now();
         document.getElementById('app-overlay').style.display = 'flex';
+        // Устанавливаем z-index выше админки, чтобы volt.html был сверху
+        document.getElementById('app-overlay').style.zIndex = "3500";
     }
 
     function closeApp() {
@@ -231,20 +209,19 @@
             if (count > lastSeen) {
                 badge.innerText = "+" + (count - lastSeen);
                 badge.style.display = 'inline-block';
-            } else { badge.style.display = 'none'; }
+            } else badge.style.display = 'none';
         });
     }
 
     function handleShabashkiClick() {
         database.ref('shabashki/active').once('value', snap => {
-            const count = Object.keys(snap.val() || {}).length;
-            localStorage.setItem('shabash_seen', count);
+            localStorage.setItem('shabash_seen', Object.keys(snap.val() || {}).length);
             document.getElementById('shabash-count').style.display = 'none';
             openApp('Шабашки', 'shabashki.html');
         });
     }
 
-    // 7. Админка
+    // Секретный вход в Админку (3 клика)
     let clicks = 0;
     document.getElementById('main-logo').onclick = () => {
         clicks++;
@@ -260,34 +237,42 @@
 
     function loadLogs() {
         database.ref('visits').on('value', snap => {
-            const container = document.getElementById('log-container');
-            container.innerHTML = '';
+            const container = document.getElementById('admin-content');
             const data = snap.val() || {};
             const today = new Date().toISOString().split('T')[0];
-            
+            const todayCount = data[today] ? Object.keys(data[today]).length : 0;
+
+            let html = `
+                <div class="admin-stats-big">СЕГОДНЯ ЗАШЛИ: ${todayCount}</div>
+                <div class="admin-nav-btn" onclick="openApp('Управление', 'volt.html')">🛠 УПРАВЛЕНИЕ ШАБАШКАМИ</div>
+            `;
+
             Object.keys(data).sort().reverse().forEach(date => {
                 const dayData = data[date];
-                container.innerHTML += `<div class="date-divider">--- ${date} --- (${Object.keys(dayData).length})</div>`;
-                Object.values(dayData).forEach(v => {
-                    container.innerHTML += `
+                html += `<div class="date-divider">--- ${date} --- (${Object.keys(dayData).length})</div>`;
+                Object.values(dayData).sort((a,b) => b.timestamp - a.timestamp).forEach(v => {
+                    html += `
                         <div class="log-item">
-                            <span class="log-time-main">${v.lastTime || '--:--'}</span>
-                            <span class="log-id">${v.id || 'N/A'}</span>
-                            <span class="log-count">x${v.count || 1}</span>
-                            <div class="log-history">${v.allTimes || ''}</div>
+                            <div class="log-row-top">
+                                <div><span class="log-id">${v.id}</span><span class="log-count">x${v.count || 1}</span></div>
+                                <span class="log-time-last">${v.lastTime}</span>
+                            </div>
+                            <div class="log-history">| • ${v.allTimes}</div>
                         </div>`;
                 });
             });
-            document.getElementById('today-visitors').innerText = `СЕГОДНЯ ЗАШЛИ: ${data[today] ? Object.keys(data[today]).length : 0}`;
+            html += `<button class="clear-btn" onclick="clearLogs()">ОЧИСТИТЬ ВСЕ ЛОГИ</button>`;
+            container.innerHTML = html;
         });
     }
 
-    function openAdminWork() {
-        document.getElementById('admin-overlay').style.display = 'none';
-        openApp('Управление', 'admin.html');
-    }
+    function clearLogs() { if(confirm("Удалить все логи?")) database.ref('visits').remove(); }
     function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; }
-    function clearLogs() { if(confirm("Очистить логи?")) database.ref('visits').remove(); }
+    
+    function handleInstall() {
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) document.getElementById('ios-instruction').style.display = 'block';
+        else alert("Нажмите 'Установить' или 'На экран Домой' в меню вашего браузера.");
+    }
 
     window.onload = initApp;
 </script>
