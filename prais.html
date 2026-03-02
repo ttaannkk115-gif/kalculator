@@ -3,206 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Калькулятор 2026</title>
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Смета 2026">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2906/2906231.png">
-    
+    <title>Смета Электрика 2026</title>
     <style>
-        :root { --primary: #1a73e8; --success: #2db855; --danger: #e53935; --dark: #202124; --bg: #f1f3f4; --admin: #fff3e0; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 140px; color: var(--dark); overflow-x: hidden; }
+        :root { --primary: #1a73e8; --success: #2db855; --danger: #e53935; --dark: #202124; --bg: #f1f3f4; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 140px; color: var(--dark); }
         
-        /* Интерфейс */
-        .header { position: sticky; top: 0; background: var(--primary); color: white; padding: 10px 15px; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .search-box { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 16px; margin-top: 8px; box-sizing: border-box; }
+        /* Шапка и Поиск */
+        .header { position: sticky; top: 0; background: var(--primary); color: white; padding: 12px 15px; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .nav-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .search-container { position: relative; width: 100%; }
+        .search-box { width: 100%; padding: 12px 40px 12px 12px; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; outline: none; }
+        .clear-search { 
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            background: #bdc3c7; color: white; border: none; border-radius: 50%;
+            width: 24px; height: 24px; cursor: pointer; display: none;
+            align-items: center; justify-content: center; font-size: 14px;
+        }
+
         .container { padding: 15px; max-width: 900px; margin: auto; background: white; min-height: 100vh; }
         
-        /* Всплывающие окна */
-        #chat-container, #extra-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; flex-direction: column; -webkit-overflow-scrolling: touch; }
-        .chat-header { background: var(--dark); color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .close-chat-btn { background: var(--danger); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        iframe { border: none; flex-grow: 1; width: 100%; height: 100%; }
-
-        /* Кнопки */
-        .head-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; margin-left: 5px; font-size: 18px; }
-        .chat-btn-wrapper { position: relative; display: inline-block; }
-        .notification-dot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #ff5252; border: 2px solid white; border-radius: 50%; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-
-        /* Таблица */
-        .estimate-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .estimate-table th, .estimate-table td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 13px; }
-        .qty-inp { width: 65px; border: 1px solid #ccc; padding: 5px; text-align: center; font-weight: bold; }
+        /* Инфо-блок */
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+        .info-input { border: none; border-bottom: 1px solid #eee; padding: 4px 0; font-size: 16px; outline: none; width: 100%; font-family: inherit; }
+        .info-label { font-size: 11px; color: #666; font-weight: bold; text-transform: uppercase; }
 
         /* Каталог */
         .section-box { border: 1px solid #ddd; margin-bottom: 5px; border-radius: 5px; overflow: hidden; }
-        .section-header { padding: 12px; background: #eee; cursor: pointer; font-weight: bold; }
-        .section-content { display: none; padding: 5px 10px; background: #fff; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f9f9f9; }
-        
-        .catalog-controls { display: flex; align-items: center; gap: 8px; }
-        .cat-qty { width: 50px; padding: 8px; border: 1px solid #ccc; border-radius: 5px; text-align: center; font-weight: bold; }
+        .section-header { padding: 12px; background: #f8f9fa; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-top: 1px solid #eee; }
+        .catalog-qty { width: 50px; border: 2px solid var(--primary); color: var(--primary); text-align: center; border-radius: 6px; font-weight: bold; padding: 5px; margin-right: 8px; outline: none; font-size: 14px; }
 
-        /* Админ-панель */
-        #admin-panel { display: none; padding: 15px; background: var(--admin); border: 2px dashed #ff9800; margin: 10px; border-radius: 10px; position: relative; }
+        /* Таблица сметы */
+        .estimate-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .estimate-table th, .estimate-table td { border: 1px solid #ccc; padding: 8px; font-size: 14px; text-align: left; }
+        .qty-inp { width: 60px; border: 1px solid #ddd; text-align: center; font-weight: bold; padding: 6px; border-radius: 4px; font-size: 16px; }
 
+        /* Футер */
         .footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 1001; }
         .total-amount { font-size: 24px; color: #ffeb3b; font-weight: 900; }
+        .btn { border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-family: inherit; }
 
-        @media print { .no-print { display: none !important; } .sign-block { display: flex !important; margin-top: 50px; justify-content: space-between; } }
-        
-        .whatsapp-button { position: fixed; width: 60px; height: 60px; bottom: 95px; right: 20px; background-color: #25d366; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 2000; text-decoration: none; }
+        /* Модалки */
+        .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; align-items:center; justify-content:center; }
+        .modal-content { background:white; padding:20px; border-radius:12px; width:90%; max-width:400px; color: #000; }
+
+        @media print { .no-print { display: none !important; } .container { width: 100%; padding: 0; } }
     </style>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
-
-<script>
-  // Конфигурация вашей базы со скриншота
-  const firebaseConfig = {
-    databaseURL: "https://kalculator-8e345-default-rtdb.firebaseio.com/"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const database = firebase.database();
-</script>
 </head>
 <body>
 
-<div id="extra-container"><div class="chat-header" style="background: #444;"><span>Расчеты 🧮</span><button class="close-chat-btn" onclick="toggleExtra(false)">✕</button></div><iframe id="extra-frame" src="about:blank"></iframe></div>
-<div id="chat-container"><div class="chat-header"><span>Поддержка 📨</span><button class="close-chat-btn" onclick="toggleChat(false)">✕</button></div><iframe id="chat-frame" src="about:blank"></iframe></div>
-
 <div class="header no-print">
-    <div style="display:flex; flex-direction:column; line-height: 1;">
-        <span id="user-display-id" onclick="adminLogin()" style="font-weight:bold; font-size: 18px; cursor:pointer; color: #ffeb3b;">ID: ---</span>
-        <span id="visit-counter" style="font-size: 10px; opacity: 0.7;">ВИЗИТ: 0</span>
-        <div style="margin-top:5px;">
-            <button class="head-btn" onclick="toggleExtra(true)">🧮</button>
-            <div class="chat-btn-wrapper">
-                <button class="head-btn" onclick="toggleChat(true)">📨</button>
-                <span id="chat-dot" class="notification-dot"></span>
-            </div>
-            <button class="head-btn" onclick="document.getElementById('modal-custom').style.display='flex'">📦+</button>
-            <button class="head-btn" onclick="resetSmeta()">СБРОС</button>
+    <div class="nav-row">
+        <span style="font-weight: bold;">СМЕТА 2026</span>
+        <div style="display: flex; gap: 8px;">
+            <button class="btn" style="background:#673ab7; color:white;" onclick="toggleModal('modal-archive')">Архив</button>
+            <button class="btn" style="background:rgba(255,255,255,0.2); color:white;" onclick="toggleModal('modal-custom')">📦+</button>
+            <button class="btn" style="background:var(--danger); color:white;" onclick="resetSmeta()">СБРОС</button>
         </div>
     </div>
-    <input type="text" id="search" class="search-box" placeholder="Поиск работ..." oninput="renderCatalog(this.value)">
-</div>
-
-<div id="admin-panel" class="no-print">
-    <button onclick="this.parentElement.style.display='none'" style="position:absolute; right:10px; top:10px; border:none; background:none; font-weight:bold; cursor:pointer;">✕</button>
-    <h3 id="admin-title" style="margin:0 0 10px 0; font-size: 16px;">Добавление работы</h3>
-    
-    <label style="font-size: 11px; font-weight: bold;">РАЗДЕЛ:</label>
-    <select id="new-work-cat" style="width:100%; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc;"></select>
-    
-    <input type="text" id="new-work-name" style="width:100%; padding:10px; margin-bottom:8px; box-sizing:border-box;" placeholder="Название работы">
-    
-    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-        <input type="number" id="new-work-price" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:5px;" placeholder="Цена">
-        <input type="text" id="new-work-unit" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:5px;" value="шт" placeholder="Ед.изм">
+    <div class="search-container">
+        <input type="text" id="search" class="search-box" placeholder="Поиск..." oninput="handleSearch(this.value)">
+        <button id="clear-btn" class="clear-search" onclick="clearSearch()">✕</button>
     </div>
-    
-    <button onclick="addNewWork()" style="width:100%; padding:12px; background:var(--success); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">СОХРАНИТЬ В БАЗУ</button>
 </div>
-
 
 <div class="container">
-    <div id="catalog" class="no-print"></div>
+    <div id="catalog" class="no-print" style="margin-bottom: 20px;"></div>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; border-bottom: 2px solid #222; padding-bottom: 10px;">
+    <div class="info-grid">
         <div>
-            <input type="text" id="client-name" placeholder="Заказчик" style="width:100%; border:1px solid #ddd; padding:5px;" oninput="saveInfo()">
-            <input type="text" id="client-address" placeholder="Адрес объекта" style="width:100%; border:1px solid #ddd; padding:5px; margin-top:5px;" oninput="saveInfo()">
+            <div class="info-label">Заказчик</div>
+            <input type="text" id="inp-client" class="info-input" placeholder="Имя">
+            <div class="info-label" style="margin-top:10px">Адрес</div>
+            <input type="text" id="inp-address" class="info-input" placeholder="Объект">
         </div>
         <div style="text-align: right;">
-            <div id="estimate-date" style="font-weight:bold;"></div>
-            <input type="text" id="master-name" placeholder="Мастер" style="width:100%; border:1px solid #ddd; padding:5px; margin-top:5px; text-align:right;" oninput="saveInfo()">
+            <div class="info-label">Дата</div>
+            <div style="font-size: 18px; font-weight: bold; padding: 4px 0;">02.03.2026</div>
+            <div class="info-label" style="margin-top:10px">Мастер</div>
+            <input type="text" id="inp-master" class="info-input" style="text-align: right;" value="Master">
         </div>
     </div>
 
-    <h2 style="text-align:center; text-transform:uppercase; font-size:16px;">Смета на электромонтажные работы</h2>
     <div id="estimate"></div>
-    <div style="text-align:right; font-weight:bold; margin-top:20px; font-size:18px;">ИТОГО: <span id="total-bottom">0</span> ₽</div>
-
-    <div class="sign-block" style="display: none; justify-content: space-between; margin-top: 40px;">
-        <div style="border-top:1px solid #000; width:200px; text-align:center;">Исполнитель</div>
-        <div style="border-top:1px solid #000; width:200px; text-align:center;">Заказчик</div>
-    </div>
+    <div style="text-align:right; font-weight:bold; margin-top:20px; font-size:22px;">ИТОГО: <span id="total-bottom">0</span> ₽</div>
 </div>
 
 <div class="footer no-print">
-    <div>
-        <div style="font-size:10px;">ИТОГО К ОПЛАТЕ:</div>
-        <div class="total-amount"><span id="total">0</span> ₽</div>
-    </div>
-    <button style="background:#fff; color:#000; border:none; padding:12px 20px; border-radius:8px; font-weight:bold;" onclick="window.print()">ПЕЧАТЬ PDF</button>
-</div>
-
-<div id="modal-custom" class="no-print" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:5000; align-items:center; justify-content:center;" onclick="this.style.display='none'">
-    <div style="background:white; padding:20px; border-radius:15px; width:90%;" onclick="event.stopPropagation()">
-        <h3>Своя позиция (разово)</h3>
-        <input type="text" id="custom-name" style="width:100%; padding:10px; margin-bottom:10px;" placeholder="Название">
-        <input type="number" id="custom-price" style="width:100%; padding:10px; margin-bottom:10px;" placeholder="Цена">
-        <button onclick="addOneTimeItem()" style="width:100%; padding:12px; background:var(--success); color:white; border:none; border-radius:8px;">ДОБАВИТЬ В СМЕТУ</button>
-    </div>
-</div>
-<div id="custom-alert" class="no-print" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; align-items:center; justify-content:center;">
-    <div style="background:#fff; width:300px; border-radius:15px; overflow:hidden; box-shadow:0 5px 25px rgba(0,0,0,0.5); font-family:sans-serif;">
-        <div style="padding:25px 20px; text-align:center; color:#202124; font-size:16px; border-bottom:1px solid #eee;">
-            Ваш ID (<span id="alert-id-val" style="font-weight:bold;"></span>) не найден в облаке. <br>
-            <span onclick="openPrava()" style="color:#1a73e8; font-weight:bold; text-decoration:underline; cursor:pointer; display:inline-block; margin-top:12px;">Обратитесь к главному</span>
-        </div>
-        <div style="display:flex;">
-            <button onclick="document.getElementById('custom-alert').style.display='none'" style="width:100%; padding:15px; border:none; background:none; color:#1a73e8; font-size:16px; font-weight:bold; cursor:pointer;">Закрыть</button>
-        </div>
+    <div class="total-amount"><span id="total">0</span> ₽</div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn" style="background:var(--success); color:white; padding:12px 15px;" onclick="saveToArchive()">СОХРАНИТЬ</button>
+        <button class="btn" style="background:#fff; color:#000; padding:12px 15px;" onclick="window.print()">ПЕЧАТЬ</button>
     </div>
 </div>
 
-<div id="prava-container" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:11000; flex-direction:column;">
-    <div style="background:#202124; color:white; padding:12px; display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-weight:bold; margin-left:10px;">Доступ и права</span>
-        <button onclick="document.getElementById('prava-container').style.display='none'" style="background:#e53935; color:white; border:none; padding:8px 15px; border-radius:5px; font-weight:bold; cursor:pointer;">✕ ЗАКРЫТЬ</button>
+<div id="modal-custom" class="modal" onclick="toggleModal('modal-custom')">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h4>Своя работа 📦</h4>
+        <input type="text" id="c-name" class="info-input" style="border:1px solid #ddd; margin-bottom:10px; padding:8px;" placeholder="Название">
+        <input type="number" id="c-price" class="info-input" style="border:1px solid #ddd; margin-bottom:15px; padding:8px;" placeholder="Цена">
+        <button class="btn" style="width:100%; background:var(--success); color:white; padding:12px;" onclick="addOneTimeItem()">ДОБАВИТЬ</button>
     </div>
-    <iframe id="prava-frame" src="about:blank" style="border:none; flex-grow:1; width:100%; height:100%;"></iframe>
+</div>
+
+<div id="modal-archive" class="modal" onclick="toggleModal('modal-archive')">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h4>Архив смет 📁</h4>
+            <button onclick="toggleModal('modal-archive')" style="border:none; background:none; font-size:22px;">✕</button>
+        </div>
+        <div id="archive-list" style="max-height: 350px; overflow-y: auto; margin-top:10px; border-top:1px solid #eee;"></div>
+    </div>
 </div>
 
 <script>
-// 1. Инициализация ID и Регистрация
-let userId = localStorage.getItem('user_id_2026'); 
-if (!userId) {
-    userId = 'ID-' + Math.floor(1000 + Math.random() * 9000);
-    localStorage.setItem('user_id_2026', userId);
-    
-    // Регистрация мастера в уникальном списке
-    database.ref('users_registry/' + userId).set({
-        registered_at: firebase.database.ServerValue.TIMESTAMP
-    });
-}
-document.getElementById('user-display-id').innerText = userId;
-
-let allowedAdmins = [];  
-let isAdmin = false;
-let isFullAdmin = false;
-
-const ADMIN_PASS = "12345";      // Пароль для мастеров
-const SUPER_PASS = "Gazik0303";       // Ваш главный пароль
-
-// Слушатель базы данных
-database.ref('allowedAdmins').on('value', (snapshot) => {
-    const data = snapshot.val();
-    allowedAdmins = data ? Object.values(data) : [];
-    console.log("Список админов обновлен:", allowedAdmins);
-    if (isAdmin && isFullAdmin) {
-        showAdminPanel();
-    }
-});
-
-// Загрузка изменений базы
-let fullDbChanges = JSON.parse(localStorage.getItem('full_db_changes')) || [];
-
-// ВАША БАЗА ДАННЫХ (db)
-
+// БАЗА ДАННЫХ
 const db = [
     { cat: "1. Технологические отверстия", items: [
         {id:"1.1", n:"до Ø20мм Дерево", p:15, u:"п/см"}, {id:"1.2", n:"до Ø20мм Газоблок", p:20, u:"п/см"},
@@ -582,304 +497,185 @@ const db = [
     ]},
 ];
 
-// Применяем сохраненные изменения в базу
-fullDbChanges.forEach(change => {
-    const section = db.find(s => s.cat === change.catName);
-    if (section && !section.items.find(i => i.id === change.item.id)) {
-        section.items.push(change.item);
-    }
-});
+let state = JSON.parse(localStorage.getItem('smeta_current')) || [];
+let archive = JSON.parse(localStorage.getItem('smeta_archive')) || [];
+let openSections = {}; // Всегда пусто при загрузке (разделы закрыты)
 
-let state = JSON.parse(localStorage.getItem('smeta_items_2026')) || [];
-
-// Функции интерфейса
-function sync() {
-    localStorage.setItem('smeta_items_2026', JSON.stringify(state));
-    const list = document.getElementById('estimate');
-    document.getElementById('estimate-date').innerText = new Date().toLocaleDateString('ru-RU');
-    let total = 0;
-    
-    let html = `<table class="estimate-table"><thead><tr><th>№</th><th>Наименование</th><th>Кол-во</th><th>Сумма</th><th class="no-print"></th></tr></thead><tbody>`;
-    state.forEach((item, i) => {
-        const sum = Math.round(item.p * item.qty * (item.k ? 2.5 : 1));
-        total += sum;
-        html += `<tr><td>${i+1}</td><td>${item.n}${item.k ? '<br><small style="color:red">Коэф 2.5</small>':''}</td>
-        <td><input type="number" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)"></td>
-        <td>${sum.toLocaleString()} ₽</td><td class="no-print">
-        <input type="checkbox" ${item.k?'checked':''} onchange="toggleK(${i})"> <span onclick="remove(${i})" style="color:red; cursor:pointer; font-weight:bold; margin-left:10px;">✕</span></td></tr>`;
-        
-        const catInp = document.getElementById(`qty-${item.id}`);
-        if(catInp) catInp.value = item.qty;
-    });
-    
-    list.innerHTML = state.length ? html + `</tbody></table>` : "<p style='text-align:center'>Смета пуста</p>";
-    document.getElementById('total').innerText = total.toLocaleString();
-    document.getElementById('total-bottom').innerText = total.toLocaleString();
+// ПОИСК
+function handleSearch(val) {
+    document.getElementById('clear-btn').style.display = val.length > 0 ? 'flex' : 'none';
+    renderCatalog(val);
 }
 
+function clearSearch() {
+    const inp = document.getElementById('search');
+    inp.value = "";
+    inp.focus();
+    handleSearch("");
+}
+
+// КАТАЛОГ
 function renderCatalog(filter = "") {
     const list = document.getElementById('catalog');
     list.innerHTML = "";
+    const f = filter.toLowerCase().replace(/ё/g, 'е');
+    
     db.forEach(sec => {
-        const items = sec.items.filter(i => i.n.toLowerCase().includes(filter.toLowerCase()));
+        const items = sec.items.filter(i => i.n.toLowerCase().replace(/ё/g, 'е').includes(f));
         if (!items.length) return;
         
+        const isVisible = openSections[sec.cat] || (f.length > 0);
         const box = document.createElement('div');
         box.className = 'section-box';
-        box.innerHTML = `<div class="section-header" onclick="toggleSec(this)">${sec.cat}</div><div class="section-content"></div>`;
-        const content = box.querySelector('.section-content');
-        if(filter) content.style.display = 'block';
+        
+        let itemsHtml = items.map(i => {
+            const currentItem = state.find(s => s.id === i.id && !s.k25);
+            const count = currentItem ? currentItem.qty : 0;
+            return `
+                <div class="item-row">
+                    <div>${i.n}<br><small>${i.p} ₽ / ${i.u}</small></div>
+                    <div style="display:flex; align-items:center;">
+                        <input type="number" class="catalog-qty" value="${count || ''}" placeholder="0" 
+                               onchange="manualUpdate('${i.id}', this.value)" onclick="event.stopPropagation()">
+                        <button class="btn" style="background:var(--success); color:white;" onclick="addItem('${i.id}')">+</button>
+                    </div>
+                </div>`;
+        }).join('');
 
-        items.forEach(item => {
-            const inSmeta = state.find(s => s.id === item.id);
-            const val = inSmeta ? inSmeta.qty : 0;
-            
-            // Теперь крестик виден любому админу (и 12345, и Gazik0303)
-            const delBtn = isAdmin ? `<span onclick="deleteWork('${item.id}')" style="color:red; margin-right:10px; cursor:pointer; font-weight:bold; font-size:18px;">✕</span>` : "";
-            
-            content.innerHTML += `<div class="item-row">
-                <div style="flex:1; display:flex; align-items:center;">
-                    ${delBtn}
-                    <div>${item.n}<br><small>${item.p} ₽ / ${item.u}</small></div>
-                </div>
-                <div class="catalog-controls">
-                    <input type="number" id="qty-${item.id}" class="cat-qty" value="${val}" onchange="manualCatUpdate('${item.id}', this.value)">
-                    <button onclick="addItem('${item.id}')" style="background:var(--success); color:white; border:none; padding:10px 15px; border-radius:5px; font-weight:bold;">+</button>
-                </div>
-            </div>`;
-        });
+        box.innerHTML = `
+            <div class="section-header" onclick="toggleSec('${sec.cat}')">
+                ${sec.cat} <span>${isVisible ? '▲' : '▼'}</span>
+            </div>
+            <div class="section-content" style="display:${isVisible ? 'block' : 'none'}">${itemsHtml}</div>`;
         list.appendChild(box);
     });
 }
 
-function deleteWork(id) {
-    if(!isAdmin) return; // Если не админ, кнопка не сработает
-    
-    if(!confirm("Удалить эту работу из базы?")) return;
-    
-    db.forEach(section => {
-        section.items = section.items.filter(i => i.id !== id);
-    });
-    
-    fullDbChanges = fullDbChanges.filter(c => c.item.id !== id);
-    localStorage.setItem('full_db_changes', JSON.stringify(fullDbChanges));
-    
-    renderCatalog();
-    sync(); // Обновляем смету на случай, если работа была там
+function toggleSec(cat) {
+    openSections[cat] = !openSections[cat];
+    renderCatalog(document.getElementById('search').value);
 }
 
+// ЛОГИКА ДОБАВЛЕНИЯ
 function addItem(id) {
-    let itemInState = state.find(i => i.id === id);
-    if(itemInState) { 
-        itemInState.qty += 1; 
-    } else { 
-        db.forEach(s => s.items.forEach(i => { 
-            if(i.id === id) state.push({...i, qty: 1, k: false}); 
-        })); 
+    let baseItem = null;
+    db.forEach(s => s.items.forEach(i => { if(i.id === id) baseItem = i; }));
+    const existing = state.find(s => s.id === id && !s.k25);
+    if (existing) { existing.qty += 1; } 
+    else { state.push({...baseItem, qty: 1, k25: false}); }
+    sync();
+}
+
+function manualUpdate(id, val) {
+    const num = parseFloat(val) || 0;
+    const existingIndex = state.findIndex(s => s.id === id && !s.k25);
+    if (existingIndex !== -1) {
+        if (num <= 0) state.splice(existingIndex, 1);
+        else state[existingIndex].qty = num;
+    } else if (num > 0) {
+        let baseItem = null;
+        db.forEach(s => s.items.forEach(i => { if(i.id === id) baseItem = i; }));
+        if(baseItem) state.push({...baseItem, qty: num, k25: false});
     }
     sync();
 }
 
-function manualCatUpdate(id, val) {
-    let num = parseFloat(val) || 0;
-    let itemInState = state.find(i => i.id === id);
-    if(num > 0) {
-        if(itemInState) itemInState.qty = num; 
-        else db.forEach(s => s.items.forEach(i => { if(i.id === id) state.push({...i, qty: num, k: false}); }));
-    } else { 
-        state = state.filter(i => i.id !== id); 
-    }
-    sync();
-}
+// СИНХРОНИЗАЦИЯ И ПАМЯТЬ
+function sync() {
+    localStorage.setItem('smeta_current', JSON.stringify(state));
+    const container = document.getElementById('estimate');
+    let total = 0;
 
-// ЛОГИКА АДМИНКИ (ИСПРАВЛЕНО)
-function adminLogin() {
-    const p = prompt("Введите пароль администратора:");
-    
-    if (p === SUPER_PASS) {
-        isAdmin = true;
-        isFullAdmin = true; 
-        alert("Режим СУПЕРАДМИНА активирован");
-        showAdminPanel();
-    } else if (p === ADMIN_PASS) {
-        if (allowedAdmins.includes(userId)) {
-            isAdmin = true;
-            isFullAdmin = false; 
-            alert("Вход выполнен!");
-            showAdminPanel();
-        } else {
-            // Если пароль верный, но ID нет в списке разрешенных
-            document.getElementById('alert-id-val').innerText = userId;
-            document.getElementById('custom-alert').style.display = 'flex';
-        }
-    } else if (p !== null) {
-        // НОВОЕ: Если пароль введен неверно, показываем то же окно
-        // Мы можем немного изменить текст в окне динамически, если хотим
-        document.getElementById('alert-id-val').innerText = userId;
-        document.getElementById('custom-alert').style.display = 'flex';
-    }
-}
-
-function showAdminPanel() {
-    const panel = document.getElementById('admin-panel');
-    panel.style.display = 'block';
-    
-    let mgmt = document.getElementById('admin-mgmt');
-    if (isFullAdmin) {
-        if (!mgmt) {
-            mgmt = document.createElement('div');
-            mgmt.id = 'admin-mgmt';
-            panel.prepend(mgmt);
-        }
-        mgmt.innerHTML = `
-            <div style="background: #1a1a1a; color: #ffeb3b; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #ffeb3b;">
-                <h4 style="margin:0 0 10px 0; text-align:center;">УПРАВЛЕНИЕ МАСТЕРАМИ</h4>
-                <div style="display:flex; gap:5px; margin-bottom:15px;">
-                    <input type="text" id="target-id" placeholder="ID Мастера" style="flex:1; padding:10px; border-radius:5px; border:none;">
-                    <button onclick="grantAccess()" style="background:#2db855; color:white; border:none; padding:10px; border-radius:5px; font-weight:bold;">ОК</button>
-                </div>
-                <div id="admins-list">
-                    ${allowedAdmins.map(id => `
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; background:rgba(255,255,255,0.1); margin-top:5px; border-radius:4px;">
-                            <span style="color:#fff;">${id}</span>
-                            <button onclick="revokeAccess('${id}')" style="background:none; border:none; color:#ff4444; font-size:18px; cursor:pointer;">✕</button>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>`;
-    } else if (mgmt) {
-        mgmt.remove();
-    }
-
-    const select = document.getElementById('new-work-cat');
-    if (select) {
-        select.innerHTML = "";
-        db.forEach(s => {
-            select.innerHTML += `<option value="${s.cat}">${s.cat}</option>`;
+    if(!state.length) {
+        container.innerHTML = "<p style='text-align:center; color:#999; padding:20px;'>Смета пуста</p>";
+    } else {
+        let html = `<table class="estimate-table"><thead><tr><th>№</th><th>Работа</th><th>Кол-во</th><th>Сумма</th><th class="no-print"></th></tr></thead><tbody>`;
+        state.forEach((item, i) => {
+            const p = item.k25 ? Math.round(item.p * 2.5) : item.p;
+            const s = p * item.qty;
+            total += s;
+            html += `<tr>
+                <td>${i+1}</td>
+                <td>${item.n}${item.k25 ? '<br><small style="color:red">x2.5</small>' : ''}</td>
+                <td><input type="number" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)"></td>
+                <td>${s.toLocaleString()} ₽</td>
+                <td class="no-print">
+                    <input type="checkbox" ${item.k25 ? 'checked' : ''} onchange="toggleK(${i})">
+                    <button style="color:red; border:none; background:none; font-size:18px;" onclick="remove(${i})">✕</button>
+                </td>
+            </tr>`;
         });
+        container.innerHTML = html + `</tbody></table>`;
     }
-    renderCatalog();
+    document.getElementById('total').innerText = total.toLocaleString();
+    document.getElementById('total-bottom').innerText = total.toLocaleString();
+    renderCatalog(document.getElementById('search').value);
 }
 
-function grantAccess() {
-    const idInput = document.getElementById('target-id');
-    const id = idInput.value.trim();
-    if (id && !allowedAdmins.includes(id)) {
-        database.ref('allowedAdmins').push(id);
-        idInput.value = "";
+function updateQty(i, v) { state[i].qty = parseFloat(v) || 0; sync(); }
+function remove(i) { state.splice(i, 1); sync(); }
+function toggleK(i) { state[i].k25 = !state[i].k25; sync(); }
+function resetSmeta() { if(confirm("Очистить?")) { state = []; sync(); } }
+
+// АРХИВ
+function saveToArchive() {
+    if(!state.length) return;
+    const client = document.getElementById('inp-client').value || 'Без имени';
+    archive.unshift({id: Date.now(), client, total: document.getElementById('total').innerText, date: new Date().toLocaleString(), data: JSON.parse(JSON.stringify(state))});
+    localStorage.setItem('smeta_archive', JSON.stringify(archive));
+    alert("Сохранено в архив!");
+}
+
+function renderArchive() {
+    const list = document.getElementById('archive-list');
+    list.innerHTML = archive.length ? "" : "<p style='padding:10px;'>Архив пуст</p>";
+    archive.forEach(a => {
+        list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee;">
+            <div onclick="loadArchive(${a.id})" style="cursor:pointer"><b>${a.client}</b><br><small>${a.date} — ${a.total} ₽</small></div>
+            <button onclick="delArch(${a.id})" style="color:red; border:none; background:none; font-size:18px;">🗑️</button>
+        </div>`;
+    });
+}
+
+function loadArchive(id) {
+    const entry = archive.find(x => x.id === id);
+    if(confirm(`Загрузить смету для ${entry.client}?`)) {
+        state = JSON.parse(JSON.stringify(entry.data));
+        document.getElementById('inp-client').value = entry.client;
+        sync();
+        toggleModal('modal-archive');
     }
 }
 
-function revokeAccess(idToRemove) {
-    if (confirm("Удалить доступ для " + idToRemove + "?")) {
-        database.ref('allowedAdmins').once('value', (snapshot) => {
-            snapshot.forEach((child) => {
-                if (child.val() === idToRemove) child.ref.remove();
-            });
-        });
+function delArch(id) {
+    if(confirm("Удалить?")) {
+        archive = archive.filter(x => x.id !== id);
+        localStorage.setItem('smeta_archive', JSON.stringify(archive));
+        renderArchive();
     }
 }
 
-function addNewWork() {
-    const catName = document.getElementById('new-work-cat').value;
-    const n = document.getElementById('new-work-name').value;
-    const p = parseFloat(document.getElementById('new-work-price').value);
-    const u = document.getElementById('new-work-unit').value || "шт";
-    
-    if(!n || isNaN(p)) { alert("Заполните название и цену!"); return; }
-
-    const newItem = { id: "c" + Date.now(), n, p, u };
-    const section = db.find(s => s.cat === catName);
-    
-    if (section) {
-        section.items.push(newItem);
-        fullDbChanges.push({ catName, item: newItem });
-        localStorage.setItem('full_db_changes', JSON.stringify(fullDbChanges));
-        renderCatalog();
-        alert("Работа добавлена локально!");
-    }
+function toggleModal(id) {
+    const m = document.getElementById(id);
+    m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+    if(id === 'modal-archive') renderArchive();
 }
-
-
-function toggleChat(show) { 
-    document.getElementById('chat-container').style.display = show ? 'flex' : 'none'; 
-    if(show) document.getElementById('chat-frame').src = "signa.html";
-}
-function toggleExtra(show) { 
-    document.getElementById('extra-container').style.display = show ? 'flex' : 'none'; 
-    if(show) document.getElementById('extra-frame').src = "izmerenie.html";
-}
-function toggleSec(el) { el.nextElementSibling.style.display = (el.nextElementSibling.style.display === 'block' ? 'none' : 'block'); }
-window.updateQty = (i, v) => { state[i].qty = parseFloat(v)||0; sync(); }
-window.toggleK = (i) => { state[i].k = !state[i].k; sync(); }
-window.remove = (i) => { state.splice(i,1); renderCatalog(); sync(); }
-window.resetSmeta = () => { if(confirm("Очистить?")) { state = []; renderCatalog(); sync(); } }
 
 function addOneTimeItem() {
-    const n = document.getElementById('custom-name').value;
-    const p = parseFloat(document.getElementById('custom-price').value);
-    if(n && !isNaN(p)) { state.push({id:Date.now(), n, p, u:'шт', qty:1, k:false}); sync(); document.getElementById('modal-custom').style.display='none'; }
+    const n = document.getElementById('c-name').value;
+    const p = parseFloat(document.getElementById('c-price').value);
+    if(n && p) { state.push({id: Date.now(), n, p, qty: 1, k25: false, u: 'шт'}); sync(); toggleModal('modal-custom'); }
 }
 
-function saveInfo() {
-    localStorage.setItem('smeta_master_info', JSON.stringify({
-        client: document.getElementById('client-name').value,
-        address: document.getElementById('client-address').value,
-        master: document.getElementById('master-name').value
-    }));
-}
+// АВТОЗАПОЛНЕНИЕ ПОЛЕЙ ПРИ СТАРТЕ
+['inp-client', 'inp-address', 'inp-master'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = localStorage.getItem('val_'+id) || el.value;
+    el.oninput = () => localStorage.setItem('val_'+id, el.value);
+});
 
-function loadInfo() {
-    const info = JSON.parse(localStorage.getItem('smeta_master_info'));
-    if(info) {
-        document.getElementById('client-name').value = info.client || '';
-        document.getElementById('client-address').value = info.address || '';
-        document.getElementById('master-name').value = info.master || '';
-    }
-}
-
-// Получаем текущую дату в формате ГГГГ-ММ-ДД
-const today = new Date().toLocaleDateString('en-CA'); 
-
-function updateStats() {
-    // Счетчик визитов именно за СЕГОДНЯ
-    // Используем sessionStorage, чтобы повторные обновления страницы в одном сеансе не накручивали счетчик
-    if (!sessionStorage.getItem('counted_today_' + today)) {
-        database.ref('daily_visits/' + today).transaction(v => (v || 0) + 1);
-        sessionStorage.setItem('counted_today_' + today, 'true');
-    }
-
-    // Слушатель для обновления данных в шапке в реальном времени
-    database.ref().on('value', (snapshot) => {
-        const data = snapshot.val() || {};
-        
-        // Общее количество уникальных зарегистрированных мастеров
-        const totalMasters = data.users_registry ? Object.keys(data.users_registry).length : 0;
-        
-        // Количество визитов только за сегодня
-        const visitsToday = (data.daily_visits && data.daily_visits[today]) ? data.daily_visits[today] : 0;
-        
-        const counterEl = document.getElementById('visit-counter');
-        if (counterEl) {
-            counterEl.innerHTML = `<span style="color:#ffeb3b">${totalMasters}</span> | ЗА СЕГОДНЯ: <span style="color:#ffeb3b">${visitsToday}</span>`;
-        }
-    });
-}
-
-// В самом низу замените старый вызов updateVisitCounter(); на:
-loadInfo(); 
-renderCatalog(); 
-sync(); 
-updateStats(); 
-
-loadInfo(); renderCatalog(); sync(); updateVisitCounter();
-function openPrava() {
-    // Закрываем уведомление и открываем полноэкранное окно с правами
-    document.getElementById('custom-alert').style.display = 'none';
-    document.getElementById('prava-container').style.display = 'flex';
-    document.getElementById('prava-frame').src = "prava.html";
-}
-
+renderCatalog();
+sync();
 </script>
 </body>
 </html>
