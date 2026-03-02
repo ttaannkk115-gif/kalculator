@@ -205,7 +205,7 @@
         if (permission === 'granted') {
             // Ждем готовности воркера специально для iPhone
             navigator.serviceWorker.ready.then((registration) => {
-                messaging.getToken({ 
+                                messaging.getToken({ 
                     serviceWorkerRegistration: registration, 
                     vapidKey: 'BGNQzlvGewOuQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKKkYekWNL-3tgN_cQ' 
                 }).then((token) => {
