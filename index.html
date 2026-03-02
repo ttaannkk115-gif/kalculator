@@ -76,7 +76,6 @@
         iframe { width: 100%; height: 100%; border: none; }
         .close-btn { background: none; border: none; color: #ff4444; font-size: 32px; cursor: pointer; }
 
-        /* Админка */
         .admin-stats { padding: 15px 20px; font-size: 18px; font-weight: 800; color: var(--main-gold); border-bottom: 1px solid #1a1a1a; }
         .admin-nav-btn { background: #111; border: 1px solid #333; color: var(--main-gold); padding: 15px; border-radius: 12px; margin: 10px 15px; text-align: center; cursor: pointer; font-weight: bold; font-size: 14px; text-transform: uppercase; }
         .date-divider { background: #111; color: var(--main-gold); padding: 8px; font-size: 11px; text-align: center; margin: 15px 15px 5px; border-radius: 8px; font-weight: bold; border: 1px solid #222; }
@@ -150,29 +149,28 @@
 </div>
 
 <script>
-    // 1. Конфигурация Firebase
     const firebaseConfig = { databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // 2. Установка фиксированного ID из файла
+    // СИНХРОНИЗАЦИЯ С ФАЙЛОМ ШАБАШЕК (ID-6260)
     const myID = "ID-6260"; 
     localStorage.setItem('volt_master_uid_raw', "6260");
+    localStorage.setItem('volt_master_uid', "6260"); // Для совместимости с модулями
 
-    // 3. Главная функция инициализации
     function initApp() {
         const now = new Date();
         const dateKey = now.toISOString().split('T')[0];
         const timeStr = now.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
         
-        // РЕГИСТРАЦИЯ
+        // Регистрация под единым ID
         database.ref(`registered_users/${myID}`).update({
             id: myID,
             lastVisit: timeStr,
             lastDate: dateKey
         });
 
-        // ЗАПИСЬ ВИЗИТА
+        // Запись визита
         const userRef = database.ref(`visits/${dateKey}/${myID}`);
         userRef.once('value', s => {
             let data = s.val() || { allTimes: "" };
@@ -182,34 +180,31 @@
         });
         database.ref(`visits/${dateKey}/${myID}/count`).transaction(c => (c || 0) + 1);
         
-        // ОБНОВЛЕНИЕ СЧЕТЧИКА
         database.ref('registered_users').on('value', snap => {
             const total = snap.numChildren();
             document.getElementById('stats-display').innerText = `${myID} | ВСЕГО: ${total}`;
         });
 
         watchShabashki();
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+        
+        // Включаем автосохранение полей, если они появятся в будущем
+        enableAutoSave();
     }
 
-    // 4. Остальная логика PWA и интерфейса
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-    });
+    function enableAutoSave() {
+        document.querySelectorAll('input, textarea').forEach(el => {
+            const key = 'volt_master_save_' + el.id;
+            const saved = localStorage.getItem(key);
+            if(saved) el.value = saved;
+            el.addEventListener('input', () => localStorage.setItem(key, el.value));
+        });
+    }
 
     function handleInstall() {
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        if (isIOS) {
-            document.getElementById('ios-instruction').style.display = 'block';
-        } else if (deferredPrompt) {
-            deferredPrompt.prompt();
-        } else {
-            alert("Используйте меню браузера: 'Добавить на главный экран'");
-        }
+        if (isIOS) document.getElementById('ios-instruction').style.display = 'block';
+        else alert("Используйте меню браузера: 'Добавить на главный экран'");
     }
 
     function openApp(name, url) {
@@ -244,7 +239,6 @@
         });
     }
 
-    // 7. Админка
     let clicks = 0;
     document.getElementById('main-logo').onclick = () => {
         clicks++;
