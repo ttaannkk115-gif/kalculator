@@ -58,7 +58,7 @@
         .bg-free { background: rgba(255,255,255,0.1); color: #fff; }
         .bg-busy { background: rgba(33, 150, 243, 0.2); color: var(--process); }
 
-        .rej-box { background: rgba(255, 68, 68, 0.05); border: 1px dashed rgba(255, 68, 68, 0.3); border-radius: 10px; padding: 10px; margin-bottom: 10px; font-size: 11px; }
+        .rej-box { background: rgba(255, 68, 68, 0.05); border: 1px dashed rgba(255, 68, 68, 0.3); border-radius: 10px; padding: 10px; margin-bottom: 10px; font-size: 11px; color: #ff8888; }
 
         .btn { border: none; padding: 14px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; font-size: 13px; margin-top: 5px; transition: 0.3s; }
         .btn-main { background: var(--main-gold); color: #000; }
@@ -68,6 +68,7 @@
         .btn-small { padding: 8px; font-size: 9px; background: #222; color: #aaa; border-radius: 8px; flex: 1; border: 1px solid #444; }
 
         .accepted-by { text-align: center; padding: 12px; color: var(--process); font-size: 12px; background: rgba(33, 150, 243, 0.05); border-radius: 12px; margin-top: 10px; border: 1px solid rgba(33, 150, 243, 0.1); }
+        .author-info { font-size: 10px; color: #666; margin-top: 5px; font-style: italic; }
 
         nav { position: fixed; bottom: 0; width: 100%; background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; padding: 15px 0 25px; z-index: 1000; }
         nav button { background: none; border: none; color: #555; font-size: 10px; font-weight: bold; display: flex; flex-direction: column; align-items: center; flex: 1; gap: 5px; outline: none; }
@@ -144,7 +145,6 @@
 
     let currentFilter = 'Все', allOrders = [], currentRejId = null;
 
-    // Маска телефона
     document.getElementById('phone').addEventListener('input', (e) => {
         let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
         if (!x[2]) e.target.value = x[1] ? '+7 (' : '';
@@ -182,6 +182,7 @@
                 </div>
                 <span class="badge-status ${isBusy ? 'bg-busy' : 'bg-free'}">${isBusy ? '⏳ В работе' : '🔘 Свободен'}</span>
                 <h3>${o.task}</h3><div class="addr">📍 ${o.addr}</div>
+                <div class="author-info">Отправил: ID-${o.ownerID || 'Неизвестно'}</div>
                 ${rejectionsHtml}
                 ${!isBusy ? 
                     `<button class="btn btn-main" onclick="takeOrder('${o.id}')">ВЗЯТЬ В РАБОТУ</button>
@@ -228,19 +229,19 @@
         };
         if(!data.task || !data.addr || data.phone.length < 18) return alert("Заполните всё!");
         db.ref('shabashki/active/' + id).update(data).then(() => { 
-            sendPushTrigger(data.task, data.city); // СИГНАЛ ПУША
+            sendPushTrigger(data.task, data.city); 
             resetForm(); 
             changeView('list', document.querySelector('nav button')); 
         });
     }
 
     function sendPushTrigger(task, city) {
-    db.ref('push_queue').push({ 
-        title: "НОВАЯ ШАБАШКА! 🔥", 
-        body: city + ": " + task, 
-        timestamp: firebase.database.ServerValue.TIMESTAMP 
-    });
-}
+        db.ref('push_queue').push({ 
+            title: "НОВАЯ ШАБАШКА! 🔥", 
+            body: city + ": " + task, 
+            timestamp: firebase.database.ServerValue.TIMESTAMP 
+        });
+    }
 
     function takeOrder(id) { db.ref(`shabashki/active/${id}`).update({ status: 'busy', startTime: firebase.database.ServerValue.TIMESTAMP, workerID: userID }); }
     
@@ -249,7 +250,7 @@
         db.ref(`shabashki/active/${id}`).once('value', snap => {
             const o = snap.val();
             if(o.workerID != userID) return; 
-            db.ref('shabashki/archive').push({...o, closedAt: new Date().toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit'})});
+            db.ref('shabashki/archive').push({...o, closedAt: new Date().toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit'}), finisherID: userID});
             db.ref(`shabashki/active/${id}`).remove();
         });
     }
@@ -270,13 +271,18 @@
 
     function openRej(id) { currentRejId = id; document.getElementById('modal-rej').style.display = 'flex'; }
     function closeModal() { document.getElementById('modal-rej').style.display = 'none'; document.getElementById('rej-text').value = ''; }
+    
     function submitRejection() {
-        const text = document.getElementById('rej-text').value.trim();
-        if(!text) return;
+        const textInput = document.getElementById('rej-text').value.trim();
+        if(!textInput) return;
+        
+        // Добавляем ID отказавшегося прямо в текст
+        const fullText = `${textInput} (Отказ от ID-${userID})`;
+        
         db.ref(`shabashki/active/${currentRejId}`).once('value', snap => {
             const o = snap.val();
             if(o.workerID != userID) return; 
-            db.ref(`shabashki/active/${currentRejId}/rejections`).push({ text });
+            db.ref(`shabashki/active/${currentRejId}/rejections`).push({ text: fullText });
             db.ref(`shabashki/active/${currentRejId}`).update({ status: 'free', startTime: null, workerID: null });
             closeModal();
         });
@@ -284,9 +290,13 @@
 
     function renderArchive(archived) {
         document.getElementById('archive-list').innerHTML = archived.map(o => `
-            <div class="card" style="opacity:0.6"><div class="card-header"><span>${o.city}</span><span>${o.closedAt || ''}</span></div>
-            <div class="badge-status" style="background:rgba(76,175,80,0.2);color:var(--success)">✅ ВЫПОЛНЕНО</div>
-            <h3>${o.task}</h3><div class="addr">📍 ${o.addr}</div></div>`).join('') || '<div style="text-align:center;padding:50px;color:#444">Архив пуст</div>';
+            <div class="card" style="opacity:0.6">
+                <div class="card-header"><span>${o.city}</span><span>${o.closedAt || ''}</span></div>
+                <div class="badge-status" style="background:rgba(76,175,80,0.2);color:var(--success)">✅ ВЫПОЛНЕНО</div>
+                <h3>${o.task}</h3>
+                <div class="addr">📍 ${o.addr}</div>
+                <div class="author-info">Автор: ID-${o.ownerID} | Исполнитель: ID-${o.finisherID || '---'}</div>
+            </div>`).join('') || '<div style="text-align:center;padding:50px;color:#444">Архив пуст</div>';
     }
 
     function changeView(view, btn) {
