@@ -11,28 +11,40 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Фоновое уведомление
+// Ловим пуш
 messaging.onBackgroundMessage((payload) => {
-    const title = payload.notification.title;
+    const title = payload.notification.title || "VoltMaster";
     const options = {
-        body: payload.notification.body,
+        body: payload.notification.body || "Новая шабашка!",
         icon: 'logo.png',
-        data: { url: payload.data.url } // Передаем ссылку в клик
+        badge: 'logo.png',
+        data: {
+            // Если сервер прислал ссылку — берем её, если нет — открываем шабашки
+            url: (payload.data && payload.data.url) ? payload.data.url : 'shabashki.html'
+        }
     };
     return self.registration.showNotification(title, options);
 });
 
-// ОБРАБОТКА КЛИКА
+// Ловим клик по пушу
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const targetUrl = event.notification.data.url;
+    
+    // Прямая ссылка на страницу шабашек
+    const targetUrl = 'shabashki.html'; 
 
     event.waitUntil(
-        clients.matchAll({ type: 'window' }).then((windowClients) => {
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+            // Если страница уже открыта — просто переключаемся на неё
             for (let client of windowClients) {
-                if (client.url === targetUrl && 'focus' in client) return client.focus();
+                if (client.url.includes(targetUrl) && 'focus' in client) {
+                    return client.focus();
+                }
             }
-            if (clients.openWindow) return clients.openWindow(targetUrl);
+            // Если закрыта — открываем заново
+            if (clients.openWindow) {
+                return clients.openWindow(targetUrl);
+            }
         })
     );
 });
