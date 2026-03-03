@@ -57,7 +57,6 @@
         .badge-status { font-size: 9px; padding: 4px 8px; border-radius: 6px; font-weight: bold; display: inline-block; margin-bottom: 10px; text-transform: uppercase; }
         .bg-free { background: rgba(255,255,255,0.1); color: #fff; }
         .bg-busy { background: rgba(33, 150, 243, 0.2); color: var(--process); }
-        .bg-done { background: rgba(76, 175, 80, 0.2); color: var(--success); }
 
         .rej-box { background: rgba(255, 68, 68, 0.05); border: 1px dashed rgba(255, 68, 68, 0.3); border-radius: 10px; padding: 10px; margin-bottom: 10px; font-size: 11px; }
 
@@ -126,7 +125,6 @@
 </nav>
 
 <script>
-    // Инициализация (данные из вашего конфига)
     const firebaseConfig = {
         apiKey: "AIzaSyD-dIC8bm8y4kaY7RXmMrys2wOMLA5o8vY",
         authDomain: "voltmaster-332c0.firebaseapp.com",
@@ -141,7 +139,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ID пользователя (Мастер: 7486)
     let userID = localStorage.getItem('volt_master_uid') || "7486"; 
     document.getElementById('display-id').innerText = "ID: " + userID;
 
@@ -174,9 +171,7 @@
             const isBusy = o.status === 'busy';
             const isMyOrder = o.ownerID == userID; 
             const isWorker = o.workerID == userID; 
-            
-            // Отображение отказов с ID (fromID)
-            let rejectionsHtml = o.rejections ? `<div class="rej-box">${Object.values(o.rejections).map(r => `• <b>ID-${r.fromID || '?'}:</b> ${r.text}`).join('<br>')}</div>` : '';
+            let rejectionsHtml = o.rejections ? `<div class="rej-box">${Object.values(o.rejections).map(r => `• ${r.text}`).join('<br>')}</div>` : '';
 
             const card = document.createElement('div');
             card.className = 'card';
@@ -233,64 +228,61 @@
         };
         if(!data.task || !data.addr || data.phone.length < 18) return alert("Заполните всё!");
         db.ref('shabashki/active/' + id).update(data).then(() => { 
+            sendPushTrigger(data.task, data.city); // СИГНАЛ ПУША
             resetForm(); 
             changeView('list', document.querySelector('nav button')); 
         });
     }
 
+    function sendPushTrigger(task, city) {
+        db.ref('push_queue').push({ title: "НОВАЯ ШАБАШКА! 🔥", body: city + ": " + task, timestamp: firebase.database.ServerValue.TIMESTAMP });
+    }
+
     function takeOrder(id) { db.ref(`shabashki/active/${id}`).update({ status: 'busy', startTime: firebase.database.ServerValue.TIMESTAMP, workerID: userID }); }
     
-    // Исправлено: При завершении сохраняем ID того, кто выполнил
     function finishOrder(id, startTime) {
         if (Date.now() - startTime < 30 * 60 * 1000) return;
         db.ref(`shabashki/active/${id}`).once('value', snap => {
             const o = snap.val();
-            if(!o || o.workerID != userID) return; 
-            db.ref('shabashki/archive').push({
-                ...o, 
-                status: 'done',
-                workerID: userID, // Фиксируем ID исполнителя
-                closedAt: new Date().toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit'})
-            });
+            if(o.workerID != userID) return; 
+            db.ref('shabashki/archive').push({...o, closedAt: new Date().toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit'})});
             db.ref(`shabashki/active/${id}`).remove();
         });
     }
 
     function deleteOrder(id) { if(confirm("Удалить этот заказ?")) db.ref(`shabashki/active/${id}`).remove(); }
 
+    function editOrder(id) {
+        const o = allOrders.find(x => x.id === id);
+        if(!o) return;
+        document.getElementById('edit-id').value = o.id;
+        document.getElementById('task').value = o.task;
+        document.getElementById('address').value = o.addr;
+        document.getElementById('phone').value = o.phone;
+        document.getElementById('city-input').value = o.city;
+        document.getElementById('save-btn').innerText = 'СОХРАНИТЬ';
+        changeView('add', document.querySelectorAll('nav button')[1]);
+    }
+
     function openRej(id) { currentRejId = id; document.getElementById('modal-rej').style.display = 'flex'; }
     function closeModal() { document.getElementById('modal-rej').style.display = 'none'; document.getElementById('rej-text').value = ''; }
-    
-    // Исправлено: Записываем ID мастера в каждый отказ (fromID)
     function submitRejection() {
         const text = document.getElementById('rej-text').value.trim();
         if(!text) return;
         db.ref(`shabashki/active/${currentRejId}`).once('value', snap => {
             const o = snap.val();
-            if(!o || o.workerID != userID) return; 
-            
-            db.ref(`shabashki/active/${currentRejId}/rejections`).push({ 
-                text: text,
-                fromID: userID // Записываем кто отказался
-            });
-            
-            db.ref(`shabashki/active/${currentRejId}`).update({ 
-                status: 'free', 
-                startTime: null, 
-                workerID: null 
-            });
+            if(o.workerID != userID) return; 
+            db.ref(`shabashki/active/${currentRejId}/rejections`).push({ text });
+            db.ref(`shabashki/active/${currentRejId}`).update({ status: 'free', startTime: null, workerID: null });
             closeModal();
         });
     }
 
-    // В архиве теперь тоже видно, кто выполнил (ID исполнителя)
     function renderArchive(archived) {
         document.getElementById('archive-list').innerHTML = archived.map(o => `
-            <div class="card" style="opacity:0.6">
-                <div class="card-header"><span>${o.city}</span><span>${o.closedAt || ''}</span></div>
-                <div class="badge-status bg-done">✅ ВЫПОЛНЕНО (ID-${o.workerID || '?'})</div>
-                <h3>${o.task}</h3><div class="addr">📍 ${o.addr}</div>
-            </div>`).join('') || '<div style="text-align:center;padding:50px;color:#444">Архив пуст</div>';
+            <div class="card" style="opacity:0.6"><div class="card-header"><span>${o.city}</span><span>${o.closedAt || ''}</span></div>
+            <div class="badge-status" style="background:rgba(76,175,80,0.2);color:var(--success)">✅ ВЫПОЛНЕНО</div>
+            <h3>${o.task}</h3><div class="addr">📍 ${o.addr}</div></div>`).join('') || '<div style="text-align:center;padding:50px;color:#444">Архив пуст</div>';
     }
 
     function changeView(view, btn) {
