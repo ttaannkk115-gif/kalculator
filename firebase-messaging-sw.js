@@ -1,5 +1,5 @@
-importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.1.3/firebase-messaging-compat.js');
 
 firebase.initializeApp({
     apiKey: "AIzaSyD-dIC8bm8y4kaY7RXmMrys2wOMLA5o8vY",
@@ -11,12 +11,27 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Логика отображения уведомлений, когда приложение закрыто
+// Логика отображения уведомлений в фоновом режиме
 messaging.onBackgroundMessage((payload) => {
-    const notificationTitle = payload.notification.title;
+    console.log('[sw.js] Получено фоновое сообщение:', payload);
+    
+    const notificationTitle = payload.notification.title || "VoltMaster";
     const notificationOptions = {
-        body: payload.notification.body,
-        icon: 'logo.png'
+        body: payload.notification.body || "Новое уведомление",
+        icon: 'logo.png',
+        badge: 'logo.png', // Маленькая иконка в строке состояния
+        data: {
+            url: '/' // Чтобы при клике открывался сайт
+        }
     };
-    self.registration.showNotification(notificationTitle, notificationOptions);
+
+    return self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Чтобы при нажатии на уведомление открывалось приложение
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    event.waitUntil(
+        clients.openWindow('/')
+    );
 });
