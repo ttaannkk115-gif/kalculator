@@ -117,38 +117,36 @@
 </div>
 
 <script>
-    // Инициализация Firebase
     const firebaseConfig = { databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
     const DB_PATH = "marketplace_ads", ADMIN_PATH = "marketplace_settings", MS_IN_24H = 86400000, ETERNAL_VAL = 9999999999999;
     
-    // Автосохранение кода в память браузера
-    function autoSaveCode() {
-        localStorage.setItem('voltmaster_code_v1', document.documentElement.outerHTML);
-    }
-    setInterval(autoSaveCode, 60000);
-
-    // Уникальный ID пользователя
+    // 1. ИДЕНТИФИКАЦИЯ И РЕГИСТРАЦИЯ ЮЗЕРА
     let MY_ID = localStorage.getItem('volt_master_uid');
     if (!MY_ID) {
         MY_ID = Math.floor(1000 + Math.random() * 9000).toString();
         localStorage.setItem('volt_master_uid', MY_ID);
     }
+    database.ref(`${ADMIN_PATH}/users/${MY_ID}`).set(true); 
     document.getElementById('my-id-display').innerHTML = `ID: <b>${MY_ID}</b>`;
 
     let ads = [], whitelist = {}, curImg = "", editId = null, isAdmin = false, clickCount = 0, timerInt = null;
     let viewedAds = new Set();
 
-    // Работа с черновиком
+    // 2. АВТОСОХРАНЕНИЕ В ПАМЯТЬ БРАУЗЕРА
+    function autoSaveCode() { localStorage.setItem('voltmaster_code_v1', document.documentElement.outerHTML); }
+    setInterval(autoSaveCode, 60000);
+
     function saveDraft() {
         if (editId) return;
         const draft = {
             t: document.getElementById('inp-t').value,
             p: document.getElementById('inp-p').value,
             c: document.getElementById('inp-contact').value,
-            d: document.getElementById('inp-d').value
+            d: document.getElementById('inp-d').value,
+            img: curImg
         };
         localStorage.setItem('vm_market_draft', JSON.stringify(draft));
     }
@@ -159,12 +157,14 @@
         if(draft.p) document.getElementById('inp-p').value = draft.p;
         if(draft.c) document.getElementById('inp-contact').value = draft.c;
         if(draft.d) document.getElementById('inp-d').value = draft.d;
+        if(draft.img) { curImg = draft.img; document.getElementById('img-st').innerText = "ЧЕРНОВИК ФОТО ВОССТАНОВЛЕН ✅"; }
     }
 
     document.querySelectorAll('#adForm input, #adForm textarea').forEach(el => {
         el.addEventListener('input', saveDraft);
     });
 
+    // 3. АДМИН ПАНЕЛЬ
     function handleAdminAuth() {
         clickCount++;
         if (clickCount === 3) {
@@ -184,14 +184,7 @@
         if (n === 'view') { startTick(); } else { stopTick(); }
     }
 
-    function resetForm() {
-        editId = null; curImg = "";
-        document.getElementById('adForm').reset();
-        document.getElementById('img-st').innerText = "";
-        document.getElementById('btn-save').innerText = "ОПУБЛИКОВАТЬ";
-        localStorage.removeItem('vm_market_draft');
-    }
-
+    // 4. УЧЕТ ПРОСМОТРОВ (ОТСЛЕЖИВАНИЕ СКРОЛЛА)
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -204,8 +197,8 @@
         });
     }, { threshold: 0.5 });
 
+    // 5. ЗАГРУЗКА ИЗ БАЗЫ
     function load() {
-        // Оффлайн кэш объявлений
         const cache = localStorage.getItem('vm_ads_cache');
         if(cache) { ads = JSON.parse(cache); render(); }
 
@@ -219,9 +212,16 @@
             localStorage.setItem('vm_ads_cache', JSON.stringify(ads));
             render();
         });
+
         database.ref(`${ADMIN_PATH}/whitelist`).on('value', snap => { whitelist = snap.val() || {}; if(isAdmin) renderWhitelist(); });
+        
+        // СТАТИСТИКА
         database.ref(`${ADMIN_PATH}/totalVisits`).transaction(c => (c || 0) + 1);
         database.ref(`${ADMIN_PATH}/totalVisits`).on('value', s => document.getElementById('site-counter').innerHTML = `ВИЗИТЫ: <b>${s.val() || 0}</b>`);
+        database.ref(`${ADMIN_PATH}/users`).on('value', snap => {
+            const uCount = snap.val() ? Object.keys(snap.val()).length : 0;
+            document.getElementById('user-counter').innerHTML = `ЮЗЕРЫ: <b>${uCount}</b>`;
+        });
     }
 
     function render() {
@@ -246,8 +246,6 @@
         feed.innerHTML = filtered.length ? filtered.map(a => {
             const isMine = a.owner === MY_ID;
             const isEternal = a.ts === ETERNAL_VAL;
-            const showTimer = isAdmin || isMine; // ТАЙМЕР ТОЛЬКО ХОЗЯИНУ И АДМИНУ
-
             let contactLink = "#", contactClass = "btn-tg", contactText = "Telegram";
             if (a.contact) {
                 const clean = a.contact.replace(/\D/g,'');
@@ -271,16 +269,13 @@
                     <div class="desc">${a.desc}</div>
                     ${a.contact ? `<a href="${contactLink}" target="_blank" class="contact-btn ${contactClass}"><span>💬</span> ${contactText}</a>` : ''}
                 </div>
-                ${showTimer ? `
-                    <div class="timer-bottom" style="${isEternal ? 'color:var(--gold); font-weight:bold' : ''}">
-                        ${isEternal ? '⭐ ВЕЧНОЕ ОБЪЯВЛЕНИЕ' : `<span id="timer-${a.id}">...</span>`}
-                    </div>
-                ` : ''}
+                ${(isAdmin || isMine) ? `<div class="timer-bottom" style="${isEternal ? 'color:var(--gold); font-weight:bold' : ''}">${isEternal ? '⭐ ВЕЧНОЕ ОБЪЯВЛЕНИЕ' : `<span id="timer-${a.id}">...</span>`}</div>` : ''}
             </div>`;
         }).join('') : '<div style="text-align:center; padding:50px; color:#555">Объявлений нет</div>';
         document.querySelectorAll('.card').forEach(c => observer.observe(c));
     }
 
+    // ТАЙМЕРЫ
     function tick() {
         const now = Date.now();
         ads.forEach(a => {
@@ -292,10 +287,10 @@
             el.innerText = `УДАЛИТСЯ ЧЕРЕЗ: ${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
         });
     }
-
     function startTick() { stopTick(); timerInt = setInterval(tick, 1000); tick(); }
     function stopTick() { clearInterval(timerInt); }
 
+    // ФОТО И СОХРАНЕНИЕ
     function prepImg() {
         const file = document.getElementById('inp-f').files[0]; if(!file) return;
         document.getElementById('img-st').innerText = "СЖАТИЕ...";
@@ -307,6 +302,7 @@
                 if (w > MAX) { h *= MAX/w; w = MAX; }
                 canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h);
                 curImg = canvas.toDataURL('image/jpeg', 0.7); document.getElementById('img-st').innerText = "ГОТОВО ✅";
+                saveDraft();
             }; img.src = e.target.result;
         }; reader.readAsDataURL(file);
     }
@@ -321,32 +317,25 @@
         if(!title) return alert("Введите название!");
 
         if (!editId && !isAdmin && !userStatus) { 
-            const hasActive = ads.some(a => a.owner === MY_ID);
-            const lastPost = localStorage.getItem('last_post_time_2026') || 0;
-            if (hasActive || (now - lastPost) < MS_IN_24H) return alert("Лимит: 1 активный пост в 24ч.");
+            if (ads.some(a => a.owner === MY_ID)) return alert("Лимит: 1 активный пост.");
         }
 
         let finalTs = now;
         if (editId) {
             const old = ads.find(x => x.id === editId);
-            if (isAdmin) finalTs = document.getElementById('edit-p-type').value === 'e' ? ETERNAL_VAL : (old.ts === ETERNAL_VAL ? now : old.ts);
-            else finalTs = old.ts;
+            finalTs = isAdmin ? (document.getElementById('edit-p-type').value === 'e' ? ETERNAL_VAL : now) : old.ts;
         } else {
-            if (isAdmin) finalTs = document.getElementById('p-type').value === 'e' ? ETERNAL_VAL : now;
-            else if (userStatus === 'eternal') finalTs = ETERNAL_VAL;
+            finalTs = (isAdmin && document.getElementById('p-type').value === 'e') || userStatus === 'eternal' ? ETERNAL_VAL : now;
         }
 
         const data = { title, price, desc, contact, img: curImg, owner: editId ? ads.find(x => x.id === editId).owner : MY_ID, views: editId ? (ads.find(x => x.id === editId).views || 0) : 0, ts: finalTs };
-        try {
-            if (editId) await database.ref(`${DB_PATH}/${editId}`).set(data);
-            else { await database.ref(DB_PATH).push(data); if (!isAdmin && !userStatus) localStorage.setItem('last_post_time_2026', now); }
-            resetForm(); tab('view');
-        } catch(e) { alert("Ошибка!"); }
+        await database.ref(`${DB_PATH}/${editId || database.ref(DB_PATH).push().key}`).set(data);
+        resetForm(); tab('view');
     }
 
+    // ФУНКЦИИ АДМИНКИ
     async function up(id) { await database.ref(`${DB_PATH}/${id}`).update({ ts: Date.now() }); }
     async function del(id) { if(confirm("Удалить?")) await database.ref(`${DB_PATH}/${id}`).remove(); }
-    
     async function addW() { 
         const id = document.getElementById('w-id').value.trim();
         const status = document.getElementById('p-type').value === 'e' ? 'eternal' : 'temporary';
@@ -361,8 +350,8 @@
             <div class="tag-item">
                 <span><b>${id}</b> [${whitelist[id] === 'eternal' ? 'ВЕЧН' : 'ВРЕМ'}]</span>
                 <div>
-                    <button onclick="toggleW('${id}', '${whitelist[id]}')" style="border:none; background:none; color:#fff; cursor:pointer; font-size:16px; margin-right:10px">🔄</button>
-                    <button onclick="delW('${id}')" style="border:none; background:none; color:var(--danger); cursor:pointer; font-size:16px">✖</button>
+                    <button onclick="toggleW('${id}', '${whitelist[id]}')" style="border:none; background:none; color:#fff; cursor:pointer; margin-right:10px">🔄</button>
+                    <button onclick="delW('${id}')" style="border:none; background:none; color:var(--danger); cursor:pointer">✖</button>
                 </div>
             </div>`).join('');
     }
@@ -374,6 +363,14 @@
         document.getElementById('inp-contact').value = a.contact || ""; curImg = a.img || "";
         if(isAdmin) document.getElementById('edit-p-type').value = a.ts === ETERNAL_VAL ? 'e' : 'n';
         document.getElementById('btn-save').innerText = "СОХРАНИТЬ"; tab('create');
+    }
+
+    function resetForm() {
+        editId = null; curImg = "";
+        document.getElementById('adForm').reset();
+        document.getElementById('img-st').innerText = "";
+        document.getElementById('btn-save').innerText = "ОПУБЛИКОВАТЬ";
+        localStorage.removeItem('vm_market_draft');
     }
 
     load(); startTick();
