@@ -235,8 +235,12 @@
     }
 
     function sendPushTrigger(task, city) {
-        db.ref('push_queue').push({ title: "НОВАЯ ШАБАШКА! 🔥", body: city + ": " + task, timestamp: firebase.database.ServerValue.TIMESTAMP });
-    }
+    db.ref('push_queue').push({ 
+        title: "НОВАЯ ШАБАШКА! 🔥", 
+        body: city + ": " + task, 
+        timestamp: firebase.database.ServerValue.TIMESTAMP 
+    });
+}
 
     function takeOrder(id) { db.ref(`shabashki/active/${id}`).update({ status: 'busy', startTime: firebase.database.ServerValue.TIMESTAMP, workerID: userID }); }
     
