@@ -49,12 +49,7 @@
             border-radius: 20px; font-size: 10px; margin-top: 5px; border: 1px solid rgba(255, 193, 7, 0.1);
         }
 
-        .status-dot { 
-            width: 7px; height: 7px; border-radius: 50%; 
-            background: var(--main-gold); 
-            box-shadow: 0 0 8px var(--main-gold);
-            animation: pulse 2s infinite;
-        }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--main-gold); box-shadow: 0 0 8px var(--main-gold); animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
         .menu-grid { display: grid; gap: 10px; }
@@ -73,13 +68,11 @@
         .icon-box { width: 42px; height: 42px; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-right: 15px; font-size: 18px; background: rgba(255,193,7,0.1); color: var(--main-gold); }
         .menu-item h3 { margin: 0; font-size: 16px; font-weight: 600; flex: 1; }
 
-        /* Overlays */
         .overlay { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; z-index: 2000; }
         .overlay-header { padding: 15px; display: flex; justify-content: flex-end; align-items: center; border-bottom: 1px solid #222; background: #000; }
         .close-btn { background: none; border: none; color: #ff4444; font-size: 32px; cursor: pointer; line-height: 1; padding: 0 10px; }
         iframe { width: 100%; height: 100%; border: none; flex-grow: 1; }
 
-        /* Admin Styles */
         #admin-content { overflow-y: auto; flex-grow: 1; padding-bottom: 30px; }
         .admin-stats-big { color: var(--main-gold); padding: 20px 20px; font-size: 22px; font-weight: 800; text-transform: uppercase; }
         .admin-nav-btn { background: #111; border: 1px solid #333; color: var(--main-gold); padding: 18px; border-radius: 12px; margin: 0 15px 20px; text-align: center; cursor: pointer; font-weight: bold; font-size: 14px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -105,7 +98,7 @@
 <div class="app-container">
     <div class="top-nav">
         <button class="mini-btn" onclick="handleInstall()">📲 Установить</button>
-        <button class="mini-btn" onclick="initNotifications()">🔔Уведомления</button>
+        <button class="mini-btn" onclick="initNotifications()">🔔 Уведомления</button>
     </div>
 
     <div class="header" id="main-logo">
@@ -153,26 +146,17 @@
         appId: "1:312337098429:web:663e0f6787bd62d19bf9d4"
     };
 
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
     
-    let userID = localStorage.getItem('volt_master_uid');
-    if (!userID) {
-        userID = Math.floor(1000 + Math.random() * 9000).toString();
-        localStorage.setItem('volt_master_uid', userID);
-    }
+    let userID = localStorage.getItem('volt_master_uid') || Math.floor(1000 + Math.random() * 9000).toString();
+    localStorage.setItem('volt_master_uid', userID);
 
     function initApp() {
         database.ref('registered_users/ID-' + userID).update({
             id: userID,
             last_entry: firebase.database.ServerValue.TIMESTAMP
         });
-
-        if ('serviceWorker' in navigator) {
-            const v = Date.now();
-            navigator.serviceWorker.register('sw.js?v=' + v);
-            navigator.serviceWorker.register('firebase-messaging-sw.js?v=' + v);
-        }
 
         database.ref('registered_users').on('value', snap => {
             const count = snap.numChildren();
@@ -183,16 +167,19 @@
     }
 
     function initNotifications() {
-        if (!('serviceWorker' in navigator)) return;
         const messaging = firebase.messaging();
         Notification.requestPermission().then((permission) => {
             if (permission === 'granted') {
-                navigator.serviceWorker.ready.then((reg) => {
-                    messaging.getToken({ serviceWorkerRegistration: reg, vapidKey: 'BGNQzIvGew0uQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKkYekWNL-3tgN_cQ' })
-                    .then((token) => {
-                        if (token) database.ref('registered_users/ID-' + userID).update({ fcm_token: token, notifications: true });
-                    });
+                messaging.getToken({ vapidKey: 'BGNQzIvGew0uQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKkYekWNL-3tgN_cQ' })
+                .then((token) => {
+                    if (token) {
+                        // Сохраняем токен в папку для сервера Amvera
+                        database.ref('fcm_tokens/' + userID).set(token);
+                        alert("Уведомления успешно настроены!");
+                    }
                 });
+            } else {
+                alert("Нужно разрешить уведомления в браузере!");
             }
         });
     }
@@ -208,15 +195,10 @@
         document.getElementById('app-frame').src = '';
     }
 
-    // НОВАЯ ФУНКЦИЯ: закрывает логи и открывает управление
-    function openAdminApp(name, url) {
-        closeAdmin();
-        openApp(name, url);
-    }
-
     function watchShabashki() {
         database.ref('shabashki/active').on('value', snap => {
-            const count = Object.keys(snap.val() || {}).length;
+            const data = snap.val() || {};
+            const count = Object.keys(data).length;
             const lastSeen = parseInt(localStorage.getItem('shabash_seen') || 0);
             const badge = document.getElementById('shabash-count');
             if (count > lastSeen) {
@@ -228,12 +210,14 @@
 
     function handleShabashkiClick() {
         database.ref('shabashki/active').once('value', snap => {
-            localStorage.setItem('shabash_seen', Object.keys(snap.val() || {}).length);
+            const count = Object.keys(snap.val() || {}).length;
+            localStorage.setItem('shabash_seen', count);
             document.getElementById('shabash-count').style.display = 'none';
             openApp('Шабашки', 'shabashki.html');
         });
     }
 
+    // ЛОГИКА АДМИНКИ (3 клика на лого)
     let clicks = 0;
     document.getElementById('main-logo').onclick = () => {
         clicks++;
@@ -257,7 +241,7 @@
 
             let html = `
                 <div class="admin-stats-big">СЕГОДНЯ ЗАШЛИ: ${todayCount}</div>
-                <div class="admin-nav-btn" onclick="openAdminApp('Управление', 'volt.html')">🛠 УПРАВЛЕНИЕ ШАБАШКАМИ</div>
+                <div class="admin-nav-btn" onclick="closeAdmin(); openApp('Управление', 'volt.html')">🛠 УПРАВЛЕНИЕ ШАБАШКАМИ</div>
             `;
 
             Object.keys(data).sort().reverse().forEach(date => {
@@ -275,16 +259,13 @@
                 });
             });
 
-            // ВОЗВРАЩЕННАЯ КНОПКА
             html += `<button class="clear-btn" onclick="clearLogs()">ОЧИСТИТЬ ВСЕ ЛОГИ</button>`;
             container.innerHTML = html;
         });
     }
 
     function clearLogs() {
-        if(confirm("Удалить всю историю посещений?")) {
-            database.ref('visits').remove();
-        }
+        if(confirm("Удалить всю историю посещений?")) database.ref('visits').remove();
     }
 
     function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; }
