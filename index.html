@@ -149,16 +149,33 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
     
-    let userID = localStorage.getItem('volt_master_uid') || Math.floor(1000 + Math.random() * 9000).toString();
+    let userID = localStorage.getItem('volt_master_uid') || "6217"; // Используем твой ID или генерим
     localStorage.setItem('volt_master_uid', userID);
 
     function initApp() {
-        // РЕГИСТРАЦИЯ СЕРВИС-ВОРКЕРА (ЭТОГО НЕ ХВАТАЛО!)
+        // Регистрация воркера с новой версией v10 для сброса кэша iPhone
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js?v=6')
-            .then(() => console.log("Воркер VoltMaster запущен"))
+            navigator.serviceWorker.register('sw.js?v=10')
+            .then(() => console.log("Воркер VoltMaster v10 запущен"))
             .catch(err => console.log("Ошибка воркера:", err));
         }
+
+        // ОБНОВЛЕННЫЙ СЧЕТЧИК ПОСЕЩЕНИЙ
+        const now = new Date();
+        const dateKey = now.toISOString().split('T')[0];
+        const timeStr = now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+        
+        const visitRef = database.ref(`visits/${dateKey}/ID-${userID}`);
+        visitRef.once('value', snap => {
+            const data = snap.val() || { count: 0, allTimes: "" };
+            visitRef.update({
+                id: userID,
+                count: data.count + 1,
+                lastTime: timeStr,
+                allTimes: data.allTimes ? data.allTimes + ", " + timeStr : timeStr,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        });
 
         database.ref('registered_users/ID-' + userID).update({
             id: userID,
@@ -175,11 +192,8 @@
 
     function initNotifications() {
         const messaging = firebase.messaging();
-        
-        // Запрашиваем разрешение
         Notification.requestPermission().then((permission) => {
             if (permission === 'granted') {
-                // Получаем токен через воркер
                 navigator.serviceWorker.ready.then((registration) => {
                     messaging.getToken({ 
                         serviceWorkerRegistration: registration,
@@ -187,20 +201,17 @@
                     })
                     .then((token) => {
                         if (token) {
-                            database.ref('fcm_tokens/' + userID).set(token);
-                            alert("🔔 Уведомления VoltMaster включены!");
+                            // Перезаписываем токен, чтобы убрать дубли
+                            database.ref('fcm_tokens/' + userID).set(token)
+                            .then(() => alert("🔔 Уведомления настроены (v10)!"));
                         }
-                    }).catch(err => {
-                        alert("Ошибка токена: " + err);
-                    });
+                    }).catch(err => alert("Ошибка токена: " + err));
                 });
             } else {
-                alert("Разрешите уведомления в настройках браузера!");
+                alert("Разрешите уведомления в настройках iPhone!");
             }
         });
     }
-
-    // ... (остальные твои функции: openApp, closeApp, watchShabashki, handleShabashkiClick, логика админки и т.д. остаются без изменений) ...
 
     function openApp(name, url) {
         document.getElementById('overlay-title').innerText = name.toUpperCase();
