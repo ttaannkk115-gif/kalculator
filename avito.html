@@ -22,27 +22,34 @@
             border: 1px solid #4a3f20; border-radius: 25px; 
             padding: 20px 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
         }
-        .banner-subtitle { color: var(--gold); font-size: 12px; font-weight: 800; letter-spacing: 3px; margin-bottom: 5px; text-transform: uppercase; }
-        .banner-title { color: #fff; font-size: 28px; font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .banner-subtitle { color: var(--gold); font-size: 11px; font-weight: 800; letter-spacing: 3px; margin-bottom: 5px; text-transform: uppercase; }
+        .banner-title { color: #fff; font-size: 26px; font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
         .site-stats { background: #000; color: #777; font-size: 10px; text-align: center; padding: 8px; border-bottom: 1px solid #222; display: flex; justify-content: center; gap: 12px; text-transform: uppercase; }
         .site-stats b { color: var(--gold); }
+        
         .tabs { display: flex; background: #161616; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
         .tab { flex: 1; padding: 18px; text-align: center; font-weight: bold; color: #888; cursor: pointer; font-size: 13px; transition: 0.3s; }
         .tab.active { color: var(--gold); border-bottom: 3px solid var(--gold); background: rgba(255,193,7,0.05); }
+        
         .search-container { padding: 10px 15px; background: #111; }
         .search-input { width: 100%; padding: 12px; background: #000; border: 1px solid #333; border-radius: 10px; color: #fff; outline: none; box-sizing: border-box; }
+        
         .container { padding: 15px; max-width: 500px; margin: auto; min-height: 80vh; }
         .section { display: none; animation: fadeIn 0.3s ease; }
         .section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .card { background: var(--card); border-radius: 18px; overflow: hidden; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08); position: relative; }
+        
+        .card { background: var(--card); border-radius: 18px; overflow: hidden; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08); position: relative; transition: 0.3s; }
+        .card.is-mine { border: 1px solid rgba(255, 193, 7, 0.3); box-shadow: 0 0 15px rgba(255, 193, 7, 0.05); }
         .card img { width: 100%; height: auto; max-height: 400px; object-fit: contain; background: #000; display: block; }
+        
         .info { padding: 15px; }
         .price { color: var(--gold); font-size: 22px; font-weight: 900; }
         .price.neg { color: #aaa; font-size: 15px; font-weight: 400; font-style: italic; }
         .title { font-size: 18px; font-weight: 600; margin: 5px 0; color: #fff; }
         .desc { font-size: 13px; color: #aaa; white-space: pre-wrap; margin-top: 8px; line-height: 1.4; }
+        
         .contact-btn { 
             display: flex !important; align-items: center; justify-content: center; gap: 10px;
             width: 100%; padding: 14px 0; margin: 15px 0 5px 0; 
@@ -53,9 +60,11 @@
         }
         .btn-tg { background: var(--tg-grad) !important; box-shadow: 0 4px 15px rgba(0, 136, 204, 0.4); }
         .btn-wa { background: var(--wa-grad) !important; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); }
-        .timer-bottom { text-align: center; padding: 10px; font-size: 11px; font-family: monospace; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.3); }
+        
+        .timer-bottom { text-align: center; padding: 10px; font-size: 11px; font-family: monospace; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.3); color: #777; }
         .actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; z-index: 10; }
         .btn-sm { width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        
         .form { background: #161616; padding: 20px; border-radius: 20px; border: 1px solid #333; }
         input, textarea, select { width: 100%; margin-bottom: 12px; padding: 14px; border: 1px solid #333; border-radius: 12px; background: #000; color: #fff; box-sizing: border-box; }
         .btn-main { width: 100%; padding: 16px; background: var(--gold); border: none; border-radius: 12px; font-weight: 800; cursor: pointer; color: #000; }
@@ -108,12 +117,20 @@
 </div>
 
 <script>
+    // Инициализация Firebase
     const firebaseConfig = { databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
     const DB_PATH = "marketplace_ads", ADMIN_PATH = "marketplace_settings", MS_IN_24H = 86400000, ETERNAL_VAL = 9999999999999;
     
+    // Автосохранение кода в память браузера
+    function autoSaveCode() {
+        localStorage.setItem('voltmaster_code_v1', document.documentElement.outerHTML);
+    }
+    setInterval(autoSaveCode, 60000);
+
+    // Уникальный ID пользователя
     let MY_ID = localStorage.getItem('volt_master_uid');
     if (!MY_ID) {
         MY_ID = Math.floor(1000 + Math.random() * 9000).toString();
@@ -124,6 +141,7 @@
     let ads = [], whitelist = {}, curImg = "", editId = null, isAdmin = false, clickCount = 0, timerInt = null;
     let viewedAds = new Set();
 
+    // Работа с черновиком
     function saveDraft() {
         if (editId) return;
         const draft = {
@@ -187,6 +205,10 @@
     }, { threshold: 0.5 });
 
     function load() {
+        // Оффлайн кэш объявлений
+        const cache = localStorage.getItem('vm_ads_cache');
+        if(cache) { ads = JSON.parse(cache); render(); }
+
         database.ref(DB_PATH).on('value', snap => {
             const data = snap.val(), now = Date.now();
             ads = data ? Object.keys(data).map(k => ({...data[k], id: k})) : [];
@@ -194,23 +216,19 @@
                 if (a.ts !== ETERNAL_VAL && (now - a.ts) >= MS_IN_24H) { database.ref(`${DB_PATH}/${a.id}`).remove(); return false; }
                 return true;
             });
+            localStorage.setItem('vm_ads_cache', JSON.stringify(ads));
             render();
         });
         database.ref(`${ADMIN_PATH}/whitelist`).on('value', snap => { whitelist = snap.val() || {}; if(isAdmin) renderWhitelist(); });
         database.ref(`${ADMIN_PATH}/totalVisits`).transaction(c => (c || 0) + 1);
         database.ref(`${ADMIN_PATH}/totalVisits`).on('value', s => document.getElementById('site-counter').innerHTML = `ВИЗИТЫ: <b>${s.val() || 0}</b>`);
-        database.ref(`visits`).on('value', snap => {
-             const dates = snap.val() || {};
-             let totalUsers = new Set();
-             Object.values(dates).forEach(day => { Object.keys(day).forEach(uid => totalUsers.add(uid)); });
-             document.getElementById('user-counter').innerHTML = `ЮЗЕРЫ: <b>${totalUsers.size}</b>`;
-        });
     }
 
     function render() {
         const query = document.getElementById('searchInput').value.toLowerCase();
         const adminArea = document.getElementById('admin-area');
         const feed = document.getElementById('feed');
+        
         if(isAdmin) {
             adminArea.innerHTML = `<div class="form" style="margin-bottom:20px; border:1px solid var(--gold)">
                 <div id="whitelist-tags"></div>
@@ -222,17 +240,22 @@
             </div>`;
             renderWhitelist();
         } else { adminArea.innerHTML = ''; }
+
         const filtered = ads.filter(a => a.title.toLowerCase().includes(query) || a.desc.toLowerCase().includes(query)).sort((a,b) => b.ts - a.ts);
+        
         feed.innerHTML = filtered.length ? filtered.map(a => {
             const isMine = a.owner === MY_ID;
             const isEternal = a.ts === ETERNAL_VAL;
+            const showTimer = isAdmin || isMine; // ТАЙМЕР ТОЛЬКО ХОЗЯИНУ И АДМИНУ
+
             let contactLink = "#", contactClass = "btn-tg", contactText = "Telegram";
             if (a.contact) {
                 const clean = a.contact.replace(/\D/g,'');
                 if (clean.length >= 10 && /^\d+$/.test(clean)) { contactLink = `https://wa.me/${clean}`; contactClass = "btn-wa"; contactText = "WhatsApp"; }
                 else { contactLink = a.contact.startsWith('http') ? a.contact : `https://t.me/${a.contact.replace('@','')}`; contactClass = "btn-tg"; contactText = "Telegram"; }
             }
-            return `<div class="card" data-id="${a.id}">
+            
+            return `<div class="card ${isMine ? 'is-mine' : ''}" data-id="${a.id}">
                 ${(isAdmin || isMine) ? `<div class="actions">
                     ${isAdmin ? `<button class="btn-sm" style="background:#2196f3; color:#fff" onclick="up('${a.id}')">↑</button>` : ''}
                     <button class="btn-sm" style="background:var(--gold)" onclick="edit('${a.id}')">✎</button>
@@ -248,7 +271,11 @@
                     <div class="desc">${a.desc}</div>
                     ${a.contact ? `<a href="${contactLink}" target="_blank" class="contact-btn ${contactClass}"><span>💬</span> ${contactText}</a>` : ''}
                 </div>
-                <div class="timer-bottom" style="${isEternal ? 'color:var(--gold); font-weight:bold' : ''}">${isEternal ? '⭐ ВЕЧНОЕ ОБЪЯВЛЕНИЕ' : `<span id="timer-${a.id}">...</span>`}</div>
+                ${showTimer ? `
+                    <div class="timer-bottom" style="${isEternal ? 'color:var(--gold); font-weight:bold' : ''}">
+                        ${isEternal ? '⭐ ВЕЧНОЕ ОБЪЯВЛЕНИЕ' : `<span id="timer-${a.id}">...</span>`}
+                    </div>
+                ` : ''}
             </div>`;
         }).join('') : '<div style="text-align:center; padding:50px; color:#555">Объявлений нет</div>';
         document.querySelectorAll('.card').forEach(c => observer.observe(c));
@@ -317,17 +344,16 @@
         } catch(e) { alert("Ошибка!"); }
     }
 
-    async function up(id) { await database.ref(`${DB_PATH}/${id}`).update({ ts: Date.now(), f: Math.random() }); }
+    async function up(id) { await database.ref(`${DB_PATH}/${id}`).update({ ts: Date.now() }); }
     async function del(id) { if(confirm("Удалить?")) await database.ref(`${DB_PATH}/${id}`).remove(); }
     
-    // АДМИН-ФУНКЦИИ БЕЛОГО СПИСКА
     async function addW() { 
         const id = document.getElementById('w-id').value.trim();
         const status = document.getElementById('p-type').value === 'e' ? 'eternal' : 'temporary';
         if(id) { await database.ref(`${ADMIN_PATH}/whitelist/${id}`).set(status); document.getElementById('w-id').value = ""; }
     }
     async function toggleW(id, cur) { await database.ref(`${ADMIN_PATH}/whitelist/${id}`).set(cur === 'eternal' ? 'temporary' : 'eternal'); }
-    async function delW(id) { if(confirm("Удалить пользователя из списка?")) await database.ref(`${ADMIN_PATH}/whitelist/${id}`).remove(); }
+    async function delW(id) { if(confirm("Удалить пользователя?")) await database.ref(`${ADMIN_PATH}/whitelist/${id}`).remove(); }
     
     function renderWhitelist() { 
         const c = document.getElementById('whitelist-tags'); if(!c) return;
