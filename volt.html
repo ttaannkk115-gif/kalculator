@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VOLT ADMIN - ПАНЕЛЬ УПРАВЛЕНИЯ</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --gold: #ffc107;
+            --bg: #0a0a0a;
+            --card: #1a1a1a;
+            --text: #ffffff;
+            --dim: #999;
+            --danger: #ff4444;
+            --success: #4caf50;
+            --process: #2196f3;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            margin: 0; background: var(--bg);
+            color: var(--text); padding-bottom: 50px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        header {
+            padding: 20px; background: #111; 
+            text-align: center; border-bottom: 1px solid #333;
+            position: sticky; top: 0; z-index: 1000;
+        }
+        header h1 { margin: 0; font-size: 18px; letter-spacing: 2px; color: var(--gold); }
+        header span { font-weight: 300; color: #fff; }
+
+        .admin-nav {
+            display: flex; background: #161616; 
+            margin: 15px; border-radius: 12px; 
+            padding: 5px; border: 1px solid #333;
+        }
+        .nav-btn {
+            flex: 1; padding: 12px; border: none; 
+            background: none; color: #666; font-weight: bold; 
+            cursor: pointer; border-radius: 8px; transition: 0.3s;
+        }
+        .nav-btn.active { background: var(--gold); color: #000; }
+
+        .container { padding: 0 15px; }
+
+        .admin-card {
+            background: var(--card); border-radius: 15px; 
+            padding: 18px; margin-bottom: 15px; 
+            border: 1px solid #333; position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+
+        .badge {
+            font-size: 10px; padding: 4px 10px; border-radius: 6px; 
+            font-weight: bold; float: right; text-transform: uppercase;
+        }
+        .status-free { background: rgba(255,255,255,0.1); color: #ccc; }
+        .status-busy { background: rgba(33, 150, 243, 0.2); color: var(--process); }
+        .status-done { background: rgba(76, 175, 80, 0.2); color: var(--success); }
+
+        .task-title { font-size: 18px; margin: 12px 0; display: block; color: #fff; font-weight: bold; }
+        
+        .detail {
+            font-size: 13px; color: var(--dim); margin: 6px 0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .detail b { color: #eee; }
+        .phone-link { color: var(--gold); text-decoration: none; font-weight: bold; font-size: 15px; }
+
+        /* Блок отказа */
+        .rej-box {
+            background: rgba(255, 68, 68, 0.05); 
+            border: 1px dashed rgba(255, 68, 68, 0.3); 
+            border-radius: 10px; padding: 10px; 
+            margin: 12px 0; font-size: 12px;
+        }
+        .rej-item {
+            border-bottom: 1px solid rgba(255,68,68,0.1);
+            padding: 5px 0;
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .rej-item:last-child { border: none; }
+        .rej-meta { font-weight: bold; font-size: 10px; color: var(--process); }
+
+        .divider { border: 0; border-top: 1px solid #222; margin: 12px 0; }
+
+        .controls { display: flex; gap: 10px; margin-top: 15px; }
+        .btn {
+            flex: 1; padding: 12px; border: none; border-radius: 10px;
+            font-weight: bold; cursor: pointer; font-size: 12px; transition: 0.2s;
+        }
+        .btn-fin { background: var(--success); color: white; }
+        .btn-del { background: rgba(255, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+
+        .hidden { display: none; }
+        .empty-msg { text-align: center; color: #444; margin-top: 50px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>VOLT MASTER <span>ADMIN</span></h1>
+</header>
+
+<div class="admin-nav">
+    <button class="nav-btn active" onclick="switchTab('active', this)">АКТИВНЫЕ</button>
+    <button class="nav-btn" onclick="switchTab('archive', this)">АРХИВ</button>
+</div>
+
+<div class="container">
+    <div id="view-active">
+        <div id="list-active">Синхронизация...</div>
+    </div>
+    <div id="view-archive" class="hidden">
+        <div id="list-archive">Загрузка истории...</div>
+    </div>
+</div>
+
+<script>
+    // Твоя конфигурация Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyD-dIC8bm8y4kaY7RXmMrys2wOMLA5o8vY",
+        authDomain: "voltmaster-332c0.firebaseapp.com",
+        databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com",
+        projectId: "voltmaster-332c0",
+        storageBucket: "voltmaster-332c0.firebasestorage.app",
+        messagingSenderId: "312337098429",
+        appId: "1:312337098429:web:663e0f6787bd62d19bf9d4"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Автосохранение в локальную память браузера
+    function saveState(key, data) {
+        localStorage.setItem('voltmaster_admin_cache_' + key, JSON.stringify(data));
+    }
+
+    function switchTab(view, btn) {
+        document.getElementById('view-active').classList.toggle('hidden', view !== 'active');
+        document.getElementById('view-archive').classList.toggle('hidden', view !== 'archive');
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    // Слушатель Активных
+    db.ref('shabashki/active').on('value', snap => {
+        const data = snap.val() || {};
+        saveState('active', data);
+        renderList(Object.values(data), 'list-active', false);
+    });
+
+    // Слушатель Архива
+    db.ref('shabashki/archive').limitToLast(50).on('value', snap => {
+        const data = snap.val() || {};
+        renderList(Object.values(data), 'list-archive', true);
+    });
+
+    function renderList(orders, containerId, isArchive) {
+        const container = document.getElementById(containerId);
+        orders.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+        
+        if (orders.length === 0) {
+            container.innerHTML = `<div class="empty-msg">ПУСТО</div>`;
+            return;
+        }
+
+        container.innerHTML = '';
+        orders.forEach(o => {
+            const isBusy = o.status === 'busy';
+            
+            // Формируем блок отказов
+            let rejectionsHtml = '';
+            if (o.rejections) {
+                rejectionsHtml = `<div class="rej-box"><b style="color:var(--danger); font-size:10px; margin-bottom:5px; display:block;">ИСТОРИЯ ОТКАЗОВ:</b>`;
+                Object.values(o.rejections).forEach(r => {
+                    // ЕСЛИ в клиентском коде нет fromID, используем workerID заказа
+                    const rejectedBy = r.fromID || o.workerID || "ID Неизвестен";
+                    rejectionsHtml += `
+                        <div class="rej-item">
+                            <span class="rej-meta">ОТ МАСТЕРА [ID: ${rejectedBy}]</span>
+                            <span style="color:#fff;">${r.text}</span>
+                        </div>`;
+                });
+                rejectionsHtml += `</div>`;
+            }
+
+            const card = document.createElement('div');
+            card.className = 'admin-card';
+            if(isArchive) card.style.opacity = '0.8';
+
+            card.innerHTML = `
+                <span class="badge ${isArchive ? 'status-done' : (isBusy ? 'status-busy' : 'status-free')}">
+                    ${isArchive ? 'Выполнено' : (isBusy ? 'В работе' : 'Свободен')}
+                </span>
+                <div style="color:var(--gold); font-size:11px; font-weight:bold;">${o.city} | ${isArchive ? (o.closedAt || 'Архив') : o.date}</div>
+                
+                <strong class="task-title">${o.task}</strong>
+
+                <div class="detail"><span>📍 Адрес:</span> <b>${o.addr}</b></div>
+                <div class="detail"><span>📞 Тел:</span> <a href="tel:${o.phone}" class="phone-link">${o.phone}</a></div>
+
+                ${rejectionsHtml}
+
+                <div class="divider"></div>
+
+                <div class="detail"><span>👤 Автор заказа (ID):</span> <b>${o.ownerID || '—'}</b></div>
+                <div class="detail"><span>👷 Текущий мастер (ID):</span> <b style="color:var(--process)">${o.workerID || '—'}</b></div>
+
+                <div class="controls">
+                    ${!isArchive ? `<button class="btn btn-fin" onclick="adminFinish('${o.id}')">В АРХИВ</button>` : ''}
+                    <button class="btn btn-del" style="${isArchive ? 'width:100%' : ''}" onclick="adminDelete('${o.id}', ${isArchive})">
+                        ${isArchive ? 'УДАЛИТЬ ИЗ ИСТОРИИ' : 'УДАЛИТЬ'}
+                    </button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function adminDelete(id, isArchive) {
+        if(confirm("Удалить запись навсегда?")) {
+            if(isArchive) {
+                db.ref('shabashki/archive').orderByChild('id').equalTo(id).once('value', s => {
+                    s.forEach(child => child.ref.remove());
+                });
+            } else {
+                db.ref(`shabashki/active/${id}`).remove();
+            }
+        }
+    }
+
+    function adminFinish(id) {
+        if(confirm("Завершить заказ вручную?")) {
+            db.ref(`shabashki/active/${id}`).once('value', snap => {
+                const o = snap.val();
+                if(!o) return;
+                const closedAt = new Date().toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+                db.ref('shabashki/archive').push({
+                    ...o,
+                    closedAt,
+                    workerID: o.workerID || "ADMIN",
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                db.ref(`shabashki/active/${id}`).remove();
+            });
+        }
+    }
+</script>
+</body>
+</html>
