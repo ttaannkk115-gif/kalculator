@@ -153,6 +153,13 @@
     localStorage.setItem('volt_master_uid', userID);
 
     function initApp() {
+        // РЕГИСТРАЦИЯ СЕРВИС-ВОРКЕРА (ЭТОГО НЕ ХВАТАЛО!)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js?v=6')
+            .then(() => console.log("Воркер VoltMaster запущен"))
+            .catch(err => console.log("Ошибка воркера:", err));
+        }
+
         database.ref('registered_users/ID-' + userID).update({
             id: userID,
             last_entry: firebase.database.ServerValue.TIMESTAMP
@@ -168,21 +175,32 @@
 
     function initNotifications() {
         const messaging = firebase.messaging();
+        
+        // Запрашиваем разрешение
         Notification.requestPermission().then((permission) => {
             if (permission === 'granted') {
-                messaging.getToken({ vapidKey: 'BGNQzIvGew0uQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKkYekWNL-3tgN_cQ' })
-                .then((token) => {
-                    if (token) {
-                        // Сохраняем токен в папку для сервера Amvera
-                        database.ref('fcm_tokens/' + userID).set(token);
-                        alert("Уведомления успешно настроены!");
-                    }
+                // Получаем токен через воркер
+                navigator.serviceWorker.ready.then((registration) => {
+                    messaging.getToken({ 
+                        serviceWorkerRegistration: registration,
+                        vapidKey: 'BGNQzIvGew0uQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKkYekWNL-3tgN_cQ' 
+                    })
+                    .then((token) => {
+                        if (token) {
+                            database.ref('fcm_tokens/' + userID).set(token);
+                            alert("🔔 Уведомления VoltMaster включены!");
+                        }
+                    }).catch(err => {
+                        alert("Ошибка токена: " + err);
+                    });
                 });
             } else {
-                alert("Нужно разрешить уведомления в браузере!");
+                alert("Разрешите уведомления в настройках браузера!");
             }
         });
     }
+
+    // ... (остальные твои функции: openApp, closeApp, watchShabashki, handleShabashkiClick, логика админки и т.д. остаются без изменений) ...
 
     function openApp(name, url) {
         document.getElementById('overlay-title').innerText = name.toUpperCase();
@@ -217,7 +235,6 @@
         });
     }
 
-    // ЛОГИКА АДМИНКИ (3 клика на лого)
     let clicks = 0;
     document.getElementById('main-logo').onclick = () => {
         clicks++;
