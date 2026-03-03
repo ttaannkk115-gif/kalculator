@@ -1,7 +1,6 @@
 importScripts('https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.1.3/firebase-messaging-compat.js');
 
-// 1. Оставляем инициализацию (твои ключи)
 firebase.initializeApp({
     apiKey: "AIzaSyD-dIC8bm8y4kaY7RXmMrys2wOMLA5o8vY",
     databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com",
@@ -12,60 +11,40 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// 2. ФОНОВЫЙ ПРИЕМ (когда приложение закрыто)
+// Ловим пуш
 messaging.onBackgroundMessage((payload) => {
-    console.log('Получен фоновый пуш:', payload);
     const title = payload.notification.title || "VoltMaster";
     const options = {
         body: payload.notification.body || "Новая шабашка!",
         icon: 'logo.png',
         badge: 'logo.png',
         data: {
-            // Прямая ссылка для iPhone
-            url: "https://ttaannkk115-gif.github.io/shabashki.html"
+            // Если сервер прислал ссылку — берем её, если нет — открываем шабашки
+            url: (payload.data && payload.data.url) ? payload.data.url : 'shabashki.html'
         }
     };
     return self.registration.showNotification(title, options);
 });
 
-// 3. ОБРАБОТКА КЛИКА (чтобы открывались шабашки)
+// Ловим клик по пушу
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
     
-    // Ссылка, куда должен перейти мастер
-    const targetUrl = "https://ttaannkk115-gif.github.io/shabashki.html";
+    // Прямая ссылка на страницу шабашек
+    const targetUrl = 'shabashki.html'; 
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-            // Если вкладка с шабашками уже открыта — переключаем фокус на неё
+            // Если страница уже открыта — просто переключаемся на неё
             for (let client of windowClients) {
-                if (client.url === targetUrl && 'focus' in client) {
+                if (client.url.includes(targetUrl) && 'focus' in client) {
                     return client.focus();
                 }
             }
-            // Если такой вкладки нет — открываем новую
+            // Если закрыта — открываем заново
             if (clients.openWindow) {
                 return clients.openWindow(targetUrl);
             }
         })
     );
-});
-
-// 4. КЭШИРОВАНИЕ (чтобы работало без интернета)
-const CACHE_NAME = 'volt-v6';
-const ASSETS = [
-    'index.html',
-    'prais.html',
-    'shabashki.html',
-    'izmerenie.html',
-    'logo.png',
-    'manifest.json'
-];
-
-self.addEventListener('install', (e) => {
-    e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
-});
-
-self.addEventListener('fetch', (e) => {
-    e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
 });
