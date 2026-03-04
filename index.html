@@ -49,7 +49,7 @@
             border-radius: 20px; font-size: 10px; margin-top: 5px; border: 1px solid rgba(255, 193, 7, 0.1);
         }
 
-        /* МОДАЛЬНОЕ ОКНО */
+                /* МОДАЛЬНОЕ ОКНО С ПРОКРУТКОЙ */
         #global-modal {
             position: fixed; inset: 0; background: rgba(0,0,0,0.95);
             z-index: 5000; display: none; align-items: center; justify-content: center;
@@ -57,12 +57,25 @@
         }
         .modal-content {
             background: #161616; border: 2px solid var(--main-gold);
-            border-radius: 24px; padding: 30px 20px; width: 100%; max-width: 320px;
+            border-radius: 24px; padding: 25px 15px; width: 100%; max-width: 320px;
+            max-height: 80vh; /* Ограничиваем высоту, чтобы не вылетало за экран */
+            display: flex; flex-direction: column; 
             text-align: center; box-shadow: 0 0 50px rgba(255, 193, 7, 0.2);
         }
-        .modal-title { color: var(--main-gold); font-size: 12px; font-weight: 900; text-transform: uppercase; margin-bottom: 15px; }
-        .modal-text { font-size: 18px; font-weight: 600; line-height: 1.5; margin-bottom: 25px; white-space: pre-wrap; color: #fff; }
-        .modal-btn { background: var(--main-gold); color: #000; border: none; padding: 15px; width: 100%; border-radius: 14px; font-weight: 800; cursor: pointer; }
+        .modal-title { color: var(--main-gold); font-size: 12px; font-weight: 900; text-transform: uppercase; margin-bottom: 15px; flex-shrink: 0; }
+        
+        .modal-text { 
+            font-size: 18px; font-weight: 600; line-height: 1.5; margin-bottom: 25px; 
+            white-space: pre-wrap; color: #fff; 
+            overflow-y: auto; /* ВОТ ЭТО ВКЛЮЧАЕТ ПРОКРУТКУ */
+            padding-right: 5px;
+        }
+        
+        /* Тонкий золотой скроллбалл для красоты */
+        .modal-text::-webkit-scrollbar { width: 4px; }
+        .modal-text::-webkit-scrollbar-thumb { background: var(--main-gold); border-radius: 10px; }
+
+        .modal-btn { background: var(--main-gold); color: #000; border: none; padding: 15px; width: 100%; border-radius: 14px; font-weight: 800; cursor: pointer; flex-shrink: 0; }
 
         .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--main-gold); box-shadow: 0 0 8px var(--main-gold); animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
@@ -164,21 +177,27 @@
     let userID = localStorage.getItem('volt_master_uid') || Math.floor(1000 + Math.random() * 9000).toString();
     localStorage.setItem('volt_master_uid', userID);
 
-    function initApp() {
+            function initApp() {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js?v=10').then(() => console.log("VoltMaster V10 OK"));
         }
 
-        // 1. Модальное сообщение
+        // --- ЭТОТ БЛОК ОТВЕЧАЕТ ЗА ПОЛУЧЕНИЕ ОБЪЯВЛЕНИЙ ---
         database.ref('global_message').on('value', snap => {
             const msg = snap.val();
+            // Проверяем, есть ли сообщение и не читали ли мы его уже
             if(msg && localStorage.getItem('last_msg_read') !== msg) {
                 document.getElementById('modal-msg-text').innerText = msg;
                 document.getElementById('global-modal').style.display = 'flex';
-            } else { document.getElementById('global-modal').style.display = 'none'; }
+                
+                // Автоматическое сохранение в память браузера (как ты просил)
+                localStorage.setItem('volt_cached_msg', msg); 
+            } else { 
+                document.getElementById('global-modal').style.display = 'none'; 
+            }
         });
 
-        // 2. СЧЕТЧИК И ИСТОРИЯ ВРЕМЕНИ
+        // Остальной код (счетчик ID)
         const now = new Date();
         const dateKey = now.toISOString().split('T')[0];
         const timeStr = now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
