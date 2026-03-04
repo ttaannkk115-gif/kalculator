@@ -6,13 +6,13 @@
     <title>VOLT MASTER Pro</title>
     <style>
         :root {
-            --primary: #00a884;
+            --primary: #ffc107;
             --bg: #111b21;
             --chat-bg: #0b141a;
-            --my-msg: #005c4b;
+            --my-msg: #3d3000;
             --others-msg: #202c33;
             --ticks-blue: #53bdeb;
-            --notify: #25d366;
+            --notify: #ffc107;
             --text-main: #e9edef;
             --accent: #ffc107;
         }
@@ -36,7 +36,7 @@
         .back-btn { background: none; border: none; color: var(--primary); font-size: 24px; cursor: pointer; }
 
         .msg { max-width: 80%; padding: 8px 10px; border-radius: 8px; font-size: 14.5px; position: relative; cursor: pointer; }
-        .msg.my { align-self: flex-end; background: var(--my-msg); border-top-right-radius: 0; }
+        .msg.my { align-self: flex-end; background: var(--my-msg); border-top-right-radius: 0; border: 1px solid rgba(255,193,7,0.2); }
         .msg.others { align-self: flex-start; background: var(--others-msg); border-top-left-radius: 0; }
         
         .sender-info { font-size: 11px; font-weight: bold; color: var(--accent); margin-bottom: 4px; cursor: pointer; }
@@ -47,7 +47,7 @@
         .input-panel { background: #202c33; padding: 10px; display: flex; align-items: center; gap: 10px; }
         .input-panel input { flex: 1; border: none; padding: 12px 15px; border-radius: 25px; background: #2a3942; color: white; outline: none; }
 
-        @keyframes highlight { 0% { background: #3b4a54; } 100% { background: inherit; } }
+        @keyframes highlight { 0% { background: #4a3e10; } 100% { background: inherit; } }
         .highlight-target { animation: highlight 2s ease; }
 
         @media (min-width: 768px) { #app-container { width: 100%; transform: none !important; } #contact-screen { width: 350px; } #chat-screen { width: calc(100% - 350px); } .back-btn { display: none; } }
@@ -70,7 +70,7 @@
     <div id="chat-screen">
         <div class="chat-header">
             <button class="back-btn" onclick="closeChat()">❮</button>
-            <div id="chatTitle" style="font-weight:bold;">Выберите чат</div>
+            <div id="chatTitle" style="font-weight:bold; color:var(--primary);">Выберите чат</div>
             <button id="adminDelBtn" style="background:none; border:none; display:none; margin-left:auto; font-size:18px;" onclick="clearHistory()">🗑️</button>
         </div>
         <div id="messages"></div>
@@ -90,22 +90,32 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, push, set, onValue, onDisconnect, serverTimestamp, update, get, child, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    const firebaseConfig = { databaseURL: "https://kalculator-8e345-default-rtdb.firebaseio.com/" };
+    // ТВОЙ КОНФИГ VOLTMASTER
+    const firebaseConfig = {
+        apiKey: "AIzaSyD-dIC8bm8y4kaY7RXmMrys2wOMLA5o8vY",
+        authDomain: "voltmaster-332c0.firebaseapp.com",
+        databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com",
+        projectId: "voltmaster-332c0",
+        storageBucket: "voltmaster-332c0.firebasestorage.app",
+        messagingSenderId: "312337098429",
+        appId: "1:312337098429:web:663e0f6787bd62d19bf9d4"
+    };
+
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    let myId = localStorage.getItem('user_id_2026') || "ID-" + Math.floor(1000 + Math.random() * 9000);
-    localStorage.setItem('user_id_2026', myId);
-    let myName = localStorage.getItem('chat_user_name') || prompt("Имя:") || myId;
+    // ID БЕРЕТСЯ ИЗ ПАМЯТИ (КАК ТЫ ПРОСИЛ)
+    let myId = localStorage.getItem('volt_master_uid') || "ID-" + Math.floor(1000 + Math.random() * 9000);
+    localStorage.setItem('volt_master_uid', myId);
+    let myName = localStorage.getItem('chat_user_name') || prompt("Ваше имя:") || myId;
     localStorage.setItem('chat_user_name', myName);
 
     let currentChatId = null, isGlobal = false, replyingTo = null;
     let recentUsers = JSON.parse(localStorage.getItem('recent_chats') || "[]");
     let namesCache = {}, unreadCounts = {}, globalUnread = 0;
     
-    // Метка времени последнего сообщения, которое мы видели в общем чате
     let lastSeenGlobalTs = parseInt(localStorage.getItem('last_msg_global_ts') || "0");
-    let tempLastTs = 0; // Для отслеживания самого свежего сообщения в открытом чате
+    let tempLastTs = 0;
 
     const statusRef = ref(db, 'status/' + myId);
     set(statusRef, { online: true, name: myName });
@@ -125,7 +135,7 @@
             if (ts > maxTs) maxTs = ts;
         });
         globalUnread = count;
-        if (isGlobal) tempLastTs = maxTs; // Если чат открыт, запоминаем актуальный максимум
+        if (isGlobal) tempLastTs = maxTs;
         renderList();
     });
 
@@ -144,23 +154,12 @@
 
     function renderList() {
         const list = document.getElementById('userList');
-        list.innerHTML = `
-            <li onclick="openChat('GLOBAL_CHAT', true)" style="background:rgba(0,168,132,0.05)">
-                <b>📢 ОБЩИЙ ЧАТ</b>
-                ${globalUnread > 0 ? `<div class="unread-badge">${globalUnread}</div>` : ''}
-            </li>`;
+        list.innerHTML = `<li onclick="openChat('GLOBAL_CHAT', true)" style="background:rgba(255,193,7,0.1)"><b>📢 ОБЩИЙ ЧАТ VOLT</b>${globalUnread > 0 ? `<div class="unread-badge">${globalUnread}</div>` : ''}</li>`;
         recentUsers.forEach(uId => {
             if (uId === myId) return;
-            list.innerHTML += `
-                <li onclick="openChat('${uId}', false)">
-                    <div><b>${namesCache[uId] || uId}</b><br><small>${uId}</small></div>
-                    <div style="display:flex; align-items:center;">
-                        ${unreadCounts[uId] ? `<div class="unread-badge">${unreadCounts[uId]}</div>` : ''}
-                        <div class="remove-chat" onclick="event.stopPropagation(); removeRecent('${uId}')">✕</div>
-                    </div>
-                </li>`;
+            list.innerHTML += `<li onclick="openChat('${uId}', false)"><div><b>${namesCache[uId] || uId}</b><br><small>${uId}</small></div><div style="display:flex; align-items:center;">${unreadCounts[uId] ? `<div class="unread-badge">${unreadCounts[uId]}</div>` : ''}<div class="remove-chat" onclick="event.stopPropagation(); removeRecent('${uId}')">✕</div></div></li>`;
         });
-        document.getElementById('myIdDisplay').innerText = `Вы: ${myName} (${myId})`;
+        document.getElementById('myIdDisplay').innerText = `Вы: ${myName} (ID: ${myId})`;
     }
 
     window.openChat = (targetId, global) => {
@@ -179,7 +178,7 @@
             const box = document.getElementById('messages'); box.innerHTML = "";
             snap.forEach(m => {
                 const d = m.val();
-                if (isGlobal && (d.ts || 0) > tempLastTs) tempLastTs = d.ts; // Обновляем "виденное" время
+                if (isGlobal && (d.ts || 0) > tempLastTs) tempLastTs = d.ts;
                 if (!isGlobal && d.sender !== myId && d.status !== 'read') update(ref(db, path + '/' + m.key), { status: 'read' });
                 
                 const div = document.createElement('div');
@@ -243,15 +242,16 @@
     };
 
     window.cancelReply = () => { replyingTo = null; document.getElementById('reply-bar').style.display = 'none'; };
-    window.tryAdmin = () => { if (prompt("Pass:") === '6739218') document.getElementById('adminDelBtn').style.display = 'block'; };
+    window.tryAdmin = () => { if (prompt("Pass:") === 'Gazik0303') document.getElementById('adminDelBtn').style.display = 'block'; };
     window.clearHistory = () => { if (confirm("Очистить?")) remove(ref(db, isGlobal ? 'global_messages' : 'private_messages/' + currentChatId)); };
+    
     window.searchUser = async () => {
         const q = document.getElementById('searchInput').value.trim();
         const s = await get(child(ref(db), `status/${q}`));
         if (s.exists()) openChat(q, false); else alert("ID не найден");
     };
 
-    setInterval(() => localStorage.setItem('volt_master_backup', document.documentElement.outerHTML), 10000);
+    setInterval(() => localStorage.setItem('volt_master_backup', document.documentElement.outerHTML), 15000);
 </script>
 </body>
 </html>
