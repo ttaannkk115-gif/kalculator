@@ -49,7 +49,7 @@
             border-radius: 20px; font-size: 10px; margin-top: 5px; border: 1px solid rgba(255, 193, 7, 0.1);
         }
 
-                /* МОДАЛЬНОЕ ОКНО С ПРОКРУТКОЙ */
+                        /* МОДАЛЬНОЕ ОКНО С ПРОКРУТКОЙ */
         #global-modal {
             position: fixed; inset: 0; background: rgba(0,0,0,0.95);
             z-index: 5000; display: none; align-items: center; justify-content: center;
@@ -58,12 +58,18 @@
         .modal-content {
             background: #161616; border: 2px solid var(--main-gold);
             border-radius: 24px; padding: 25px 15px; width: 100%; max-width: 320px;
-            max-height: 80vh; /* Ограничиваем высоту, чтобы не вылетало за экран */
-            display: flex; flex-direction: column; 
+            max-height: 80vh; display: flex; flex-direction: column; 
             text-align: center; box-shadow: 0 0 50px rgba(255, 193, 7, 0.2);
         }
         .modal-title { color: var(--main-gold); font-size: 12px; font-weight: 900; text-transform: uppercase; margin-bottom: 15px; flex-shrink: 0; }
-        
+        .modal-text { 
+            font-size: 18px; font-weight: 600; line-height: 1.5; margin-bottom: 25px; 
+            white-space: pre-wrap; color: #fff; overflow-y: auto; padding-right: 5px;
+        }
+        .modal-text::-webkit-scrollbar { width: 4px; }
+        .modal-text::-webkit-scrollbar-thumb { background: var(--main-gold); border-radius: 10px; }
+        .modal-btn { background: var(--main-gold); color: #000; border: none; padding: 15px; width: 100%; border-radius: 14px; font-weight: 800; cursor: pointer; flex-shrink: 0; }
+
         .modal-text { 
             font-size: 18px; font-weight: 600; line-height: 1.5; margin-bottom: 25px; 
             white-space: pre-wrap; color: #fff; 
@@ -214,13 +220,17 @@
             });
         });
 
+                // Обновленный счетчик и регистрация
+        database.ref('registered_users/' + userID).set({ last_active: Date.now() });
+
         database.ref('registered_users').on('value', snap => {
-            document.getElementById('stats-display').innerText = `ID: ${userID} | ВСЕГО: ${snap.numChildren()}`;
+            const total = snap.numChildren();
+            document.getElementById('stats-display').innerText = `ID: ${userID} | ВСЕГО: ${total}`;
+            localStorage.setItem('volt_total_users', total);
         });
 
         watchShabashki();
-    }
-
+}
     function closeGlobalModal() {
         localStorage.setItem('last_msg_read', document.getElementById('modal-msg-text').innerText);
         document.getElementById('global-modal').style.display = 'none';
