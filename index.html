@@ -11,7 +11,6 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-messaging-compat.js"></script>
 
     <style>
         :root {
@@ -49,21 +48,6 @@
             border-radius: 20px; font-size: 10px; margin-top: 5px; border: 1px solid rgba(255, 193, 7, 0.1);
         }
 
-        /* МОДАЛЬНОЕ ОКНО */
-        #global-modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
-            z-index: 5000; display: none; align-items: center; justify-content: center;
-            padding: 20px; backdrop-filter: blur(10px);
-        }
-        .modal-content {
-            background: #161616; border: 2px solid var(--main-gold);
-            border-radius: 24px; padding: 30px 20px; width: 100%; max-width: 320px;
-            text-align: center; box-shadow: 0 0 50px rgba(255, 193, 7, 0.2);
-        }
-        .modal-title { color: var(--main-gold); font-size: 12px; font-weight: 900; text-transform: uppercase; margin-bottom: 15px; }
-        .modal-text { font-size: 18px; font-weight: 600; line-height: 1.5; margin-bottom: 25px; white-space: pre-wrap; color: #fff; }
-        .modal-btn { background: var(--main-gold); color: #000; border: none; padding: 15px; width: 100%; border-radius: 14px; font-weight: 800; cursor: pointer; }
-
         .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--main-gold); box-shadow: 0 0 8px var(--main-gold); animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
@@ -88,26 +72,31 @@
         .close-btn { background: none; border: none; color: #ff4444; font-size: 32px; cursor: pointer; line-height: 1; padding: 0 10px; }
         iframe { width: 100%; height: 100%; border: none; flex-grow: 1; }
 
-        /* АДМИНКА */
+        /* Админка */
         #admin-content { overflow-y: auto; flex-grow: 1; padding-bottom: 30px; }
-        .admin-stats-big { color: var(--main-gold); padding: 20px; font-size: 22px; font-weight: 800; text-transform: uppercase; }
-        .admin-input-box { padding: 15px; background: #111; margin: 0 15px 15px; border-radius: 12px; border: 1px solid #333; }
-        .admin-input-box textarea { background: #000; border: 1px solid #444; color: #fff; padding: 10px; width: 100%; box-sizing: border-box; border-radius: 8px; margin-bottom: 10px; font-family: inherit; }
-        .admin-nav-btn { background: #111; border: 1px solid #333; color: var(--main-gold); padding: 18px; border-radius: 12px; margin: 0 15px 10px; text-align: center; cursor: pointer; font-weight: bold; font-size: 14px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .date-divider { color: var(--main-gold); padding: 10px; font-size: 12px; text-align: center; margin: 15px 0 5px; font-weight: bold; border-top: 1px solid #1a1a1a; background: rgba(255,193,7,0.02); }
-        .log-item { padding: 12px 20px; border-bottom: 1px solid #111; }
-        .log-history { color: #666; font-size: 11px; line-height: 1.4; margin-top: 5px; border-left: 1px solid #333; padding-left: 8px; }
+        .admin-stats-big { color: var(--main-gold); padding: 20px; font-size: 22px; font-weight: 800; }
+        .admin-input-box { padding: 18px; background: #111; margin: 15px; border-radius: 20px; border: 2px solid var(--main-gold); }
+        .admin-input-box textarea, .admin-input-box input {
+            background: #000; border: 1px solid #333; color: #fff; padding: 12px; width: 100%;
+            box-sizing: border-box; border-radius: 12px; margin-bottom: 12px; outline: none; font-family: inherit;
+        }
+        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .btn-admin { padding: 18px; border-radius: 14px; font-weight: 800; cursor: pointer; border: none; text-transform: uppercase; font-size: 11px; }
+        .btn-gold { background: var(--main-gold); color: #000; }
+        .btn-white { background: #fff; color: #000; }
+        .btn-delete-msg { width: 100%; background: rgba(255, 68, 68, 0.1); border: 1px solid #400; color: #ff4444; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+
+        .date-divider { color: var(--main-gold); padding: 10px; font-size: 12px; text-align: center; margin: 15px 0 5px; font-weight: bold; border-top: 1px solid #1a1a1a; }
+        .log-item { padding: 15px 20px; border-bottom: 1px solid #111; }
+        .log-row-top { display: flex; justify-content: space-between; }
+        .log-id { font-size: 18px; font-weight: bold; color: #fff; }
+        .log-time-last { color: var(--main-gold); font-size: 16px; font-weight: bold; }
+        .log-history { color: #666; font-size: 11px; margin-top: 5px; }
+
+        @keyframes slideIn { from { top: -100px; opacity: 0; } to { top: 20px; opacity: 1; } }
     </style>
 </head>
 <body>
-
-<div id="global-modal">
-    <div class="modal-content">
-        <div class="modal-title">📣 ОБЪЯВЛЕНИЕ</div>
-        <div class="modal-text" id="modal-msg-text">...</div>
-        <button class="modal-btn" onclick="closeGlobalModal()">Я ПРОЧИТАЛ</button>
-    </div>
-</div>
 
 <div class="app-container">
     <div class="top-nav">
@@ -119,7 +108,7 @@
         <h1>VOLT<span>MASTER</span></h1>
         <div class="status-badge">
             <div class="status-dot"></div>
-            <span id="stats-display">ID: ---- | ВСЕГО: 0</span>
+            <span id="stats-display">ID: ${userID}</span>
         </div>
     </div>
 
@@ -135,10 +124,7 @@
 </div>
 
 <div id="app-overlay" class="overlay">
-    <div class="overlay-header">
-        <span id="overlay-title" style="color:var(--main-gold); font-weight:bold; font-size:14px; margin-right: auto;"></span>
-        <button class="close-btn" onclick="closeApp()">&times;</button>
-    </div>
+    <div class="overlay-header"><span id="overlay-title" style="color:var(--main-gold); margin-right:auto; font-weight:bold;"></span><button class="close-btn" onclick="closeApp()">&times;</button></div>
     <iframe id="app-frame"></iframe>
 </div>
 
@@ -165,100 +151,117 @@
     localStorage.setItem('volt_master_uid', userID);
 
     function initApp() {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js?v=10').then(() => console.log("VoltMaster V10 OK"));
-        }
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js?v=12');
 
-        // 1. Модальное сообщение
-        database.ref('global_message').on('value', snap => {
-            const msg = snap.val();
-            if(msg && localStorage.getItem('last_msg_read') !== msg) {
-                document.getElementById('modal-msg-text').innerText = msg;
-                document.getElementById('global-modal').style.display = 'flex';
-            } else { document.getElementById('global-modal').style.display = 'none'; }
-        });
-
-        // 2. СЧЕТЧИК И ИСТОРИЯ ВРЕМЕНИ
         const now = new Date();
         const dateKey = now.toISOString().split('T')[0];
         const timeStr = now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
-        const visitRef = database.ref(`visits/${dateKey}/ID-${userID}`);
         
-        visitRef.once('value', snap => {
+        // Логи входа
+        database.ref(`visits/${dateKey}/ID-${userID}`).once('value', snap => {
             const d = snap.val() || { count: 0, allTimes: "" };
-            visitRef.update({
-                id: userID,
-                count: d.count + 1,
-                lastTime: timeStr,
+            database.ref(`visits/${dateKey}/ID-${userID}`).update({
+                id: userID, count: d.count + 1, lastTime: timeStr,
                 allTimes: d.allTimes ? d.allTimes + ", " + timeStr : timeStr,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             });
         });
 
+        // Статистика
+        database.ref('registered_users/ID-' + userID).set(true);
         database.ref('registered_users').on('value', snap => {
             document.getElementById('stats-display').innerText = `ID: ${userID} | ВСЕГО: ${snap.numChildren()}`;
+        });
+
+        // ОБЩИЕ СООБЩЕНИЯ
+        database.ref('global_message').on('value', snap => {
+            const val = snap.val();
+            if (val && localStorage.getItem('read_global') !== val) {
+                showVoltMessage("ОБЩЕЕ ОБЪЯВЛЕНИЕ", val, 'global');
+            } else if (!val) {
+                const ex = document.getElementById('volt-notif-global');
+                if (ex) ex.remove();
+            }
+        });
+
+        // ЛИЧНЫЕ СООБЩЕНИЯ (Всегда показываем, если есть в базе)
+        database.ref('private_messages/' + userID).on('value', snap => {
+            const val = snap.val();
+            if (val) {
+                showVoltMessage("ЛИЧНОЕ СООБЩЕНИЕ", val, 'private');
+            } else {
+                const ex = document.getElementById('volt-notif-private');
+                if (ex) ex.remove();
+            }
         });
 
         watchShabashki();
     }
 
-    function closeGlobalModal() {
-        localStorage.setItem('last_msg_read', document.getElementById('modal-msg-text').innerText);
-        document.getElementById('global-modal').style.display = 'none';
+    function showVoltMessage(title, text, type) {
+        const msgId = 'volt-notif-' + type;
+        let msgBox = document.getElementById(msgId);
+        if (!msgBox) {
+            msgBox = document.createElement('div');
+            msgBox.id = msgId;
+            msgBox.style = "position:fixed; top:20px; left:50%; transform:translateX(-50%); width:85%; background:#1a1a1a; border:2px solid var(--main-gold); border-radius:15px; padding:20px; z-index:5000; box-shadow:0 10px 30px rgba(0,0,0,0.8); text-align:center; animation: slideIn 0.3s ease-out;";
+            document.body.appendChild(msgBox);
+        }
+        msgBox.innerHTML = `
+            <div style="color:var(--main-gold); font-weight:bold; font-size:12px; margin-bottom:10px;">${title}</div>
+            <div style="color:#fff; font-size:16px; margin-bottom:15px; line-height:1.4;">${text}</div>
+            <button onclick="closeMsg('${type}', '${text.replace(/'/g, "\\'")}')" style="background:var(--main-gold); border:none; padding:10px 30px; border-radius:10px; font-weight:bold; cursor:pointer;">ПОНЯЛ</button>
+        `;
     }
 
-    // АДМИНКА
-    function sendGlobalMsg() {
-        const text = document.getElementById('new-global-msg').value;
-        if(text) database.ref('global_message').set(text).then(() => alert("Объявление отправлено!"));
+    function closeMsg(type, text) {
+        if (type === 'global') localStorage.setItem('read_global', text);
+        const el = document.getElementById('volt-notif-' + type);
+        if (el) el.remove();
+        if (type === 'private') database.ref('private_messages/' + userID).remove();
     }
 
-    function deleteGlobalMsg() {
-        if(confirm("Удалить объявление?")) database.ref('global_message').remove();
+    function adminSend(type) {
+        const txt = document.getElementById('adm-txt').value.trim();
+        const tid = document.getElementById('adm-id').value.trim();
+        if (!txt) return;
+        if (type === 'global') {
+            database.ref('global_message').set(txt).then(() => alert("Отправлено всем!"));
+        } else {
+            if (!tid) { alert("Введите ID!"); return; }
+            database.ref('private_messages/' + tid).set(txt).then(() => alert("Личное отправлено для " + tid));
+        }
+    }
+
+    function clearGlobal() {
+        if (confirm("Удалить у всех?")) database.ref('global_message').set(null);
     }
 
     function loadLogs() {
         database.ref('visits').on('value', snap => {
+            const container = document.getElementById('admin-content');
             const data = snap.val() || {};
+            const today = new Date().toISOString().split('T')[0];
             let html = `
-                <div class="admin-stats-big">АДМИН-ПАНЕЛЬ</div>
+                <div class="admin-stats-big">СЕГОДНЯ: ${data[today] ? Object.keys(data[today]).length : 0}</div>
                 <div class="admin-input-box">
-                    <div style="color:var(--main-gold); font-size:11px; margin-bottom:8px; font-weight:bold;">ОБЪЯВЛЕНИЕ ПЕРЕД ЭКРАНОМ:</div>
-                    <textarea id="new-global-msg" rows="3" placeholder="Текст для всех..."></textarea>
-                    <button class="admin-nav-btn" style="margin:0; width:100%;" onclick="sendGlobalMsg()">📢 ЗАБЛОКИРОВАТЬ ЭКРАНЫ</button>
-                    <button class="admin-nav-btn" style="margin:10px 0 0; width:100%; color:#ff4444; border-color:#500;" onclick="deleteGlobalMsg()">❌ УДАЛИТЬ У ВСЕХ</button>
+                    <textarea id="adm-txt" rows="3" placeholder="Текст..."></textarea>
+                    <input type="text" id="adm-id" placeholder="ID получателя">
+                    <div class="btn-row">
+                        <button class="btn-admin btn-gold" onclick="adminSend('private')">ЛИЧНОЕ</button>
+                        <button class="btn-admin btn-white" onclick="adminSend('global')">ОБЩЕЕ</button>
+                    </div>
+                    <button class="btn-delete-msg" onclick="clearGlobal()">× УДАЛИТЬ ОБЩЕЕ</button>
                 </div>
-                <div class="admin-nav-btn" onclick="closeAdmin(); openApp('Управление', 'volt.html')">🛠 УПРАВЛЕНИЕ ШАБАШКАМИ</div>
+                <button class="btn-admin btn-white" style="width:92%; margin:0 15px 20px;" onclick="closeAdmin(); openApp('Управление', 'volt.html')">🛠 АДМИНКА ШАБАШЕК</button>
             `;
-            
             Object.keys(data).sort().reverse().forEach(date => {
-                html += `<div class="date-divider">--- ${date} --- (${Object.keys(data[date]).length})</div>`;
-                Object.values(data[date]).sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0)).forEach(v => {
-                    html += `
-                        <div class="log-item">
-                            <div style="display:flex;justify-content:space-between;align-items:baseline;">
-                                <div><span style="font-weight:bold;">ID: ${v.id}</span> <span style="color:var(--main-gold);font-size:12px;">x${v.count}</span></div>
-                                <span style="color:var(--main-gold);font-size:14px;font-weight:bold;">${v.lastTime}</span>
-                            </div>
-                            <div class="log-history">${v.allTimes || '---'}</div>
-                        </div>`;
+                html += `<div class="date-divider">${date}</div>`;
+                Object.values(data[date]).sort((a,b) => b.timestamp - a.timestamp).forEach(v => {
+                    html += `<div class="log-item"><div class="log-row-top"><b>${v.id} (x${v.count})</b><span>${v.lastTime}</span></div><div class="log-history">${v.allTimes}</div></div>`;
                 });
             });
-            html += `<button class="admin-nav-btn" style="background:#ff4444; color:#fff; border:none; margin-top:20px;" onclick="if(confirm('Стереть историю?')) database.ref('visits').remove()">ОЧИСТИТЬ ЛОГИ</button>`;
-            document.getElementById('admin-content').innerHTML = html;
-        });
-    }
-
-    // ОСТАЛЬНОЕ
-    function initNotifications() {
-        const messaging = firebase.messaging();
-        Notification.requestPermission().then((perm) => {
-            if (perm === 'granted') {
-                navigator.serviceWorker.ready.then((reg) => {
-                    messaging.getToken({ serviceWorkerRegistration: reg, vapidKey: 'BGNQzIvGew0uQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKkYekWNL-3tgN_cQ' })
-                    .then((tok) => { if(tok) database.ref('fcm_tokens/' + userID).set(tok); alert("🔔 Уведомления включены!"); });
-                });
-            }
+            container.innerHTML = html;
         });
     }
 
@@ -267,16 +270,25 @@
         document.getElementById('app-frame').src = url + "?v=" + Date.now();
         document.getElementById('app-overlay').style.display = 'flex';
     }
-
     function closeApp() { document.getElementById('app-overlay').style.display = 'none'; document.getElementById('app-frame').src = ''; }
+    function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; }
+
+    let clicks = 0;
+    document.getElementById('main-logo').onclick = () => {
+        if(++clicks === 3) {
+            if(prompt("Пароль:") === "Gazik0303") { document.getElementById('admin-overlay').style.display = 'flex'; loadLogs(); }
+            clicks = 0;
+        }
+        setTimeout(() => clicks = 0, 1000);
+    };
 
     function watchShabashki() {
         database.ref('shabashki/active').on('value', snap => {
             const count = Object.keys(snap.val() || {}).length;
-            const lastSeen = parseInt(localStorage.getItem('shabash_seen') || 0);
-            const badge = document.getElementById('shabash-count');
-            if (count > lastSeen) { badge.innerText = "+" + (count - lastSeen); badge.style.display = 'inline-block'; } 
-            else badge.style.display = 'none';
+            const last = parseInt(localStorage.getItem('shabash_seen') || 0);
+            const b = document.getElementById('shabash-count');
+            if (count > last) { b.innerText = "+" + (count - last); b.style.display = 'inline-block'; } 
+            else b.style.display = 'none';
         });
     }
 
@@ -288,18 +300,8 @@
         });
     }
 
-    let clicks = 0;
-    document.getElementById('main-logo').onclick = () => {
-        clicks++;
-        if(clicks === 3) {
-            if(prompt("Пароль:") === "Gazik0303") { document.getElementById('admin-overlay').style.display = 'flex'; loadLogs(); }
-            clicks = 0;
-        }
-        setTimeout(() => clicks = 0, 800);
-    };
-
-    function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; }
-    function handleInstall() { if(/iPad|iPhone|iPod/.test(navigator.userAgent)) alert("Нажми 'Поделиться' -> На экран Домой"); else alert("Меню браузера -> Установить"); }
+    function initNotifications() { alert("Система готова!"); }
+    function handleInstall() { alert("Нажми 'Поделиться' -> 'Домой'"); }
 
     window.onload = initApp;
 </script>
