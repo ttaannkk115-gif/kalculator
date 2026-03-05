@@ -589,26 +589,46 @@ function sync() {
     if(!state.length) {
         container.innerHTML = "<p style='text-align:center; color:#999; padding:20px;'>Смета пуста</p>";
     } else {
-        let html = `<table class="estimate-table"><thead><tr><th>№</th><th>Работа</th><th>Кол-во</th><th>Сумма</th><th class="no-print"></th></tr></thead><tbody>`;
+        let html = `<table class="estimate-table">
+            <thead>
+                <tr>
+                    <th>№</th>
+                    <th>Работа</th>
+                    <th>Кол-во</th>
+                    <th>Цена</th>
+                    <th>Сумма</th>
+                    <th class="no-print"></th>
+                </tr>
+            </thead>
+            <tbody>`;
+            
         state.forEach((item, i) => {
             const p = item.k25 ? Math.round(item.p * 2.5) : item.p;
             const s = p * item.qty;
             total += s;
             html += `<tr>
                 <td>${i+1}</td>
-                <td>${item.n}${item.k25 ? '<br><small style="color:red">x2.5</small>' : ''}</td>
-                <td><input type="number" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)"></td>
-                <td>${s.toLocaleString()} ₽</td>
+                <td style="font-size:12px;">${item.n}${item.k25 ? '<br><small style="color:red">x2.5</small>' : ''}</td>
+                <td>
+                    <input type="number" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)">
+                    <div style="font-size:10px; color:#999;">${item.u}</div>
+                </td>
+                <td style="white-space:nowrap;">${p} ₽</td>
+                <td style="font-weight:bold; white-space:nowrap;">${s.toLocaleString()} ₽</td>
                 <td class="no-print">
-                    <input type="checkbox" ${item.k25 ? 'checked' : ''} onchange="toggleK(${i})">
-                    <button style="color:red; border:none; background:none; font-size:18px;" onclick="remove(${i})">✕</button>
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+                        <input type="checkbox" ${item.k25 ? 'checked' : ''} onchange="toggleK(${i})">
+                        <button style="color:red; border:none; background:none; font-size:18px;" onclick="remove(${i})">✕</button>
+                    </div>
                 </td>
             </tr>`;
         });
         container.innerHTML = html + `</tbody></table>`;
     }
-    document.getElementById('total').innerText = total.toLocaleString();
-    document.getElementById('total-bottom').innerText = total.toLocaleString();
+    
+    const formattedTotal = total.toLocaleString();
+    document.getElementById('total').innerText = formattedTotal;
+    document.getElementById('total-bottom').innerText = formattedTotal;
     renderCatalog(document.getElementById('search').value);
 }
 
