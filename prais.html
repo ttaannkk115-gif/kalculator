@@ -100,8 +100,23 @@
 }
 .btn-coeff.active { background: #e53935; color: white; border-color: #b71c1c; box-shadow: 0 2px 4px rgba(229,57,53,0.3); }
 
-#modal-view-smeta .modal-content { max-width: 500px; width: 92%; max-height: 85vh; display: flex; flex-direction: column; }
-/* ------------------------------------ */
+/* Обновленное окно детализации с прокруткой */
+#modal-view-smeta .modal-content { 
+    max-width: 500px; 
+    width: 94%; 
+    max-height: 85vh;       /* Ограничиваем высоту окна до 85% экрана */
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden;       /* Прячем лишнее, что выходит за рамки */
+}
+
+/* Этот блок отвечает за то, чтобы список внутри можно было листать */
+#quick-view-content { 
+    flex: 1;               /* Занимает всё свободное место */
+    overflow-y: auto;      /* ВКЛЮЧАЕТ ПРОКРУТКУ (скролл) по вертикали */
+    padding-right: 5px;    /* Место для полосы прокрутки */
+    -webkit-overflow-scrolling: touch; /* Плавный скролл на iPhone */
+}
 
     </style>
 </head>
