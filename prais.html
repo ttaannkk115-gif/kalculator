@@ -48,6 +48,22 @@
         .modal-content { background:white; padding:20px; border-radius:12px; width:90%; max-width:400px; color: #000; }
 
         @media print { .no-print { display: none !important; } .container { width: 100%; padding: 0; } }
+    /* --- НОВЫЕ СТИЛИ ДЛЯ БЫСТРОГО ОКНА --- */
+.quick-row { border-bottom: 1px solid #eee; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; }
+.quick-info { flex: 1; padding-right: 10px; }
+.quick-controls { display: flex; align-items: center; gap: 8px; }
+.btn-qty { width: 35px; height: 35px; border-radius: 8px; border: 1px solid #ccc; background: #fff; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.btn-qty:active { background: #eee; }
+
+.btn-coeff { 
+    margin-top: 8px; padding: 5px 10px; border-radius: 6px; border: 1px solid #ddd; 
+    font-size: 11px; font-weight: bold; cursor: pointer; background: #f8f9fa; transition: 0.2s;
+}
+.btn-coeff.active { background: #e53935; color: white; border-color: #b71c1c; box-shadow: 0 2px 4px rgba(229,57,53,0.3); }
+
+#modal-view-smeta .modal-content { max-width: 500px; width: 92%; max-height: 85vh; display: flex; flex-direction: column; }
+/* ------------------------------------ */
+
     </style>
 </head>
 <body>
@@ -90,7 +106,10 @@
 </div>
 
 <div class="footer no-print">
-    <div class="total-amount"><span id="total">0</span> ₽</div>
+    <div class="total-amount" onclick="showQuickSmeta()" style="cursor:pointer; border-radius: 8px; padding: 5px;">
+    <span id="total">0</span> ₽ <span style="font-size: 14px; opacity: 0.6; margin-left: 5px;">📋</span>
+</div>
+
     <div style="display: flex; gap: 10px;">
         <button class="btn" style="background:var(--success); color:white; padding:12px 15px;" onclick="saveToArchive()">СОХРАНИТЬ</button>
         <button class="btn" style="background:#fff; color:#000; padding:12px 15px;" onclick="window.print()">ПЕЧАТЬ</button>
@@ -113,6 +132,17 @@
             <button onclick="toggleModal('modal-archive')" style="border:none; background:none; font-size:22px;">✕</button>
         </div>
         <div id="archive-list" style="max-height: 350px; overflow-y: auto; margin-top:10px; border-top:1px solid #eee;"></div>
+    </div>
+</div>
+
+<div id="modal-view-smeta" class="modal" onclick="toggleModal('modal-view-smeta')">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+            <h3 style="margin:0; color:var(--dark);">Детализация работ</h3>
+            <button onclick="toggleModal('modal-view-smeta')" style="border:none; background:none; font-size:28px; cursor:pointer;">&times;</button>
+        </div>
+        <div id="quick-view-content"></div>
+        <button class="btn" style="width:100%; margin-top:15px; background:var(--dark); color:white; padding: 12px;" onclick="toggleModal('modal-view-smeta')">Вернуться к каталогу</button>
     </div>
 </div>
 
@@ -696,6 +726,56 @@ function addOneTimeItem() {
 
 renderCatalog();
 sync();
+// Функция отображения и управления быстрой сметой
+function showQuickSmeta() {
+    const modal = document.getElementById('modal-view-smeta');
+    const content = document.getElementById('quick-view-content');
+    
+    if (state.length === 0) {
+        content.innerHTML = "<div style='text-align:center; padding:30px; color:#999;'>Смета пуста. Добавьте работы из каталога!</div>";
+        if (modal.style.display !== 'flex') toggleModal('modal-view-smeta');
+        return;
+    }
+
+    let html = `<div style="overflow-y: auto; flex: 1; padding-right:5px;">`;
+    
+    state.forEach((item, i) => {
+        const p = item.k25 ? Math.round(item.p * 2.5) : item.p;
+        html += `
+            <div class="quick-row">
+                <div class="quick-info">
+                    <div style="font-size:15px; font-weight:bold;">${item.n}</div>
+                    <div style="font-size:13px; color:#666;">${p} ₽ × ${item.qty} ${item.u}</div>
+                    <button class="btn-coeff ${item.k25 ? 'active' : ''}" 
+                            onclick="toggleK(${i}); showQuickSmeta();">
+                        ${item.k25 ? '🔥 Коэфф. x2.5 ВКЛ' : 'Применить x2.5'}
+                    </button>
+                </div>
+                <div class="quick-controls">
+                    <button class="btn-qty" onclick="updateQty(${i}, ${item.qty - 1}); if(state[i]?.qty <= 0) remove(${i}); showQuickSmeta();">−</button>
+                    <b style="min-width:35px; text-align:center; font-size:18px;">${item.qty}</b>
+                    <button class="btn-qty" onclick="updateQty(${i}, ${item.qty + 1}); showQuickSmeta();">+</button>
+                    <button style="border:none; background:none; font-size:22px; margin-left:10px; cursor:pointer;" 
+                            onclick="if(confirm('Удалить позицию?')) { remove(${i}); showQuickSmeta(); }">🗑️</button>
+                </div>
+            </div>`;
+    });
+    
+    html += `</div>`;
+    
+    // Итоговая плашка
+    const currentTotal = document.getElementById('total').innerText;
+    html += `
+        <div style="margin-top:15px; padding-top:15px; border-top:3px solid var(--dark); display:flex; justify-content:space-between; align-items:center;">
+            <b style="font-size:16px;">ИТОГО:</b>
+            <b style="font-size:24px; color:var(--primary);">${currentTotal} ₽</b>
+        </div>`;
+             
+    content.innerHTML = html;
+    
+    if (modal.style.display !== 'flex') toggleModal('modal-view-smeta');
+}
+
 </script>
 </body>
 </html>
