@@ -752,9 +752,12 @@ function showQuickSmeta() {
                     </button>
                 </div>
                 <div class="quick-controls">
-                    <button class="btn-qty" onclick="updateQty(${i}, ${item.qty - 1}); if(state[i]?.qty <= 0) remove(${i}); showQuickSmeta();">−</button>
+                    <button class="btn-qty" onclick="if(state[${i}].qty > 1) { updateQty(${i}, state[${i}].qty - 1); } else { if(confirm('Удалить?')) remove(${i}); } showQuickSmeta();">−</button>
+                    
                     <b style="min-width:35px; text-align:center; font-size:18px;">${item.qty}</b>
-                    <button class="btn-qty" onclick="updateQty(${i}, ${item.qty + 1}); showQuickSmeta();">+</button>
+                    
+                    <button class="btn-qty" onclick="updateQty(${i}, state[${i}].qty + 1); showQuickSmeta();">+</button>
+                    
                     <button style="border:none; background:none; font-size:22px; margin-left:10px; cursor:pointer;" 
                             onclick="if(confirm('Удалить позицию?')) { remove(${i}); showQuickSmeta(); }">🗑️</button>
                 </div>
@@ -763,7 +766,6 @@ function showQuickSmeta() {
     
     html += `</div>`;
     
-    // Итоговая плашка
     const currentTotal = document.getElementById('total').innerText;
     html += `
         <div style="margin-top:15px; padding-top:15px; border-top:3px solid var(--dark); display:flex; justify-content:space-between; align-items:center;">
