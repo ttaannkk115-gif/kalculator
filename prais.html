@@ -60,15 +60,38 @@
         .catalog-qty { width: 50px; border: 2px solid var(--primary); color: var(--primary); text-align: center; border-radius: 6px; font-weight: bold; padding: 5px; margin-right: 8px; outline: none; font-size: 14px; }
 
         /* Таблица сметы */
-                .estimate-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 10px; 
-            table-layout: fixed; /* Фиксирует колонки, чтобы не тянули экран */
-        }
+.estimate-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin-top: 10px; 
+    table-layout: fixed;
+}
 
-        .estimate-table th, .estimate-table td { border: 1px solid #ccc; padding: 8px; font-size: 14px; text-align: left; }
-        .qty-inp { width: 60px; border: 1px solid #ddd; text-align: center; font-weight: bold; padding: 6px; border-radius: 4px; font-size: 16px; }
+/* Эта строчка возвращает границы (рамку) */
+.estimate-table th, .estimate-table td { 
+    border: 1px solid #ccc; 
+    padding: 6px; 
+    font-size: 14px; 
+    text-align: left; 
+}
+
+/* Настройка ширины колонок */
+.estimate-table th:nth-child(1), .estimate-table td:nth-child(1) { width: 30px; text-align: center; }
+.estimate-table th:nth-child(2), .estimate-table td:nth-child(2) { width: auto; word-wrap: break-word; }
+.estimate-table th:nth-child(3), .estimate-table td:nth-child(3) { width: 65px; text-align: center; }
+.estimate-table th:nth-child(4), .estimate-table td:nth-child(4) { width: 75px; }
+.estimate-table th:nth-child(5), .estimate-table td:nth-child(5) { width: 90px; }
+.estimate-table th:nth-child(6), .estimate-table td:nth-child(6) { width: 40px; }
+
+/* Компактное поле ввода количества */
+.qty-inp { 
+    width: 45px; 
+    border: 1px solid #ddd; 
+    text-align: center; 
+    font-weight: bold; 
+    padding: 4px; 
+    border-radius: 4px; 
+}
 
         /* Футер */
         .footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 1001; }
