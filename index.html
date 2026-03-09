@@ -116,7 +116,40 @@
         .date-divider { color: var(--main-gold); padding: 10px; font-size: 12px; text-align: center; margin: 15px 0 5px; font-weight: bold; border-top: 1px solid #1a1a1a; background: rgba(255,193,7,0.02); }
         .log-item { padding: 12px 20px; border-bottom: 1px solid #111; }
         .log-history { color: #666; font-size: 11px; line-height: 1.4; margin-top: 5px; border-left: 1px solid #333; padding-left: 8px; }
-    </style>
+   /* --- КНОПКА WHATSAPP --- */
+.whatsapp-float {
+    position: fixed;
+    width: 56px;
+    height: 56px;
+    bottom: 20px;
+    right: 20px;
+    background-color: #25d366;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 10px rgba(255, 193, 7, 0.2);
+    z-index: 1500; /* Выше основного контента */
+    transition: transform 0.2s;
+    border: 2px solid var(--main-gold);
+    text-decoration: none;
+}
+
+.whatsapp-float:active {
+    transform: scale(0.9);
+}
+
+.whatsapp-float img {
+    width: 32px;
+    height: 32px;
+}
+
+/* Скрываем кнопку, когда открыто любое внутреннее приложение (iframe) */
+#app-overlay[style*="flex"] ~ .whatsapp-float,
+#admin-overlay[style*="flex"] ~ .whatsapp-float {
+    display: none;
+}
+     </style>
 </head>
 <body>
 
@@ -332,5 +365,11 @@
 
     window.onload = initApp;
 </script>
+<a href="https://chat.whatsapp.com/E10FzUdV9YLHem5KCVAQtQ?mode=hqctcli" 
+   class="whatsapp-float" 
+   target="_blank">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Group">
+</a>
+
 </body>
 </html>
