@@ -179,7 +179,25 @@
     </div>
 
     <div id="estimate"></div>
-    <div style="text-align:right; font-weight:bold; margin-top:20px; font-size:22px;">ИТОГО: <span id="total-bottom">0</span> ₽</div>
+    <div style="margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px;">
+    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <span class="info-label" style="margin: 0;">Ваша скидка:</span>
+        <div style="position: relative; width: 80px;">
+            <input type="number" id="inp-discount" class="info-input" 
+       style="text-align: center; border: 1px solid var(--primary); border-radius: 6px; padding: 5px 20px 5px 5px; color: var(--primary); font-weight: bold;" 
+       placeholder="0" value="0" 
+       oninput="sync()" 
+       onclick="this.value=''"> 
+            <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--primary); font-weight: bold;">%</span>
+        </div>
+    </div>
+
+    <div style="text-align:right; font-weight:900; font-size:26px; color: var(--dark);">
+        <span style="font-size: 16px; color: #666; font-weight: normal; margin-right: 10px;">К ОПЛАТЕ:</span>
+        <span id="total-bottom">0</span> ₽
+    </div>
+</div>
+
 </div>
 
 <div class="footer no-print">
@@ -680,10 +698,16 @@ function sync() {
             </thead>
             <tbody>`;
             
-        state.forEach((item, i) => {
-            const p = item.k25 ? Math.round(item.p * 2.5) : item.p;
-            const s = p * item.qty;
-            total += s;
+                state.forEach((item, i) => {
+            const discountPercent = parseFloat(document.getElementById('inp-discount')?.value) || 0;
+            const basePrice = item.k25 ? Math.round(item.p * 2.5) : item.p;
+            const itemTotal = basePrice * item.qty;
+            
+            // Расчет со скидкой
+            const priceWithDiscount = Math.round(basePrice * (1 - discountPercent / 100));
+            const totalWithDiscount = Math.round(itemTotal * (1 - discountPercent / 100));
+            total += totalWithDiscount;
+
             html += `<tr>
                 <td>${i+1}</td>
                 <td style="font-size:12px;">${item.n}${item.k25 ? '<br><small style="color:red">x2.5</small>' : ''}</td>
@@ -691,8 +715,14 @@ function sync() {
                     <input type="number" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)">
                     <div style="font-size:10px; color:#999;">${item.u}</div>
                 </td>
-                <td style="white-space:nowrap;">${p} ₽</td>
-                <td style="font-weight:bold; white-space:nowrap;">${s.toLocaleString()} ₽</td>
+                <td style="white-space:nowrap;">
+                    ${discountPercent > 0 ? `<del style="color:gray; font-size:11px;">${basePrice}</del><br>` : ''}
+                    ${discountPercent > 0 ? priceWithDiscount : basePrice} ₽
+                </td>
+                <td style="font-weight:bold; white-space:nowrap;">
+                    ${discountPercent > 0 ? `<del style="color:gray; font-size:11px; font-weight:normal;">${itemTotal.toLocaleString()}</del><br>` : ''}
+                    ${totalWithDiscount.toLocaleString()} ₽
+                </td>
                 <td class="no-print">
                     <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
                         <input type="checkbox" ${item.k25 ? 'checked' : ''} onchange="toggleK(${i})">
@@ -704,16 +734,53 @@ function sync() {
         container.innerHTML = html + `</tbody></table>`;
     }
     
-    const formattedTotal = total.toLocaleString();
-    document.getElementById('total').innerText = formattedTotal;
-    document.getElementById('total-bottom').innerText = formattedTotal;
+        // СЧИТАЕМ ОРИГИНАЛЬНУЮ СУММУ БЕЗ СКИДКИ
+    let totalOriginal = 0;
+    state.forEach(item => {
+        const basePrice = item.k25 ? Math.round(item.p * 2.5) : item.p;
+        totalOriginal += basePrice * item.qty;
+    });
+
+    const discountPercent = parseFloat(document.getElementById('inp-discount')?.value) || 0;
+    const finalTotal = total; // Эта переменная уже содержит сумму со скидкой
+    
+    const formattedFinal = finalTotal.toLocaleString();
+    const formattedOriginal = totalOriginal.toLocaleString();
+
+    // Желтая сумма в плавающей панели
+    document.getElementById('total').innerText = formattedFinal;
+
+    // Сумма внизу сметы "К ОПЛАТЕ"
+    const bottomTotalEl = document.getElementById('total-bottom');
+    if (discountPercent > 0) {
+        bottomTotalEl.innerHTML = `
+            <del style="color: #999; font-size: 18px; font-weight: normal; margin-right: 10px;">${formattedOriginal} ₽</del>
+            <span style="color: #e53935;">${formattedFinal}</span>
+        `;
+    } else {
+        bottomTotalEl.innerHTML = `<span>${formattedFinal}</span>`;
+    }
+
     renderCatalog(document.getElementById('search').value);
 }
 
 function updateQty(i, v) { state[i].qty = parseFloat(v) || 0; sync(); }
 function remove(i) { state.splice(i, 1); sync(); }
 function toggleK(i) { state[i].k25 = !state[i].k25; sync(); }
-function resetSmeta() { if(confirm("Очистить?")) { state = []; sync(); } }
+function resetSmeta() { 
+    if (confirm("Очистить всю смету?")) {
+        state = []; // Очищаем список работ
+        
+        // СБРОС СКИДКИ
+        const discInp = document.getElementById('inp-discount');
+        if (discInp) {
+            discInp.value = 0; // Обнуляем поле визуально
+            localStorage.setItem('val_inp-discount', '0'); // Обнуляем в памяти
+        }
+
+        sync(); // Пересчитываем всё
+    }
+}
 
 // АРХИВ
 function saveToArchive() {
@@ -766,10 +833,22 @@ function addOneTimeItem() {
 }
 
 // АВТОЗАПОЛНЕНИЕ ПОЛЕЙ ПРИ СТАРТЕ
-['inp-client', 'inp-address', 'inp-master'].forEach(id => {
+['inp-client', 'inp-address', 'inp-master', 'inp-discount'].forEach(id => {
     const el = document.getElementById(id);
-    el.value = localStorage.getItem('val_'+id) || el.value;
-    el.oninput = () => localStorage.setItem('val_'+id, el.value);
+    if (el) {
+        // 1. Загружаем сохраненное значение из памяти
+        el.value = localStorage.getItem('val_' + id) || el.value;
+        
+        // 2. Вешаем обработчик ввода
+        el.oninput = () => {
+            localStorage.setItem('val_' + id, el.value);
+            
+            // ГЛАВНОЕ: если меняем скидку, вызываем функцию пересчета sync()
+            if (id === 'inp-discount') {
+                sync(); 
+            }
+        };
+    }
 });
 
 renderCatalog();
