@@ -773,20 +773,21 @@ function resetSmeta() {
         // 1. Очищаем список работ
         state = []; 
 
-        // 2. Список ID полей, которые нужно обнулить
+        // 2. ЗАКРЫВАЕМ ВСЕ РАЗДЕЛЫ КАТАЛОГА
+        openSections = {}; 
+
+        // 3. Список ID полей, которые нужно обнулить
         const fields = ['inp-client', 'inp-address', 'inp-discount'];
         
         fields.forEach(id => {
             const el = document.getElementById(id);
             if (el) {
-                // Ставим 0 для скидки и пустоту для текста
                 el.value = (id === 'inp-discount') ? '0' : '';
-                // Удаляем из памяти браузера
                 localStorage.setItem('val_' + id, el.value);
             }
         });
 
-        // 3. Синхронизируем экран (пересчет итогов и таблицы)
+        // 4. Синхронизируем экран и перерисовываем каталог (чтобы он свернулся)
         sync(); 
     }
 }
