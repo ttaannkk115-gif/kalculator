@@ -785,15 +785,18 @@ function resetSmeta() {
 // АРХИВ
 function saveToArchive() {
     if(!state.length) return;
-    const client = document.getElementById('inp-client').value;
-    // Достаем текущий процент скидки
+    const client = document.getElementById('inp-client').value || "Без имени";
     const discount = parseFloat(document.getElementById('inp-discount')?.value) || 0;
+    const total = document.getElementById('total').innerText; // Берем итого с экрана
+    const date = new Date().toLocaleDateString(); // Сегодняшняя дата
     
     archive.unshift({
         id: Date.now(), 
-        client, 
+        client: client, 
+        date: date,
+        total: total,
         state: JSON.parse(JSON.stringify(state)),
-        discount: discount // <--- СОХРАНЯЕМ СКИДКУ
+        discount: discount
     });
     
     localStorage.setItem('smeta_archive', JSON.stringify(archive));
@@ -802,26 +805,32 @@ function saveToArchive() {
 
 function renderArchive() {
     const list = document.getElementById('archive-list');
-    list.innerHTML = archive.length ? "" : "<p style='padding:10px;'>Архив пуст</p>";
+    list.innerHTML = archive.length ? "" : "<p style='padding:20px; text-align:center;'>Архив пуст</p>";
+    
     archive.forEach(a => {
-        list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee;">
-            <div onclick="loadArchive(${a.id})" style="cursor:pointer"><b>${a.client}</b><br><small>${a.date} — ${a.total} ₽</small></div>
-            <button onclick="delArch(${a.id})" style="color:red; border:none; background:none; font-size:18px;">🗑️</button>
+        list.innerHTML += `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee;">
+            <div onclick="loadArchive(${a.id})" style="cursor:pointer; flex-grow:1;">
+                <b style="color:var(--primary);">${a.client}</b><br>
+                <small style="color:#666;">${a.date || '---'} — <b>${a.total || 0} ₽</b></small>
+            </div>
+            <button onclick="delArch(${a.id})" style="border:none; background:none; font-size:20px; cursor:pointer;">🗑️</button>
         </div>`;
     });
 }
 
 function loadArchive(id) {
-    const entry = archive.find(x => x.id === id);
+    const entry = archive.find(x => x.id == id);
+    if(!entry) return;
+
     if(confirm(`Загрузить смету для ${entry.client}?`)) {
         state = JSON.parse(JSON.stringify(entry.state));
-        document.getElementById('inp-client').value = entry.client;
         
-        // ЗАГРУЖАЕМ СКИДКУ ИЗ АРХИВА
+        // Восстанавливаем данные
+        document.getElementById('inp-client').value = entry.client || '';
         const discInp = document.getElementById('inp-discount');
         if (discInp) {
-            // Если в старых записях скидки нет, ставим 0
-            discInp.value = entry.discount || 0; 
+            discInp.value = entry.discount || 0;
             localStorage.setItem('val_inp-discount', discInp.value);
         }
         
