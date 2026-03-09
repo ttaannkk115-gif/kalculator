@@ -769,17 +769,25 @@ function updateQty(i, v) { state[i].qty = parseFloat(v) || 0; sync(); }
 function remove(i) { state.splice(i, 1); sync(); }
 function toggleK(i) { state[i].k25 = !state[i].k25; sync(); }
 function resetSmeta() { 
-    if (confirm("Очистить всю смету?")) {
-        state = []; // Очищаем список работ
-        
-        // СБРОС СКИДКИ
-        const discInp = document.getElementById('inp-discount');
-        if (discInp) {
-            discInp.value = 0; // Обнуляем поле визуально
-            localStorage.setItem('val_inp-discount', '0'); // Обнуляем в памяти
-        }
+    if (confirm("Очистить всю смету и данные заказчика?")) {
+        // 1. Очищаем список работ
+        state = []; 
 
-        sync(); // Пересчитываем всё
+        // 2. Список ID полей, которые нужно обнулить
+        const fields = ['inp-client', 'inp-address', 'inp-discount'];
+        
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                // Ставим 0 для скидки и пустоту для текста
+                el.value = (id === 'inp-discount') ? '0' : '';
+                // Удаляем из памяти браузера
+                localStorage.setItem('val_' + id, el.value);
+            }
+        });
+
+        // 3. Синхронизируем экран (пересчет итогов и таблицы)
+        sync(); 
     }
 }
 
