@@ -702,17 +702,22 @@ function sync() {
             
                 state.forEach((item, i) => {
             const discountPercent = parseFloat(document.getElementById('inp-discount')?.value) || 0;
-            const basePrice = item.k25 ? Math.round(item.p * 2.5) : item.p;
+            let basePrice = item.p;
+if (item.k25) basePrice = Math.round(item.p * 2.5);
+if (item.isDemo) basePrice = Math.round(item.p * 0.5);
             const itemTotal = basePrice * item.qty;
             
             // Расчет со скидкой
             const priceWithDiscount = Math.round(basePrice * (1 - discountPercent / 100));
             const totalWithDiscount = Math.round(itemTotal * (1 - discountPercent / 100));
             total += totalWithDiscount;
-
+// Формируем название с пометкой ДЕМ
+let displayName = item.n;
+if (item.isDemo) displayName += ' <b style="color:orange;">(ДЕМ)</b>';
+if (item.k25) displayName += '<br><small style="color:red">x2.5</small>';
             html += `<tr>
                 <td>${i+1}</td>
-                <td style="font-size:12px;">${item.n}${item.k25 ? '<br><small style="color:red">x2.5</small>' : ''}</td>
+                <td style="font-size:12px;">${displayName}</td>
                 <td>
                     <input type="number" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)">
                     <div style="font-size:10px; color:#999;">${item.u}</div>
@@ -726,11 +731,20 @@ function sync() {
                     ${totalWithDiscount.toLocaleString()} ₽
                 </td>
                 <td class="no-print">
-                    <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
-                        <input type="checkbox" ${item.k25 ? 'checked' : ''} onchange="toggleK(${i})">
-                        <button style="color:red; border:none; background:none; font-size:18px;" onclick="remove(${i})">✕</button>
-                    </div>
-                </td>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+        <label style="font-size:9px; display:flex; flex-direction:column; align-items:center;">
+            <input type="checkbox" ${item.k25 ? 'checked' : ''} onchange="toggleK(${i})">
+            x2.5
+        </label>
+        
+        <label style="font-size:9px; color:orange; display:flex; flex-direction:column; align-items:center;">
+            <input type="checkbox" ${item.isDemo ? 'checked' : ''} onchange="toggleDemo(${i})">
+            0.5
+        </label>
+        
+        <button style="color:red; border:none; background:none; font-size:18px;" onclick="remove(${i})">✕</button>
+    </div>
+</td>
             </tr>`;
         });
         container.innerHTML = html + `</tbody></table>`;
@@ -739,7 +753,9 @@ function sync() {
         // СЧИТАЕМ ОРИГИНАЛЬНУЮ СУММУ БЕЗ СКИДКИ
     let totalOriginal = 0;
     state.forEach(item => {
-        const basePrice = item.k25 ? Math.round(item.p * 2.5) : item.p;
+        let basePrice = item.p;
+if (item.k25) basePrice = Math.round(item.p * 2.5);
+if (item.isDemo) basePrice = Math.round(item.p * 0.5);
         totalOriginal += basePrice * item.qty;
     });
 
@@ -769,6 +785,13 @@ function sync() {
 function updateQty(i, v) { state[i].qty = parseFloat(v) || 0; sync(); }
 function remove(i) { state.splice(i, 1); sync(); }
 function toggleK(i) { state[i].k25 = !state[i].k25; sync(); }
+function toggleDemo(i) { 
+    // Если демонтаж уже включен - выключаем, если нет - включаем
+    state[i].isDemo = !state[i].isDemo; 
+    // Если включили демонтаж (0.5), то выключаем коэффициент x2.5
+    if(state[i].isDemo) state[i].k25 = false; 
+    sync(); 
+}
 function resetSmeta() { 
     if (confirm("Очистить всю смету и данные заказчика?")) {
         // 1. Очищаем список работ
@@ -921,10 +944,14 @@ function showQuickSmeta() {
                 <div class="quick-info">
                     <div style="font-size:15px; font-weight:bold;">${item.n}</div>
                     <div style="font-size:13px; color:#666;">${p} ₽ × ${item.qty} ${item.u}</div>
-                    <button class="btn-coeff ${item.k25 ? 'active' : ''}" 
-                            onclick="toggleK(${i}); showQuickSmeta();">
-                        ${item.k25 ? '🔥 Коэфф. x2.5 ВКЛ' : 'Применить x2.5'}
-                    </button>
+                    <div style="display:flex; gap:5px; margin-top:5px;">
+    <button class="btn-coeff ${item.k25 ? 'active' : ''}" 
+            onclick="toggleK(${i}); showQuickSmeta();">x2.5</button>
+            
+    <button class="btn-coeff ${item.isDemo ? 'active' : ''}" 
+            style="${item.isDemo ? 'background:orange; border-color:darkorange;' : ''}"
+            onclick="toggleDemo(${i}); showQuickSmeta();">0.5 Дем</button>
+</div>
                 </div>
                 <div class="quick-controls">
                     <button class="btn-qty" onclick="if(state[${i}].qty > 1) { updateQty(${i}, state[${i}].qty - 1); } else { if(confirm('Удалить?')) remove(${i}); } showQuickSmeta();">−</button>
