@@ -795,13 +795,15 @@ function resetSmeta() {
 function saveToArchive() {
     if(!state.length) return;
     const client = document.getElementById('inp-client').value || "Без имени";
+    const address = document.getElementById('inp-address').value || "Адрес не указан";
     const discount = parseFloat(document.getElementById('inp-discount')?.value) || 0;
-    const total = document.getElementById('total').innerText; // Берем итого с экрана
-    const date = new Date().toLocaleDateString(); // Сегодняшняя дата
+    const total = document.getElementById('total').innerText;
+    const date = new Date().toLocaleDateString();
     
     archive.unshift({
         id: Date.now(), 
         client: client, 
+        address: address, // <--- Сохраняем адрес
         date: date,
         total: total,
         state: JSON.parse(JSON.stringify(state)),
@@ -821,7 +823,8 @@ function renderArchive() {
         <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee;">
             <div onclick="loadArchive(${a.id})" style="cursor:pointer; flex-grow:1;">
                 <b style="color:var(--primary);">${a.client}</b><br>
-                <small style="color:#666;">${a.date || '---'} — <b>${a.total || 0} ₽</b></small>
+                <small style="color:#202124; display:block; margin: 2px 0;">📍 ${a.address || '---'}</small>
+                <small style="color:#666;">${a.date} — <b>${a.total} ₽</b></small>
             </div>
             <button onclick="delArch(${a.id})" style="border:none; background:none; font-size:20px; cursor:pointer;">🗑️</button>
         </div>`;
@@ -835,13 +838,20 @@ function loadArchive(id) {
     if(confirm(`Загрузить смету для ${entry.client}?`)) {
         state = JSON.parse(JSON.stringify(entry.state));
         
-        // Восстанавливаем данные
+        // Восстанавливаем текстовые поля
         document.getElementById('inp-client').value = entry.client || '';
+        document.getElementById('inp-address').value = entry.address || ''; // <--- Загружаем адрес
+        
+        // Восстанавливаем скидку
         const discInp = document.getElementById('inp-discount');
         if (discInp) {
             discInp.value = entry.discount || 0;
             localStorage.setItem('val_inp-discount', discInp.value);
         }
+        
+        // Обновляем память для автозаполнения
+        localStorage.setItem('val_inp-client', entry.client || '');
+        localStorage.setItem('val_inp-address', entry.address || '');
         
         sync();
         toggleModal('modal-archive');
