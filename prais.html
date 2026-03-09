@@ -785,8 +785,17 @@ function resetSmeta() {
 // АРХИВ
 function saveToArchive() {
     if(!state.length) return;
-    const client = document.getElementById('inp-client').value || 'Без имени';
-    archive.unshift({id: Date.now(), client, total: document.getElementById('total').innerText, date: new Date().toLocaleString(), data: JSON.parse(JSON.stringify(state))});
+    const client = document.getElementById('inp-client').value;
+    // Достаем текущий процент скидки
+    const discount = parseFloat(document.getElementById('inp-discount')?.value) || 0;
+    
+    archive.unshift({
+        id: Date.now(), 
+        client, 
+        state: JSON.parse(JSON.stringify(state)),
+        discount: discount // <--- СОХРАНЯЕМ СКИДКУ
+    });
+    
     localStorage.setItem('smeta_archive', JSON.stringify(archive));
     alert("Сохранено в архив!");
 }
@@ -805,8 +814,17 @@ function renderArchive() {
 function loadArchive(id) {
     const entry = archive.find(x => x.id === id);
     if(confirm(`Загрузить смету для ${entry.client}?`)) {
-        state = JSON.parse(JSON.stringify(entry.data));
+        state = JSON.parse(JSON.stringify(entry.state));
         document.getElementById('inp-client').value = entry.client;
+        
+        // ЗАГРУЖАЕМ СКИДКУ ИЗ АРХИВА
+        const discInp = document.getElementById('inp-discount');
+        if (discInp) {
+            // Если в старых записях скидки нет, ставим 0
+            discInp.value = entry.discount || 0; 
+            localStorage.setItem('val_inp-discount', discInp.value);
+        }
+        
         sync();
         toggleModal('modal-archive');
     }
