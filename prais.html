@@ -163,20 +163,33 @@
 <div class="container">
     <div id="catalog" class="no-print" style="margin-bottom: 20px;"></div>
 
-    <div class="info-grid">
+    <div style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <div>
-            <div class="info-label">Заказчик</div>
-            <input type="text" id="inp-client" class="info-input" placeholder="Имя">
-            <div class="info-label" style="margin-top:10px">Адрес</div>
-            <input type="text" id="inp-address" class="info-input" placeholder="Объект">
+            <div class="info-label">Дата</div>
+            <div style="font-size: 16px; font-weight: bold; padding-top: 2px;">10.03.2026</div>
         </div>
         <div style="text-align: right;">
-            <div class="info-label">Дата</div>
-            <div style="font-size: 18px; font-weight: bold; padding: 4px 0;">02.03.2026</div>
-            <div class="info-label" style="margin-top:10px">Мастер</div>
+            <img src="IMG.jpeg" alt="QR" style="width: 55px; height: 55px; display: block; object-fit: cover; border: 1px solid #eee;">
+        </div>
+    </div>
+
+    <div style="display: flex; align-items: flex-end; gap: 15px;">
+        <div style="flex: 1.5; min-width: 100px;">
+            <div class="info-label">Заказчик</div>
+            <input type="text" id="inp-client" class="info-input" placeholder="Имя">
+        </div>
+        <div style="flex: 2.5; min-width: 120px;">
+            <div class="info-label">Адрес</div>
+            <input type="text" id="inp-address" class="info-input" placeholder="Объект">
+        </div>
+        <div style="flex: 1; min-width: 90px; text-align: right;">
+            <div class="info-label">Мастер</div>
             <input type="text" id="inp-master" class="info-input" style="text-align: right;" value="Master">
         </div>
     </div>
+</div>
 
     <div id="estimate"></div>
     <div style="margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px;">
