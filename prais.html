@@ -753,8 +753,8 @@ if (item.isDemo) basePrice = Math.round(item.p * 0.5);
             total += totalWithDiscount;
 // Формируем название с пометкой ДЕМ
 let displayName = item.n;
-if (item.isDemo) displayName += ' <b style="color:orange;">(ДЕМ)</b>';
-if (item.k25) displayName += '<br><small style="color:red">x2.5</small>';
+if (item.isDemo) displayName += ' <b style="color:orange;">(Демонтаж)</b>';
+if (item.k25) displayName += '<br><small style="color:red">(Надб. за слож. x2.5)</small>';
             html += `<tr>
                 <td>${i+1}</td>
                 <td style="font-size:12px;">${displayName}</td>
