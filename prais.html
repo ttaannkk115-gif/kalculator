@@ -209,20 +209,16 @@
     <div id="estimate"></div>
     <div style="margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px;">
     <div class="no-print" style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: 10px;">
-    <span class="info-label" style="margin: 0;">Ваша скидка:</span>
-    <div style="position: relative; width: 80px;">
-        <input type="number" 
-               id="inp-discount" 
-               class="info-input" 
-               inputmode="numeric"
-               style="text-align: center; border: 1px solid var(--primary); border-radius: 6px; padding: 5px 20px 5px 5px; color: var(--primary); font-weight: bold; -webkit-appearance: none;" 
-               placeholder="0" 
-               value="0" 
-               oninput="sync()" 
-               onclick="this.value=''"> 
-        <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--primary); font-weight: bold; pointer-events: none;">%</span>
+        <span class="info-label" style="margin: 0;">Ваша скидка:</span>
+        <div style="position: relative; width: 80px;">
+            <input type="number" id="inp-discount" class="info-input" 
+       style="text-align: center; border: 1px solid var(--primary); border-radius: 6px; padding: 5px 20px 5px 5px; color: var(--primary); font-weight: bold;" 
+       placeholder="0" value="0" 
+       oninput="sync()" 
+       onclick="this.value=''"> 
+            <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--primary); font-weight: bold;">%</span>
+        </div>
     </div>
-</div>
 
     <div style="text-align:right; font-weight:900; font-size:26px; color: var(--dark);">
         <span style="font-size: 16px; color: #666; font-weight: normal; margin-right: 10px;">К ОПЛАТЕ:</span>
