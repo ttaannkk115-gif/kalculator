@@ -698,33 +698,51 @@ function renderCatalog(filter = "") {
     list.innerHTML = "";
     const f = filter.toLowerCase().replace(/ё/g, 'е');
     
-    db.forEach(sec => {
+        db.forEach(sec => {
         const items = sec.items.filter(i => i.n.toLowerCase().replace(/ё/g, 'е').includes(f));
-        if (!items.length) return;
+        if (!items.length) return; 
+
+        // ИЗМЕНЕНО: Секция видна, если мы ищем (f.length > 0) ИЛИ она открыта вручную
+        const isVisible = (f.length > 0) || openSections[sec.cat];
         
-        const isVisible = openSections[sec.cat] || (f.length > 0);
         const box = document.createElement('div');
         box.className = 'section-box';
         
         let itemsHtml = items.map(i => {
             const currentItem = state.find(s => s.id === i.id && !s.k25);
             const count = currentItem ? currentItem.qty : 0;
+            
+            // ПОДСВЕТКА: выделяем найденное слово
+            let displayName = i.n;
+            if (f.length > 0) {
+                const regex = new RegExp(`(${f})`, 'gi');
+                displayName = i.n.replace(regex, '<mark style="background:#fff176;color:#000;padding:0 2px;border-radius:2px;">$1</mark>');
+            }
+
             return `
                 <div class="item-row">
-                    <div>${i.n}<br><small>${i.p} ₽ / ${i.u}</small></div>
+                    <div style="flex:1; padding-right:10px;">
+                        <div style="font-size:14px; line-height:1.2;">${displayName}</div>
+                        <small style="color:#666;">${i.p} ₽ / ${i.u}</small>
+                    </div>
                     <div style="display:flex; align-items:center;">
-                        <input type="number" class="catalog-qty" value="${count || ''}" placeholder="0" 
-                               onchange="manualUpdate('${i.id}', this.value)" onclick="event.stopPropagation()">
-                        <button class="btn" style="background:var(--success); color:white;" onclick="addItem('${i.id}')">+</button>
+                        <input type="number" class="catalog-qty" 
+                               value="${count || ''}" 
+                               placeholder="0" 
+                               onchange="manualUpdate('${i.id}', this.value)" 
+                               onclick="event.stopPropagation()">
+                        <button class="btn" style="background:var(--success); color:white; width:40px; height:40px;" onclick="addItem('${i.id}')">+</button>
                     </div>
                 </div>`;
         }).join('');
 
         box.innerHTML = `
-            <div class="section-header" onclick="toggleSec('${sec.cat}')">
-                ${sec.cat} <span>${isVisible ? '▲' : '▼'}</span>
+            <div class="section-header" onclick="toggleSec('${sec.cat}')" style="background:${f.length > 0 ? '#e8f0fe' : ''}">
+                <span style="flex:1">${sec.cat}</span>
+                <span>${isVisible ? '▲' : '▼'}</span>
             </div>
             <div class="section-content" style="display:${isVisible ? 'block' : 'none'}">${itemsHtml}</div>`;
+        
         list.appendChild(box);
     });
 }
