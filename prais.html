@@ -706,6 +706,12 @@ let state = JSON.parse(localStorage.getItem('smeta_current')) || [];
 let archive = JSON.parse(localStorage.getItem('smeta_archive')) || [];
 let openSections = {}; // Всегда пусто при загрузке (разделы закрыты)
 
+// Функция для того, чтобы поиск не различал Е и Ё
+const normalizeForSearch = (text) => {
+    if (!text) return "";
+    return text.toLowerCase().replace(/ё/g, 'е');
+};
+
 // ПОИСК
 function handleSearch(val) {
     document.getElementById('clear-btn').style.display = val.length > 0 ? 'flex' : 'none';
@@ -728,11 +734,12 @@ function renderCatalog(filter = "") {
     // 1. Создаем массив поисковых слов
     const searchWords = filter.toLowerCase().trim().split(/\s+/).filter(word => word.length > 0);
 
-    db.forEach(sec => {
-        // 2. Фильтруем элементы: название должно содержать КАЖДОЕ слово из поиска
+        db.forEach(sec => {
+        // Фильтруем элементы: нормализованное название товара содержит каждое слово из поиска
         const items = sec.items.filter(i => {
-            const itemName = i.n.toLowerCase();
-            return searchWords.every(word => itemName.includes(word));
+            if (searchWords.length === 0) return true;
+            const normalizedItemName = normalizeForSearch(i.n);
+            return searchWords.every(word => normalizedItemName.includes(word));
         });
 
         if (!items.length) return;
@@ -750,10 +757,12 @@ function renderCatalog(filter = "") {
 
             let displayName = i.n;
             
-            // 3. Умная подсветка каждого слова
+                        // Умная подсветка
             if (searchWords.length > 0) {
                 searchWords.forEach(word => {
-                    const regex = new RegExp(`(${word})`, 'gi');
+                    // Создаем регулярку: если в поиске 'е', она подсветит и 'е', и 'ё' в названии
+                    const pattern = word.replace(/е/g, '[её]');
+                    const regex = new RegExp(`(${pattern})`, 'gi');
                     displayName = displayName.replace(regex, '<mark>$1</mark>');
                 });
             }
