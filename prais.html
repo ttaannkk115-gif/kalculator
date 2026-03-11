@@ -824,12 +824,20 @@ if (item.isDemo) basePrice = Math.round(item.p * 0.5);
 
 function updateQty(i, v) { state[i].qty = parseFloat(v) || 0; sync(); }
 function remove(i) { state.splice(i, 1); sync(); }
-function toggleK(i) { state[i].k25 = !state[i].k25; sync(); }
+function toggleK(i) { 
+    state[i].k25 = !state[i].k25; 
+    // Если включили x2.5, то принудительно выключаем демонтаж
+    if (state[i].k25) {
+        state[i].isDemo = false;
+    }
+    sync(); 
+}
 function toggleDemo(i) { 
-    // Если демонтаж уже включен - выключаем, если нет - включаем
     state[i].isDemo = !state[i].isDemo; 
-    // Если включили демонтаж (0.5), то выключаем коэффициент x2.5
-    if(state[i].isDemo) state[i].k25 = false; 
+    // Если включили демонтаж (0.5), то принудительно выключаем x2.5
+    if (state[i].isDemo) {
+        state[i].k25 = false;
+    }
     sync(); 
 }
 function resetSmeta() { 
