@@ -163,7 +163,6 @@
 
 <div class="app-container">
     <div class="top-nav">
-        <button class="mini-btn" onclick="handleInstall()">📲 Установить</button>
         <button class="mini-btn" onclick="initNotifications()">🔔 Уведомления</button>
     </div>
 
@@ -361,7 +360,6 @@
     };
 
     function closeAdmin() { document.getElementById('admin-overlay').style.display = 'none'; }
-    function handleInstall() { if(/iPad|iPhone|iPod/.test(navigator.userAgent)) alert("Нажми 'Поделиться' -> На экран Домой"); else alert("Меню браузера -> Установить"); }
 
     window.onload = initApp;
 </script>
