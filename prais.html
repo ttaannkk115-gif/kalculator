@@ -170,7 +170,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <div>
             <div class="info-label">Дата</div>
-            <div style="font-size: 16px; font-weight: bold; padding-top: 2px;">10.03.2026</div>
+            <div id="current-date" style="font-size: 16px; font-weight: bold; padding-top: 2px;"></div>
         </div>
         
         <div style="display: flex; align-items: center; gap: 12px; text-align: right;">
@@ -1112,6 +1112,25 @@ function showQuickSmeta() {
     
     if (modal.style.display !== 'flex') toggleModal('modal-view-smeta');
 }
+// Автоматическая установка текущей даты при запуске
+document.addEventListener('DOMContentLoaded', () => {
+    const dateDisplay = document.getElementById('current-date');
+    if (dateDisplay) {
+        const now = new Date();
+        // Формат ДД.ММ.ГГГГ
+        dateDisplay.innerText = now.toLocaleDateString('ru-RU');
+    }
+});
+
+// Дополнительная проверка сохранения для всех полей VoltMaster
+['inp-client', 'inp-address', 'inp-master', 'inp-discount'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+        el.addEventListener('change', () => {
+            localStorage.setItem('val_' + id, el.value);
+        });
+    }
+});
 
 </script>
 </body>
