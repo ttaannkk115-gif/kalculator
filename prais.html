@@ -858,9 +858,20 @@ if (item.isDemo) basePrice = Math.round(item.p * 0.5);
             const itemTotal = basePrice * item.qty;
             
             // Расчет со скидкой
-            const priceWithDiscount = Math.round(basePrice * (1 - discountPercent / 100));
-            const totalWithDiscount = Math.round(itemTotal * (1 - discountPercent / 100));
-            total += totalWithDiscount;
+let priceWithDiscount, totalWithDiscount;
+
+if (basePrice > 0) {
+    // Если цена положительная — считаем скидку как обычно
+    priceWithDiscount = Math.round(basePrice * (1 - discountPercent / 100));
+    totalWithDiscount = Math.round(itemTotal * (1 - discountPercent / 100));
+} else {
+    // Если цена отрицательная (аванс) или 0 — скидка 0%
+    priceWithDiscount = basePrice;
+    totalWithDiscount = itemTotal;
+}
+
+total += totalWithDiscount;
+
 // Формируем название с пометкой ДЕМ
 let displayName = item.n;
 if (item.isDemo) displayName += ' <b style="color:orange;">(Демонтаж)</b>';
@@ -872,14 +883,14 @@ if (item.k25) displayName += '<br><small style="color:red">(Надб. за сл�
                     <input type="number" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)">
                     <div style="font-size:10px; color:#999;">${item.u}</div>
                 </td>
-                <td style="white-space:nowrap;">
-                    ${discountPercent > 0 ? `<del style="color:gray; font-size:11px;">${basePrice}</del><br>` : ''}
-                    ${discountPercent > 0 ? priceWithDiscount : basePrice} ₽
-                </td>
-                <td style="font-weight:bold; white-space:nowrap;">
-                    ${discountPercent > 0 ? `<del style="color:gray; font-size:11px; font-weight:normal;">${itemTotal.toLocaleString()}</del><br>` : ''}
-                    ${totalWithDiscount.toLocaleString()} ₽
-                </td>
+                <td style="white-space:nowrap">
+    ${(discountPercent > 0 && basePrice > 0) ? `<del style="color: #999; font-size: 0.8em;">${basePrice}</del><br>` : ''}
+    ${priceWithDiscount.toLocaleString()}
+</td>
+<td style="font-weight:bold;">
+    ${(discountPercent > 0 && basePrice > 0) ? `<del style="color: #999; font-weight: normal; font-size: 0.8em;">${itemTotal}</del><br>` : ''}
+    ${totalWithDiscount.toLocaleString()}
+</td>
                 <td class="no-print">
     <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
         <label style="font-size:9px; display:flex; flex-direction:column; align-items:center;">
