@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>VoltMaster Precision Zoom Fixed</title>
+    <title>VoltMaster Pro Full</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         :root { --bg-color: #000; --card-bg: #1a1a1a; --text-gold: #f1c40f; --danger: #ff3b30; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color); font-family: -apple-system, sans-serif; overflow: hidden; }
 
         #menu-screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; z-index: 2000; background: var(--bg-color); overflow-y: auto; }
-        .logo { font-size: 28px; font-weight: bold; color: var(--text-gold); margin-bottom: 30px; text-transform: uppercase; }
+        .logo { font-size: 28px; font-weight: bold; color: var(--text-gold); margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; }
         .file-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
         .file-item { background: var(--card-bg); padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #333; }
 
@@ -20,14 +20,8 @@
         .btn-close-top { color: var(--danger); font-size: 32px; font-weight: bold; cursor: pointer; }
 
         #zoom-area { position: absolute; top: 60px; bottom: 0; left: 0; right: 0; overflow: hidden; background: #fff; }
-        #viewer-wrapper { 
-            position: absolute; 
-            width: 100%; 
-            transform-origin: 0 0; /* Фиксированная точка для стабильных расчетов */
-            will-change: transform;
-        }
-        .page-container { width: 100%; background: #fff; margin-bottom: 2px; }
-        canvas { width: 100% !important; height: auto !important; display: block; }
+        #viewer-wrapper { position: absolute; width: 100%; transform-origin: 0 0; will-change: transform; }
+        canvas { width: 100% !important; height: auto !important; display: block; border-bottom: 2px solid #ddd; }
 
         .btn-action { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .btn-add { background: #3498db; color: white; }
@@ -59,18 +53,18 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     let activeSlot = null;
-    let currentPdfDoc = null;
+    let scale = 1, posX = 0, posY = 0;
+    let lastScale = 1, lastPosX = 0, lastPosY = 0;
+    let velocityY = 0, lastTouchY = 0, lastTouchTime = 0, animationId = null;
+    let touchType = null;
 
     const wrapper = document.getElementById('viewer-wrapper');
     const zoomArea = document.getElementById('zoom-area');
 
-    // Параметры состояния
-    let scale = 1;
-    let pointX = 0;
-    let pointY = 0;
-    let startTouches = [];
-
-    window.onload = createMenu;
+    // 1. ПРИ ЗАГРУЗКЕ — ВОССТАНАВЛИВАЕМ ДАННЫЕ
+    window.onload = () => {
+        createMenu();
+    };
 
     function createMenu() {
         const container = document.getElementById('slots-container');
@@ -91,16 +85,30 @@
     }
 
     function triggerInput(s) { activeSlot = s; document.getElementById('file-input').click(); }
-    function openSlot(s) { const d = localStorage.getItem('pdf_data_'+s); const n = localStorage.getItem('pdf_name_'+s); if(d) renderPDF(d, n); }
-    function deleteFile(s) { if(confirm("Удалить?")) { localStorage.removeItem('pdf_data_'+s); localStorage.removeItem('pdf_name_'+s); createMenu(); } }
+    
+    function openSlot(s) { 
+        const d = localStorage.getItem('pdf_data_'+s); 
+        const n = localStorage.getItem('pdf_name_'+s); 
+        if(d) renderPDF(d, n); 
+    }
+
+    function deleteFile(s) { 
+        if(confirm("Удалить файл из памяти?")) { 
+            localStorage.removeItem('pdf_data_'+s); 
+            localStorage.removeItem('pdf_name_'+s); 
+            createMenu(); 
+        } 
+    }
 
     document.getElementById('file-input').onchange = (e) => {
         const f = e.target.files[0]; if(!f) return;
         const r = new FileReader();
         r.onload = () => {
+            // 2. АВТОМАТИЧЕСКОЕ СОХРАНЕНИЕ В ПАМЯТЬ БРАУЗЕРА
             localStorage.setItem('pdf_data_'+activeSlot, r.result);
             localStorage.setItem('pdf_name_'+activeSlot, f.name);
-            createMenu(); renderPDF(r.result, f.name);
+            createMenu(); 
+            renderPDF(r.result, f.name);
         };
         r.readAsDataURL(f);
     };
@@ -110,92 +118,98 @@
         document.getElementById('viewer-container').style.display = 'block';
         document.getElementById('header-filename').innerText = filename;
         wrapper.innerHTML = '<div style="color:black; padding:20px;">Загрузка...</div>';
-        
-        // Сброс позиции
-        scale = 1; pointX = 0; pointY = 0;
+        scale = 1; posX = 0; posY = 0;
         updateTransform();
 
-        currentPdfDoc = await pdfjsLib.getDocument(data).promise;
+        const pdf = await pdfjsLib.getDocument(data).promise;
         wrapper.innerHTML = '';
-        for (let i = 1; i <= currentPdfDoc.numPages; i++) {
-            const page = await currentPdfDoc.getPage(i);
-            const vp = page.getViewport({ scale: 2.5 }); 
-            const container = document.createElement('div');
-            container.className = 'page-container';
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const vp = page.getViewport({ scale: 2.2 }); 
             const canvas = document.createElement('canvas');
             canvas.width = vp.width; canvas.height = vp.height;
-            container.appendChild(canvas);
-            wrapper.appendChild(container);
+            wrapper.appendChild(canvas);
             await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
         }
     }
 
-    // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ МАТЕМАТИКИ ЗУМА
-    function getDistance(t) {
-        return Math.hypot(t[0].pageX - t[1].pageX, t[0].pageY - t[1].pageY);
-    }
-
-    function getCenter(t) {
-        return {
-            x: (t[0].pageX + t[1].pageX) / 2,
-            y: (t[0].pageY + t[1].pageY) / 2
-        };
-    }
-
-    // ОБРАБОТЧИК ЖЕСТОВ
+    // ЛОГИКА ЖЕСТОВ С ИНЕРЦИЕЙ И ТОЧНЫМ ЗУМОМ
     zoomArea.addEventListener('touchstart', e => {
-        startTouches = Array.from(e.touches);
+        stopInertia();
+        if (e.touches.length === 2) {
+            touchType = 'zoom';
+            const t1 = e.touches[0], t2 = e.touches[1];
+            this.startDist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
+            this.startMidX = (t1.pageX + t2.pageX) / 2;
+            this.startMidY = (t1.pageY + t2.pageY) / 2;
+            lastScale = scale; lastPosX = posX; lastPosY = posY;
+        } else {
+            touchType = 'drag';
+            this.startX1 = e.touches[0].pageX - posX;
+            this.startY1 = e.touches[0].pageY - posY;
+            lastTouchY = e.touches[0].pageY;
+            lastTouchTime = Date.now();
+            velocityY = 0;
+        }
     });
 
     zoomArea.addEventListener('touchmove', e => {
         e.preventDefault();
-        const touches = Array.from(e.touches);
-
-        if (touches.length === 2 && startTouches.length === 2) {
-            // ЛОГИКА ЗУМА (ДВА ПАЛЬЦА)
-            const startDist = getDistance(startTouches);
-            const currDist = getDistance(touches);
-            const startCenter = getCenter(startTouches);
-            const currCenter = getCenter(touches);
-
-            const zoom = currDist / startDist;
-            const newScale = Math.min(Math.max(scale * zoom, 1), 10);
-
-            // Магия: вычисляем смещение так, чтобы точка под пальцами не двигалась
-            pointX = currCenter.x - (startCenter.x - pointX) * (newScale / scale);
-            pointY = currCenter.y - (startCenter.y - pointY) * (newScale / scale);
-            
-            scale = newScale;
-            updateTransform();
-        } else if (touches.length === 1 && startTouches.length === 1) {
-            // ЛОГИКА ПЕРЕМЕЩЕНИЯ (ОДИН ПАЛЕЦ)
-            const deltaX = touches[0].pageX - startTouches[0].pageX;
-            const deltaY = touches[0].pageY - startTouches[0].pageY;
-
-            pointX += deltaX;
-            pointY += deltaY;
-            updateTransform();
+        const now = Date.now();
+        if (touchType === 'zoom' && e.touches.length === 2) {
+            const t1 = e.touches[0], t2 = e.touches[1];
+            const dist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
+            const midX = (t1.pageX + t2.pageX) / 2;
+            const midY = (t1.pageY + t2.pageY) / 2;
+            scale = Math.min(Math.max(lastScale * (dist / this.startDist), 1), 10);
+            posX = midX - (this.startMidX - lastPosX) * (scale / lastScale);
+            posY = midY - (this.startMidY - lastPosY) * (scale / lastScale);
+        } else if (touchType === 'drag' && e.touches.length === 1) {
+            const currentY = e.touches[0].pageY;
+            const dt = now - lastTouchTime;
+            if (dt > 0) velocityY = (currentY - lastTouchY) / dt;
+            posX = e.touches[0].pageX - this.startX1;
+            posY = e.touches[0].pageY - this.startY1;
+            lastTouchY = currentY;
+            lastTouchTime = now;
         }
-        
-        startTouches = touches;
+        updateTransform();
     });
 
-    zoomArea.addEventListener('touchend', e => {
-        startTouches = Array.from(e.touches);
+    zoomArea.addEventListener('touchend', () => {
+        if (scale <= 1.05 && Math.abs(velocityY) > 0.1) startInertia();
+        if (scale < 1.05) { scale = 1; posX = 0; updateTransform(); }
+        touchType = null;
     });
+
+    function startInertia() {
+        const friction = 0.95;
+        function step() {
+            if (Math.abs(velocityY) < 0.01) return;
+            posY += velocityY * 16;
+            velocityY *= friction;
+            updateTransform();
+            animationId = requestAnimationFrame(step);
+        }
+        animationId = requestAnimationFrame(step);
+    }
+
+    function stopInertia() { cancelAnimationFrame(animationId); velocityY = 0; }
 
     function updateTransform() {
-        // Ограничение: не даем улетать слишком далеко в пустоту при уменьшении
-        if (scale === 1) {
-            pointX = Math.min(Math.max(pointX, -200), 200); // Небольшой люфт
+        if (scale <= 1.05) {
+            posX = 0;
+            if (posY > 0) { posY = 0; velocityY = 0; }
+            const limit = zoomArea.offsetHeight - wrapper.offsetHeight;
+            if (posY < limit && wrapper.offsetHeight > zoomArea.offsetHeight) { posY = limit; velocityY = 0; }
         }
-        wrapper.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+        wrapper.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
     }
 
     function closeViewer() {
         document.getElementById('menu-screen').style.display = 'flex';
         document.getElementById('viewer-container').style.display = 'none';
-        currentPdfDoc = null;
+        stopInertia();
     }
 </script>
 </body>
