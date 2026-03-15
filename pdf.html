@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>VoltMaster 5 Slots</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>VoltMaster 5 Slots Clean</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         :root { 
@@ -17,17 +17,17 @@
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
             background: var(--bg-color); font-family: -apple-system, sans-serif; 
-            color: white; overflow: hidden; 
+            color: white;
         }
 
         /* ГЛАВНОЕ МЕНЮ */
         #menu-screen { 
-            position: absolute; inset: 0; display: flex; flex-direction: column; 
+            position: fixed; inset: 0; display: flex; flex-direction: column; 
             align-items: center; padding: 40px 20px; z-index: 2000; 
             background: var(--bg-color); overflow-y: auto; 
         }
         
-        .logo { font-size: 28px; font-weight: bold; color: var(--text-gold); letter-spacing: 2px; margin-bottom: 30px; }
+        .logo { font-size: 28px; font-weight: bold; color: var(--text-gold); letter-spacing: 2px; margin-bottom: 30px; text-transform: uppercase; }
         .file-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
         
         .file-item { 
@@ -39,45 +39,33 @@
         .file-name-label { font-size: 14px; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
 
         /* ПРОСМОТРЩИК */
-        #viewer-container { display: none; position: absolute; inset: 0; z-index: 1000; background: #000; }
+        #viewer-container { display: none; min-height: 100vh; background: #000; position: relative; }
         
         /* ВЕРХНЯЯ ПАНЕЛЬ */
         .viewer-header {
             height: 60px; background: #000; display: flex; align-items: center;
-            justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #222;
+            justify-content: space-between; padding: 0 20px; 
+            position: sticky; top: 0; z-index: 4000; border-bottom: 1px solid #222;
         }
         
-        /* ДИНАМИЧЕСКИЙ ЗАГОЛОВОК */
         #header-filename { 
             color: var(--text-gold); font-weight: bold; font-size: 14px; 
             text-transform: uppercase; white-space: nowrap; overflow: hidden; 
-            text-overflow: ellipsis; max-width: 70%; 
+            text-overflow: ellipsis; max-width: 80%; 
         }
         
-        .btn-close-top { color: var(--danger); font-size: 30px; font-weight: bold; cursor: pointer; padding: 5px; }
-
-        /* ПОИСК */
-        #search-float {
-            position: fixed; top: 80px; right: 20px; width: 50px; height: 50px;
-            background: #3498db; border-radius: 50%; display: flex; align-items: center;
-            justify-content: center; z-index: 3000; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        #search-input-box {
-            position: fixed; top: 85px; right: 80px; display: none; z-index: 3001;
-        }
-        #search-input-box input {
-            padding: 10px 15px; border-radius: 20px; border: 1px solid #3498db; width: 160px; outline: none; background: white; color: black;
-        }
+        .btn-close-top { color: var(--danger); font-size: 32px; font-weight: bold; cursor: pointer; padding: 5px; }
 
         /* ОБЛАСТЬ PDF */
         #viewer-wrapper { 
-            width: 100%; height: calc(100% - 60px); overflow-y: auto; 
-            display: flex; flex-direction: column; align-items: center; background: #fff;
+            width: 100%; display: flex; flex-direction: column; align-items: center; background: #fff;
         }
-        .page-container { width: 100%; display: flex; justify-content: center; background: #fff; margin-bottom: 5px; }
-        canvas { width: 100% !important; height: auto !important; }
+        .page-container { 
+            width: 100%; display: flex; justify-content: center; background: #fff; margin-bottom: 2px;
+        }
+        canvas { max-width: 100%; height: auto !important; }
 
-        /* КНОПКИ ДЕЙСТВИЙ */
+        /* КНОПКИ УПРАВЛЕНИЯ В МЕНЮ */
         .btn-action { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .btn-add { background: var(--accent); color: white; }
         .btn-del { background: var(--danger); color: white; }
@@ -96,12 +84,6 @@
         <div id="header-filename">НАЗВАНИЕ ФАЙЛА</div>
         <div class="btn-close-top" onclick="closeViewer()">✕</div>
     </div>
-
-    <div id="search-input-box">
-        <input type="text" id="search-input" placeholder="Поиск...">
-    </div>
-    <div id="search-float" onclick="toggleSearch()">🔍</div>
-
     <div id="viewer-wrapper"></div>
 </div>
 
@@ -116,6 +98,7 @@
 
     window.onload = createMenu;
 
+    // Создание списка слотов
     function createMenu() {
         const container = document.getElementById('slots-container');
         container.innerHTML = '';
@@ -150,72 +133,62 @@
         } 
     }
 
-    function toggleSearch() {
-        const box = document.getElementById('search-input-box');
-        box.style.display = box.style.display === 'block' ? 'none' : 'block';
-        if(box.style.display === 'block') document.getElementById('search-input').focus();
-    }
-
-    document.getElementById('search-input').addEventListener('input', (e) => {
-        performSearch(e.target.value.toLowerCase().trim());
-    });
-
-    async function performSearch(query) {
-        if(!query || !currentPdfDoc) return;
-        for (let i = 1; i <= currentPdfDoc.numPages; i++) {
-            const page = await currentPdfDoc.getPage(i);
-            const text = await page.getTextContent();
-            if(text.items.map(s => s.str).join("").toLowerCase().includes(query)) {
-                document.getElementById('viewer-wrapper').children[i-1].scrollIntoView();
-                break;
-            }
-        }
-    }
-
+    // Загрузка файла
     document.getElementById('file-input').onchange = (e) => {
         const f = e.target.files[0]; if(!f) return;
         const r = new FileReader();
         r.onload = () => {
-            localStorage.setItem('pdf_data_'+activeSlot, r.result);
-            localStorage.setItem('pdf_name_'+activeSlot, f.name);
-            createMenu(); 
-            renderPDF(r.result, f.name);
+            try {
+                localStorage.setItem('pdf_data_'+activeSlot, r.result);
+                localStorage.setItem('pdf_name_'+activeSlot, f.name);
+                createMenu(); 
+                renderPDF(r.result, f.name);
+            } catch (err) {
+                alert("Память переполнена. Попробуйте файл меньшего размера.");
+            }
         };
         r.readAsDataURL(f);
     };
 
+    // Отрисовка PDF с поддержкой четкого зума
     async function renderPDF(data, filename) {
         document.getElementById('menu-screen').style.display = 'none';
         document.getElementById('viewer-container').style.display = 'block';
+        document.body.style.overflow = 'auto'; 
         
-        // УСТАНОВКА НАЗВАНИЯ В ХЕДЕР
         document.getElementById('header-filename').innerText = filename || "БЕЗ НАЗВАНИЯ";
         
         const wrapper = document.getElementById('viewer-wrapper');
-        wrapper.innerHTML = '<div style="color:black; padding:20px;">Загрузка страниц...</div>';
+        wrapper.innerHTML = '<div style="color:black; padding:20px;">Загрузка прайса...</div>';
         
-        currentPdfDoc = await pdfjsLib.getDocument(data).promise;
-        wrapper.innerHTML = '';
-        
-        for (let i = 1; i <= currentPdfDoc.numPages; i++) {
-            const page = await currentPdfDoc.getPage(i);
-            const vp = page.getViewport({ scale: 2 });
-            const container = document.createElement('div');
-            container.className = 'page-container';
-            const canvas = document.createElement('canvas');
-            canvas.width = vp.width; canvas.height = vp.height;
-            container.appendChild(canvas);
-            wrapper.appendChild(container);
-            await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+        try {
+            currentPdfDoc = await pdfjsLib.getDocument(data).promise;
+            wrapper.innerHTML = '';
+            
+            for (let i = 1; i <= currentPdfDoc.numPages; i++) {
+                const page = await currentPdfDoc.getPage(i);
+                const vp = page.getViewport({ scale: 2 }); // Высокое качество для зума
+                const container = document.createElement('div');
+                container.className = 'page-container';
+                const canvas = document.createElement('canvas');
+                canvas.width = vp.width; canvas.height = vp.height;
+                container.appendChild(canvas);
+                wrapper.appendChild(container);
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+            }
+        } catch (err) {
+            alert("Ошибка открытия файла");
+            closeViewer();
         }
     }
 
+    // Выход в меню
     function closeViewer() {
         document.getElementById('menu-screen').style.display = 'flex';
         document.getElementById('viewer-container').style.display = 'none';
+        document.body.style.overflow = 'hidden';
         currentPdfDoc = null;
-        document.getElementById('search-input').value = '';
-        document.getElementById('search-input-box').style.display = 'none';
+        window.scrollTo(0, 0);
     }
 </script>
 </body>
