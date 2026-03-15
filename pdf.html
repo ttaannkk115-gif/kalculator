@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>VoltMaster 5 Slots Search+</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        :root { --bg-color: #0b0b0b; --card-bg: #1a1a1a; --accent: #3498db; --danger: #e74c3c; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color); font-family: -apple-system, sans-serif; color: white; overflow: hidden; }
+
+        #menu-screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; z-index: 2000; background: var(--bg-color); overflow-y: auto; }
+        .logo { font-size: 28px; font-weight: bold; color: #f1c40f; letter-spacing: 2px; margin-bottom: 30px; text-transform: uppercase; }
+        .file-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
+        .file-item { background: var(--card-bg); padding: 15px; border-radius: 15px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #333; }
+        .file-info { display: flex; align-items: center; gap: 12px; flex: 1; cursor: pointer; }
+        .file-name { font-size: 14px; font-weight: 500; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
+        
+        #viewer-container { display: none; position: absolute; inset: 0; z-index: 1000; background: black; }
+        #viewer-wrapper { width: 100%; height: 100%; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+        .page-container { min-width: 100vw; height: 100dvh; display: flex; justify-content: center; align-items: center; scroll-snap-align: start; flex-shrink: 0; }
+        canvas { width: 100vw !important; height: auto !important; max-height: 100vh; object-fit: contain; }
+
+        #btn-back { position: fixed; bottom: 25px; left: 20px; width: 50px; height: 50px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 3000; backdrop-filter: blur(10px); color: white; font-size: 24px; }
+
+        /* Улучшенный поиск */
+        #search-container { position: fixed; top: 20px; right: 20px; z-index: 3000; display: flex; align-items: center; }
+        .search-box { position: relative; display: flex; align-items: center; }
+        #search-input { width: 0; opacity: 0; padding: 10px 35px 10px 15px; border-radius: 20px; border: none; transition: 0.3s; background: white; color: black; outline: none; }
+        #search-input.open { width: 180px; opacity: 1; margin-right: 10px; }
+        
+        /* Кнопка Х внутри поиска */
+        #clear-search { 
+            position: absolute; right: 20px; color: #999; font-size: 18px; font-weight: bold; 
+            display: none; cursor: pointer; padding: 5px; z-index: 3001;
+        }
+        
+        #search-btn { width: 45px; height: 45px; background: var(--accent); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; }
+
+        .btn-action { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .btn-add { background: var(--accent); color: white; }
+        .btn-del { background: var(--danger); color: white; }
+        #file-input { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="menu-screen">
+    <div class="logo">VOLTMASTER</div>
+    <div id="slots-container" class="file-list"></div>
+</div>
+
+<div id="viewer-container">
+    <div id="btn-back" onclick="closeViewer()">←</div>
+    <div id="search-container">
+        <div class="search-box">
+            <input type="text" id="search-input" placeholder="Поиск в файле...">
+            <div id="clear-search" onclick="clearSearch()">✕</div>
+        </div>
+        <div id="search-btn" onclick="toggleSearch()">🔍</div>
+    </div>
+    <div id="viewer-wrapper"></div>
+</div>
+
+<input type="file" id="file-input" accept="application/pdf">
+
+<script>
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    let activeSlot = null;
+    let currentPdfDoc = null;
+
+    window.onload = createMenu;
+
+    function createMenu() {
+        const container = document.getElementById('slots-container');
+        container.innerHTML = '';
+        for(let i=1; i<=5; i++) {
+            const name = localStorage.getItem('pdf_name_' + i);
+            container.innerHTML += `
+                <div class="file-item">
+                    <div class="file-info" onclick="openSlot(${i})">
+                        <div class="file-icon">📄</div>
+                        <div class="file-name">${name ? i + '. ' + name : i + '. Пустой слот'}</div>
+                    </div>
+                    <div class="controls">
+                        ${name ? `<div class="btn-action btn-del" onclick="deleteFile(${i})">✕</div>` : `<div class="btn-action btn-add" onclick="triggerInput(${i})">+</div>`}
+                    </div>
+                </div>`;
+        }
+    }
+
+    function triggerInput(s) { activeSlot = s; document.getElementById('file-input').click(); }
+    function openSlot(s) { const d = localStorage.getItem('pdf_data_'+s); if(d) renderPDF(d); }
+    function deleteFile(s) { if(confirm("Удалить?")) { localStorage.removeItem('pdf_data_'+s); localStorage.removeItem('pdf_name_'+s); createMenu(); } }
+
+    function toggleSearch() {
+        const input = document.getElementById('search-input');
+        input.classList.toggle('open');
+        if (input.classList.contains('open')) input.focus();
+    }
+
+    function clearSearch() {
+        const input = document.getElementById('search-input');
+        input.value = '';
+        input.focus();
+        document.getElementById('clear-search').style.display = 'none';
+    }
+
+    document.getElementById('search-input').addEventListener('input', (e) => {
+        document.getElementById('clear-search').style.display = e.target.value ? 'block' : 'none';
+        performSearch(e.target.value.toLowerCase().trim());
+    });
+
+    async function performSearch(query) {
+        if(!query || !currentPdfDoc) return;
+        for (let i = 1; i <= currentPdfDoc.numPages; i++) {
+            const page = await currentPdfDoc.getPage(i);
+            const text = await page.getTextContent();
+            if(text.items.map(s => s.str).join("").toLowerCase().includes(query)) {
+                document.getElementById('viewer-wrapper').children[i-1].scrollIntoView({ behavior: 'smooth' });
+                break;
+            }
+        }
+    }
+
+    document.getElementById('file-input').onchange = (e) => {
+        const f = e.target.files[0]; if(!f) return;
+        const r = new FileReader();
+        r.onload = () => {
+            localStorage.setItem('pdf_data_'+activeSlot, r.result);
+            localStorage.setItem('pdf_name_'+activeSlot, f.name);
+            createMenu(); renderPDF(r.result);
+        };
+        r.readAsDataURL(f);
+    };
+
+    async function renderPDF(data) {
+        document.getElementById('menu-screen').style.display = 'none';
+        document.getElementById('viewer-container').style.display = 'block';
+        const wrapper = document.getElementById('viewer-wrapper');
+        wrapper.innerHTML = 'Загрузка...';
+        currentPdfDoc = await pdfjsLib.getDocument(data).promise;
+        wrapper.innerHTML = '';
+        for (let i = 1; i <= currentPdfDoc.numPages; i++) {
+            const page = await currentPdfDoc.getPage(i);
+            const vp = page.getViewport({ scale: 2 });
+            const container = document.createElement('div');
+            container.className = 'page-container';
+            const canvas = document.createElement('canvas');
+            canvas.width = vp.width; canvas.height = vp.height;
+            container.appendChild(canvas);
+            wrapper.appendChild(container);
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+        }
+    }
+
+    function closeViewer() {
+        document.getElementById('menu-screen').style.display = 'flex';
+        document.getElementById('viewer-container').style.display = 'none';
+        currentPdfDoc = null;
+        clearSearch();
+    }
+</script>
+</body>
+</html>
