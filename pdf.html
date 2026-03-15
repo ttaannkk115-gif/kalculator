@@ -2,57 +2,32 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=yes">
-    <title>VoltMaster Super Zoom</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>VoltMaster Force Zoom</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pinch-zoom-js@2.3.5/dist/pinch-zoom.min.js"></script>
     <style>
         :root { --bg-color: #000; --card-bg: #1a1a1a; --text-gold: #f1c40f; --danger: #ff3b30; }
-        
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: var(--bg-color); font-family: -apple-system, sans-serif; 
-            overflow: hidden; 
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color); font-family: -apple-system, sans-serif; overflow: hidden; }
 
         /* МЕНЮ */
-        #menu-screen { 
-            position: fixed; inset: 0; display: flex; flex-direction: column; 
-            align-items: center; padding: 40px 20px; z-index: 2000; 
-            background: var(--bg-color); overflow-y: auto; 
-        }
-        
+        #menu-screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; z-index: 2000; background: var(--bg-color); overflow-y: auto; }
         .logo { font-size: 28px; font-weight: bold; color: var(--text-gold); margin-bottom: 30px; text-transform: uppercase; }
         .file-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
         .file-item { background: var(--card-bg); padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #333; }
-        
+
         /* ПРОСМОТРЩИК */
-        #viewer-container { 
-            display: none; position: fixed; inset: 0; 
-            background: #000; z-index: 3000; 
-        }
-        
-        .viewer-header {
-            height: 60px; background: #000; display: flex; align-items: center;
-            justify-content: space-between; padding: 0 20px; 
-            position: absolute; top: 0; left: 0; right: 0; z-index: 4001;
-            border-bottom: 1px solid #222;
-        }
-        
+        #viewer-container { display: none; position: fixed; inset: 0; background: #000; z-index: 3000; touch-action: none; }
+        .viewer-header { height: 60px; background: #000; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #222; position: relative; z-index: 4001; }
         #header-filename { color: var(--text-gold); font-weight: bold; font-size: 14px; text-transform: uppercase; }
         .btn-close-top { color: var(--danger); font-size: 32px; font-weight: bold; cursor: pointer; }
 
-        /* ОБЛАСТЬ ЗУМА */
-        #zoom-container {
-            position: absolute; top: 60px; bottom: 0; left: 0; right: 0;
-            overflow: hidden; background: #fff;
-        }
-
+        /* ЗОНА ДЛЯ ЖЕСТОВ */
+        #zoom-area { position: absolute; top: 60px; bottom: 0; left: 0; right: 0; overflow: hidden; background: #333; cursor: grab; }
         #viewer-wrapper { 
-            width: 100%; display: flex; flex-direction: column; align-items: center;
+            position: absolute; transform-origin: 0 0; width: 100%; 
+            transition: transform 0.05s linear; will-change: transform;
         }
-        
-        .page-container { width: 100%; background: #fff; }
+        .page-container { width: 100%; background: #fff; margin-bottom: 5px; }
         canvas { width: 100% !important; height: auto !important; display: block; }
 
         .btn-action { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -73,7 +48,7 @@
         <div id="header-filename">ФАЙЛ</div>
         <div class="btn-close-top" onclick="closeViewer()">✕</div>
     </div>
-    <div id="zoom-container">
+    <div id="zoom-area">
         <div id="viewer-wrapper"></div>
     </div>
 </div>
@@ -86,7 +61,13 @@
 
     let activeSlot = null;
     let currentPdfDoc = null;
-    let pz = null; // Переменная для PinchZoom
+
+    // Переменные для ручного зума
+    let scale = 1, lastScale = 1;
+    let posX = 0, posY = 0, lastPosX = 0, lastPosY = 0;
+    let startX = 0, startY = 0;
+    let isDragging = false;
+    let initialDist = 0;
 
     window.onload = createMenu;
 
@@ -109,19 +90,8 @@
     }
 
     function triggerInput(s) { activeSlot = s; document.getElementById('file-input').click(); }
-    function openSlot(s) { 
-        const d = localStorage.getItem('pdf_data_'+s); 
-        const n = localStorage.getItem('pdf_name_'+s);
-        if(d) renderPDF(d, n); 
-    }
-
-    function deleteFile(s) { 
-        if(confirm("Удалить?")) { 
-            localStorage.removeItem('pdf_data_'+s); 
-            localStorage.removeItem('pdf_name_'+s); 
-            createMenu(); 
-        } 
-    }
+    function openSlot(s) { const d = localStorage.getItem('pdf_data_'+s); const n = localStorage.getItem('pdf_name_'+s); if(d) renderPDF(d, n); }
+    function deleteFile(s) { if(confirm("Удалить?")) { localStorage.removeItem('pdf_data_'+s); localStorage.removeItem('pdf_name_'+s); createMenu(); } }
 
     document.getElementById('file-input').onchange = (e) => {
         const f = e.target.files[0]; if(!f) return;
@@ -140,14 +110,18 @@
         document.getElementById('header-filename').innerText = filename;
         
         const wrapper = document.getElementById('viewer-wrapper');
-        wrapper.innerHTML = '<div style="color:black; padding:20px;">Загрузка...</div>';
+        wrapper.innerHTML = '<div style="color:white; padding:20px;">Загрузка...</div>';
         
+        // Сброс позиции при открытии нового файла
+        scale = 1; posX = 0; posY = 0;
+        updateTransform();
+
         currentPdfDoc = await pdfjsLib.getDocument(data).promise;
         wrapper.innerHTML = '';
         
         for (let i = 1; i <= currentPdfDoc.numPages; i++) {
             const page = await currentPdfDoc.getPage(i);
-            const vp = page.getViewport({ scale: 3 }); 
+            const vp = page.getViewport({ scale: 2 }); 
             const container = document.createElement('div');
             container.className = 'page-container';
             const canvas = document.createElement('canvas');
@@ -156,21 +130,49 @@
             wrapper.appendChild(container);
             await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
         }
+    }
 
-        // Инициализируем PinchZoom после рендеринга всех страниц
-        if(pz) pz.destroy();
-        pz = new PinchZoom(document.getElementById('zoom-container'), {
-            draggableUnzoomed: false,
-            minZoom: 1,
-            maxZoom: 10
-        });
+    // РУЧНОЙ ДВИЖОК ЗУМА И ПЕРЕМЕЩЕНИЯ
+    const zoomArea = document.getElementById('zoom-area');
+    const wrapper = document.getElementById('viewer-wrapper');
+
+    zoomArea.addEventListener('touchstart', e => {
+        if (e.touches.length === 2) {
+            initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+        } else if (e.touches.length === 1) {
+            isDragging = true;
+            startX = e.touches[0].pageX - posX;
+            startY = e.touches[0].pageY - posY;
+        }
+    });
+
+    zoomArea.addEventListener('touchmove', e => {
+        e.preventDefault();
+        if (e.touches.length === 2) {
+            const currentDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            const zoomChange = currentDist / initialDist;
+            scale = Math.min(Math.max(lastScale * zoomChange, 1), 6);
+            updateTransform();
+        } else if (e.touches.length === 1 && isDragging) {
+            posX = e.touches[0].pageX - startX;
+            posY = e.touches[0].pageY - startY;
+            updateTransform();
+        }
+    });
+
+    zoomArea.addEventListener('touchend', () => {
+        isDragging = false;
+        lastScale = scale;
+    });
+
+    function updateTransform() {
+        wrapper.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
     }
 
     function closeViewer() {
         document.getElementById('menu-screen').style.display = 'flex';
         document.getElementById('viewer-container').style.display = 'none';
         currentPdfDoc = null;
-        if(pz) pz.destroy();
     }
 </script>
 </body>
