@@ -2,18 +2,17 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=yes, viewport-fit=cover">
-    <title>VoltMaster Pro Zoom</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=yes">
+    <title>VoltMaster Super Zoom</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pinch-zoom-js@2.3.5/dist/pinch-zoom.min.js"></script>
     <style>
         :root { --bg-color: #000; --card-bg: #1a1a1a; --text-gold: #f1c40f; --danger: #ff3b30; }
         
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
             background: var(--bg-color); font-family: -apple-system, sans-serif; 
-            color: white; 
-            /* Позволяем браузеру обрабатывать жесты */
-            touch-action: manipulation; 
+            overflow: hidden; 
         }
 
         /* МЕНЮ */
@@ -26,56 +25,35 @@
         .logo { font-size: 28px; font-weight: bold; color: var(--text-gold); margin-bottom: 30px; text-transform: uppercase; }
         .file-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
         .file-item { background: var(--card-bg); padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #333; }
-        .file-name-label { font-size: 14px; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
-
+        
         /* ПРОСМОТРЩИК */
         #viewer-container { 
-            display: none; 
-            position: absolute; 
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; 
-            z-index: 3000;
+            display: none; position: fixed; inset: 0; 
+            background: #000; z-index: 3000; 
         }
         
-        /* Фиксированная шапка, которая не зумится вместе с контентом */
         .viewer-header {
             height: 60px; background: #000; display: flex; align-items: center;
             justify-content: space-between; padding: 0 20px; 
-            position: fixed; top: 0; left: 0; right: 0; z-index: 4001;
+            position: absolute; top: 0; left: 0; right: 0; z-index: 4001;
             border-bottom: 1px solid #222;
         }
         
         #header-filename { color: var(--text-gold); font-weight: bold; font-size: 14px; text-transform: uppercase; }
-        .btn-close-top { color: var(--danger); font-size: 32px; font-weight: bold; cursor: pointer; padding: 5px; }
+        .btn-close-top { color: var(--danger); font-size: 32px; font-weight: bold; cursor: pointer; }
 
-        /* Область скролла и зума */
-        #viewer-scroll-area {
-            position: absolute;
-            top: 60px; bottom: 0; left: 0; right: 0;
-            overflow: auto;
-            -webkit-overflow-scrolling: touch;
-            background: #fff;
+        /* ОБЛАСТЬ ЗУМА */
+        #zoom-container {
+            position: absolute; top: 60px; bottom: 0; left: 0; right: 0;
+            overflow: hidden; background: #fff;
         }
 
         #viewer-wrapper { 
-            width: 100%; 
-            min-height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            width: 100%; display: flex; flex-direction: column; align-items: center;
         }
         
-        .page-container { 
-            width: 100%; 
-            background: #fff;
-            margin-bottom: 2px;
-        }
-        
-        canvas { 
-            width: 100% !important; 
-            height: auto !important;
-            display: block;
-        }
+        .page-container { width: 100%; background: #fff; }
+        canvas { width: 100% !important; height: auto !important; display: block; }
 
         .btn-action { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .btn-add { background: #3498db; color: white; }
@@ -95,7 +73,7 @@
         <div id="header-filename">ФАЙЛ</div>
         <div class="btn-close-top" onclick="closeViewer()">✕</div>
     </div>
-    <div id="viewer-scroll-area">
+    <div id="zoom-container">
         <div id="viewer-wrapper"></div>
     </div>
 </div>
@@ -108,6 +86,7 @@
 
     let activeSlot = null;
     let currentPdfDoc = null;
+    let pz = null; // Переменная для PinchZoom
 
     window.onload = createMenu;
 
@@ -120,7 +99,7 @@
                 <div class="file-item">
                     <div class="file-info" style="flex:1; display:flex; align-items:center; gap:10px;" onclick="openSlot(${i})">
                         <span style="color:var(--text-gold)">${i}.</span>
-                        <div class="file-name-label">${name ? name : 'Пустой слот'}</div>
+                        <div style="font-size:14px;color:#eee;">${name ? name : 'Пустой слот'}</div>
                     </div>
                     <div class="controls">
                         ${name ? `<div class="btn-action btn-del" onclick="deleteFile(${i})">✕</div>` : `<div class="btn-action btn-add" onclick="triggerInput(${i})">+</div>`}
@@ -130,7 +109,6 @@
     }
 
     function triggerInput(s) { activeSlot = s; document.getElementById('file-input').click(); }
-
     function openSlot(s) { 
         const d = localStorage.getItem('pdf_data_'+s); 
         const n = localStorage.getItem('pdf_name_'+s);
@@ -138,7 +116,7 @@
     }
 
     function deleteFile(s) { 
-        if(confirm("Удалить файл?")) { 
+        if(confirm("Удалить?")) { 
             localStorage.removeItem('pdf_data_'+s); 
             localStorage.removeItem('pdf_name_'+s); 
             createMenu(); 
@@ -164,34 +142,35 @@
         const wrapper = document.getElementById('viewer-wrapper');
         wrapper.innerHTML = '<div style="color:black; padding:20px;">Загрузка...</div>';
         
-        try {
-            currentPdfDoc = await pdfjsLib.getDocument(data).promise;
-            wrapper.innerHTML = '';
-            
-            for (let i = 1; i <= currentPdfDoc.numPages; i++) {
-                const page = await currentPdfDoc.getPage(i);
-                // Повышаем scale до 4 для супер-четкости при увеличении
-                const vp = page.getViewport({ scale: 4 }); 
-                const container = document.createElement('div');
-                container.className = 'page-container';
-                const canvas = document.createElement('canvas');
-                canvas.width = vp.width; canvas.height = vp.height;
-                container.appendChild(canvas);
-                wrapper.appendChild(container);
-                await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-            }
-        } catch (err) {
-            alert("Ошибка PDF");
-            closeViewer();
+        currentPdfDoc = await pdfjsLib.getDocument(data).promise;
+        wrapper.innerHTML = '';
+        
+        for (let i = 1; i <= currentPdfDoc.numPages; i++) {
+            const page = await currentPdfDoc.getPage(i);
+            const vp = page.getViewport({ scale: 3 }); 
+            const container = document.createElement('div');
+            container.className = 'page-container';
+            const canvas = document.createElement('canvas');
+            canvas.width = vp.width; canvas.height = vp.height;
+            container.appendChild(canvas);
+            wrapper.appendChild(container);
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
         }
+
+        // Инициализируем PinchZoom после рендеринга всех страниц
+        if(pz) pz.destroy();
+        pz = new PinchZoom(document.getElementById('zoom-container'), {
+            draggableUnzoomed: false,
+            minZoom: 1,
+            maxZoom: 10
+        });
     }
 
     function closeViewer() {
         document.getElementById('menu-screen').style.display = 'flex';
         document.getElementById('viewer-container').style.display = 'none';
         currentPdfDoc = null;
-        // Сброс скролла области просмотра
-        document.getElementById('viewer-scroll-area').scrollTop = 0;
+        if(pz) pz.destroy();
     }
 </script>
 </body>
