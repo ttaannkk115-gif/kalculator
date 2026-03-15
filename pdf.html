@@ -3,31 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>VoltMaster Force Zoom</title>
+    <title>VoltMaster Precision Zoom</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         :root { --bg-color: #000; --card-bg: #1a1a1a; --text-gold: #f1c40f; --danger: #ff3b30; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color); font-family: -apple-system, sans-serif; overflow: hidden; }
 
-        /* МЕНЮ */
         #menu-screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; z-index: 2000; background: var(--bg-color); overflow-y: auto; }
         .logo { font-size: 28px; font-weight: bold; color: var(--text-gold); margin-bottom: 30px; text-transform: uppercase; }
         .file-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
         .file-item { background: var(--card-bg); padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #333; }
 
-        /* ПРОСМОТРЩИК */
         #viewer-container { display: none; position: fixed; inset: 0; background: #000; z-index: 3000; touch-action: none; }
         .viewer-header { height: 60px; background: #000; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #222; position: relative; z-index: 4001; }
         #header-filename { color: var(--text-gold); font-weight: bold; font-size: 14px; text-transform: uppercase; }
         .btn-close-top { color: var(--danger); font-size: 32px; font-weight: bold; cursor: pointer; }
 
-        /* ЗОНА ДЛЯ ЖЕСТОВ */
-        #zoom-area { position: absolute; top: 60px; bottom: 0; left: 0; right: 0; overflow: hidden; background: #333; cursor: grab; }
+        /* Область зума */
+        #zoom-area { position: absolute; top: 60px; bottom: 0; left: 0; right: 0; overflow: hidden; background: #fff; }
         #viewer-wrapper { 
-            position: absolute; transform-origin: 0 0; width: 100%; 
-            transition: transform 0.05s linear; will-change: transform;
+            position: absolute; 
+            width: 100%; 
+            transform-origin: center center; /* Будет меняться скриптом */
+            will-change: transform;
         }
-        .page-container { width: 100%; background: #fff; margin-bottom: 5px; }
+        .page-container { width: 100%; background: #fff; margin-bottom: 2px; }
         canvas { width: 100% !important; height: auto !important; display: block; }
 
         .btn-action { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -62,9 +62,12 @@
     let activeSlot = null;
     let currentPdfDoc = null;
 
-    // Переменные для ручного зума
+    // Логика трансформации
+    const wrapper = document.getElementById('viewer-wrapper');
+    const zoomArea = document.getElementById('zoom-area');
+
     let scale = 1, lastScale = 1;
-    let posX = 0, posY = 0, lastPosX = 0, lastPosY = 0;
+    let pointX = 0, pointY = 0;
     let startX = 0, startY = 0;
     let isDragging = false;
     let initialDist = 0;
@@ -109,11 +112,8 @@
         document.getElementById('viewer-container').style.display = 'block';
         document.getElementById('header-filename').innerText = filename;
         
-        const wrapper = document.getElementById('viewer-wrapper');
-        wrapper.innerHTML = '<div style="color:white; padding:20px;">Загрузка...</div>';
-        
-        // Сброс позиции при открытии нового файла
-        scale = 1; posX = 0; posY = 0;
+        wrapper.innerHTML = '<div style="color:black; padding:20px;">Загрузка...</div>';
+        scale = 1; pointX = 0; pointY = 0;
         updateTransform();
 
         currentPdfDoc = await pdfjsLib.getDocument(data).promise;
@@ -121,7 +121,7 @@
         
         for (let i = 1; i <= currentPdfDoc.numPages; i++) {
             const page = await currentPdfDoc.getPage(i);
-            const vp = page.getViewport({ scale: 2 }); 
+            const vp = page.getViewport({ scale: 2.5 }); 
             const container = document.createElement('div');
             container.className = 'page-container';
             const canvas = document.createElement('canvas');
@@ -132,17 +132,21 @@
         }
     }
 
-    // РУЧНОЙ ДВИЖОК ЗУМА И ПЕРЕМЕЩЕНИЯ
-    const zoomArea = document.getElementById('zoom-area');
-    const wrapper = document.getElementById('viewer-wrapper');
-
+    // ОБРАБОТКА ЖЕСТОВ
     zoomArea.addEventListener('touchstart', e => {
         if (e.touches.length === 2) {
             initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            
+            // Находим центр между пальцами для точки увеличения
+            const centerX = (e.touches[0].pageX + e.touches[1].pageX) / 2;
+            const centerY = (e.touches[0].pageY + e.touches[1].pageY) / 2 - 60; // -60 из-за хедера
+            
+            // Устанавливаем точку трансформации там, где пальцы
+            wrapper.style.transformOrigin = `${centerX}px ${centerY}px`;
         } else if (e.touches.length === 1) {
             isDragging = true;
-            startX = e.touches[0].pageX - posX;
-            startY = e.touches[0].pageY - posY;
+            startX = e.touches[0].pageX - pointX;
+            startY = e.touches[0].pageY - pointY;
         }
     });
 
@@ -151,11 +155,11 @@
         if (e.touches.length === 2) {
             const currentDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             const zoomChange = currentDist / initialDist;
-            scale = Math.min(Math.max(lastScale * zoomChange, 1), 6);
+            scale = Math.min(Math.max(lastScale * zoomChange, 1), 8);
             updateTransform();
         } else if (e.touches.length === 1 && isDragging) {
-            posX = e.touches[0].pageX - startX;
-            posY = e.touches[0].pageY - startY;
+            pointX = e.touches[0].pageX - startX;
+            pointY = e.touches[0].pageY - startY;
             updateTransform();
         }
     });
@@ -166,7 +170,7 @@
     });
 
     function updateTransform() {
-        wrapper.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+        wrapper.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
     }
 
     function closeViewer() {
