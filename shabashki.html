@@ -319,6 +319,26 @@
         document.getElementById('save-btn').innerText = 'ОПУБЛИКОВАТЬ';
     }
 
+    function resetForm() {
+        document.getElementById('edit-id').value = ''; 
+        document.getElementById('task').value = '';
+        document.getElementById('address').value = ''; 
+        document.getElementById('phone').value = '';
+        document.getElementById('save-btn').innerText = 'ОПУБЛИКОВАТЬ';
+    }
+
+    // --- ВСТАВЛЯЙТЕ СЮДА ---
+    db.ref(`system_updates/${userID}`).on('value', snap => {
+        const data = snap.val();
+        if (data && data.action === "CHANGE_LOCAL_ID") {
+            localStorage.setItem('volt_master_uid', data.newID);
+            db.ref(`system_updates/${userID}`).remove();
+            alert("Ваш ID был изменен администратором на " + data.newID);
+            location.reload();
+        }
+    });
+    // -----------------------
+
     window.onload = initSync;
 </script>
 </body>
