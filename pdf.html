@@ -3,40 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>VoltMaster 5 Slots Search+</title>
+    <title>VoltMaster 5 Slots</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        :root { --bg-color: #0b0b0b; --card-bg: #1a1a1a; --accent: #3498db; --danger: #e74c3c; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color); font-family: -apple-system, sans-serif; color: white; overflow: hidden; }
-
-        #menu-screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; z-index: 2000; background: var(--bg-color); overflow-y: auto; }
-        .logo { font-size: 28px; font-weight: bold; color: #f1c40f; letter-spacing: 2px; margin-bottom: 30px; text-transform: uppercase; }
-        .file-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
-        .file-item { background: var(--card-bg); padding: 15px; border-radius: 15px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #333; }
-        .file-info { display: flex; align-items: center; gap: 12px; flex: 1; cursor: pointer; }
-        .file-name { font-size: 14px; font-weight: 500; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
-        
-        #viewer-container { display: none; position: absolute; inset: 0; z-index: 1000; background: black; }
-        #viewer-wrapper { width: 100%; height: 100%; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
-        .page-container { min-width: 100vw; height: 100dvh; display: flex; justify-content: center; align-items: center; scroll-snap-align: start; flex-shrink: 0; }
-        canvas { width: 100vw !important; height: auto !important; max-height: 100vh; object-fit: contain; }
-
-        #btn-back { position: fixed; bottom: 25px; left: 20px; width: 50px; height: 50px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 3000; backdrop-filter: blur(10px); color: white; font-size: 24px; }
-
-        /* Улучшенный поиск */
-        #search-container { position: fixed; top: 20px; right: 20px; z-index: 3000; display: flex; align-items: center; }
-        .search-box { position: relative; display: flex; align-items: center; }
-        #search-input { width: 0; opacity: 0; padding: 10px 35px 10px 15px; border-radius: 20px; border: none; transition: 0.3s; background: white; color: black; outline: none; }
-        #search-input.open { width: 180px; opacity: 1; margin-right: 10px; }
-        
-        /* Кнопка Х внутри поиска */
-        #clear-search { 
-            position: absolute; right: 20px; color: #999; font-size: 18px; font-weight: bold; 
-            display: none; cursor: pointer; padding: 5px; z-index: 3001;
+        :root { 
+            --bg-color: #000000; 
+            --card-bg: #1a1a1a; 
+            --accent: #3498db; 
+            --danger: #ff3b30; 
+            --text-gold: #f1c40f;
         }
         
-        #search-btn { width: 45px; height: 45px; background: var(--accent); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: var(--bg-color); font-family: -apple-system, sans-serif; 
+            color: white; overflow: hidden; 
+        }
 
+        /* ГЛАВНОЕ МЕНЮ */
+        #menu-screen { 
+            position: absolute; inset: 0; display: flex; flex-direction: column; 
+            align-items: center; padding: 40px 20px; z-index: 2000; 
+            background: var(--bg-color); overflow-y: auto; 
+        }
+        
+        .logo { font-size: 28px; font-weight: bold; color: var(--text-gold); letter-spacing: 2px; margin-bottom: 30px; }
+        .file-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
+        
+        .file-item { 
+            background: var(--card-bg); padding: 15px; border-radius: 12px; 
+            display: flex; align-items: center; justify-content: space-between; 
+            border: 1px solid #333;
+        }
+        
+        .file-name-label { font-size: 14px; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+
+        /* ПРОСМОТРЩИК */
+        #viewer-container { display: none; position: absolute; inset: 0; z-index: 1000; background: #000; }
+        
+        /* ВЕРХНЯЯ ПАНЕЛЬ */
+        .viewer-header {
+            height: 60px; background: #000; display: flex; align-items: center;
+            justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #222;
+        }
+        
+        /* ДИНАМИЧЕСКИЙ ЗАГОЛОВОК */
+        #header-filename { 
+            color: var(--text-gold); font-weight: bold; font-size: 14px; 
+            text-transform: uppercase; white-space: nowrap; overflow: hidden; 
+            text-overflow: ellipsis; max-width: 70%; 
+        }
+        
+        .btn-close-top { color: var(--danger); font-size: 30px; font-weight: bold; cursor: pointer; padding: 5px; }
+
+        /* ПОИСК */
+        #search-float {
+            position: fixed; top: 80px; right: 20px; width: 50px; height: 50px;
+            background: #3498db; border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; z-index: 3000; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        #search-input-box {
+            position: fixed; top: 85px; right: 80px; display: none; z-index: 3001;
+        }
+        #search-input-box input {
+            padding: 10px 15px; border-radius: 20px; border: 1px solid #3498db; width: 160px; outline: none; background: white; color: black;
+        }
+
+        /* ОБЛАСТЬ PDF */
+        #viewer-wrapper { 
+            width: 100%; height: calc(100% - 60px); overflow-y: auto; 
+            display: flex; flex-direction: column; align-items: center; background: #fff;
+        }
+        .page-container { width: 100%; display: flex; justify-content: center; background: #fff; margin-bottom: 5px; }
+        canvas { width: 100% !important; height: auto !important; }
+
+        /* КНОПКИ ДЕЙСТВИЙ */
         .btn-action { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .btn-add { background: var(--accent); color: white; }
         .btn-del { background: var(--danger); color: white; }
@@ -51,14 +92,16 @@
 </div>
 
 <div id="viewer-container">
-    <div id="btn-back" onclick="closeViewer()">←</div>
-    <div id="search-container">
-        <div class="search-box">
-            <input type="text" id="search-input" placeholder="Поиск в файле...">
-            <div id="clear-search" onclick="clearSearch()">✕</div>
-        </div>
-        <div id="search-btn" onclick="toggleSearch()">🔍</div>
+    <div class="viewer-header">
+        <div id="header-filename">НАЗВАНИЕ ФАЙЛА</div>
+        <div class="btn-close-top" onclick="closeViewer()">✕</div>
     </div>
+
+    <div id="search-input-box">
+        <input type="text" id="search-input" placeholder="Поиск...">
+    </div>
+    <div id="search-float" onclick="toggleSearch()">🔍</div>
+
     <div id="viewer-wrapper"></div>
 </div>
 
@@ -80,9 +123,9 @@
             const name = localStorage.getItem('pdf_name_' + i);
             container.innerHTML += `
                 <div class="file-item">
-                    <div class="file-info" onclick="openSlot(${i})">
-                        <div class="file-icon">📄</div>
-                        <div class="file-name">${name ? i + '. ' + name : i + '. Пустой слот'}</div>
+                    <div class="file-info" style="flex:1; display:flex; align-items:center; gap:10px;" onclick="openSlot(${i})">
+                        <span style="color:var(--text-gold)">${i}.</span>
+                        <div class="file-name-label">${name ? name : 'Пустой слот'}</div>
                     </div>
                     <div class="controls">
                         ${name ? `<div class="btn-action btn-del" onclick="deleteFile(${i})">✕</div>` : `<div class="btn-action btn-add" onclick="triggerInput(${i})">+</div>`}
@@ -92,24 +135,28 @@
     }
 
     function triggerInput(s) { activeSlot = s; document.getElementById('file-input').click(); }
-    function openSlot(s) { const d = localStorage.getItem('pdf_data_'+s); if(d) renderPDF(d); }
-    function deleteFile(s) { if(confirm("Удалить?")) { localStorage.removeItem('pdf_data_'+s); localStorage.removeItem('pdf_name_'+s); createMenu(); } }
 
-    function toggleSearch() {
-        const input = document.getElementById('search-input');
-        input.classList.toggle('open');
-        if (input.classList.contains('open')) input.focus();
+    function openSlot(s) { 
+        const d = localStorage.getItem('pdf_data_'+s); 
+        const n = localStorage.getItem('pdf_name_'+s);
+        if(d) renderPDF(d, n); 
     }
 
-    function clearSearch() {
-        const input = document.getElementById('search-input');
-        input.value = '';
-        input.focus();
-        document.getElementById('clear-search').style.display = 'none';
+    function deleteFile(s) { 
+        if(confirm("Удалить файл?")) { 
+            localStorage.removeItem('pdf_data_'+s); 
+            localStorage.removeItem('pdf_name_'+s); 
+            createMenu(); 
+        } 
+    }
+
+    function toggleSearch() {
+        const box = document.getElementById('search-input-box');
+        box.style.display = box.style.display === 'block' ? 'none' : 'block';
+        if(box.style.display === 'block') document.getElementById('search-input').focus();
     }
 
     document.getElementById('search-input').addEventListener('input', (e) => {
-        document.getElementById('clear-search').style.display = e.target.value ? 'block' : 'none';
         performSearch(e.target.value.toLowerCase().trim());
     });
 
@@ -119,7 +166,7 @@
             const page = await currentPdfDoc.getPage(i);
             const text = await page.getTextContent();
             if(text.items.map(s => s.str).join("").toLowerCase().includes(query)) {
-                document.getElementById('viewer-wrapper').children[i-1].scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('viewer-wrapper').children[i-1].scrollIntoView();
                 break;
             }
         }
@@ -131,18 +178,25 @@
         r.onload = () => {
             localStorage.setItem('pdf_data_'+activeSlot, r.result);
             localStorage.setItem('pdf_name_'+activeSlot, f.name);
-            createMenu(); renderPDF(r.result);
+            createMenu(); 
+            renderPDF(r.result, f.name);
         };
         r.readAsDataURL(f);
     };
 
-    async function renderPDF(data) {
+    async function renderPDF(data, filename) {
         document.getElementById('menu-screen').style.display = 'none';
         document.getElementById('viewer-container').style.display = 'block';
+        
+        // УСТАНОВКА НАЗВАНИЯ В ХЕДЕР
+        document.getElementById('header-filename').innerText = filename || "БЕЗ НАЗВАНИЯ";
+        
         const wrapper = document.getElementById('viewer-wrapper');
-        wrapper.innerHTML = 'Загрузка...';
+        wrapper.innerHTML = '<div style="color:black; padding:20px;">Загрузка страниц...</div>';
+        
         currentPdfDoc = await pdfjsLib.getDocument(data).promise;
         wrapper.innerHTML = '';
+        
         for (let i = 1; i <= currentPdfDoc.numPages; i++) {
             const page = await currentPdfDoc.getPage(i);
             const vp = page.getViewport({ scale: 2 });
@@ -160,7 +214,8 @@
         document.getElementById('menu-screen').style.display = 'flex';
         document.getElementById('viewer-container').style.display = 'none';
         currentPdfDoc = null;
-        clearSearch();
+        document.getElementById('search-input').value = '';
+        document.getElementById('search-input-box').style.display = 'none';
     }
 </script>
 </body>
