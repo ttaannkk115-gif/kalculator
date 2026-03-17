@@ -163,8 +163,12 @@
 
 <div class="app-container">
     <div class="top-nav">
-        <button class="mini-btn" onclick="initNotifications()">🔔 Уведомления</button>
+    <div id="hijri-date" class="mini-btn" style="border-color: rgba(255,193,7,0.4); color: #fff;">
+        🌙 Загрузка...
     </div>
+    
+    <button class="mini-btn" onclick="initNotifications()">🔔 Уведомления</button>
+</div>
 
     <div class="header" id="main-logo">
         <h1>VOLT<span>MASTER</span></h1>
@@ -219,7 +223,45 @@
     let userID = localStorage.getItem('volt_master_uid') || Math.floor(1000 + Math.random() * 9000).toString();
     localStorage.setItem('volt_master_uid', userID);
 
+            function updateHijriDate() {
+    const months = [
+        "Мухаррам", "Сафар", "Раби аль-авваль", "Раби ас-сани",
+        "Джумада аль-уля", "Джумада ас-сани", "Раджаб", "Шабан",
+        "Рамадан", "Шавваль", "Зу-ль-када", "Зу-ль-хиджа"
+    ];
+
+    const today = new Date();
+    // Смещение для Саудии (если дата отстает на день, можно поменять на 1 или 2)
+    const adjustment = 1; 
+    
+    let day = today.getDate();
+    let month = today.getMonth();
+    let year = today.getFullYear();
+    
+    let m = month + 1;
+    let y = year;
+    if (m < 3) { y -= 1; m += 12; }
+
+    let jd = Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + (2 - Math.floor(y / 100) + Math.floor(Math.floor(y / 100) / 4)) - 1524.5;
+    
+    jd += adjustment;
+    
+    let i = Math.floor(jd - 1948440 + 10632);
+    let n = Math.floor((i - 1) / 10631);
+    i = i - 10631 * n + 354;
+    let z = (Math.floor((10985 - i) / 5316)) * (Math.floor((50 * i) / 17719)) + (Math.floor(i / 5670)) * (Math.floor((43 * i) / 15313));
+    i = i - (Math.floor((30 - z) / 15)) * (Math.floor((17719 * z) / 50)) - (Math.floor(z / 16)) * (Math.floor((15313 * z) / 43)) + 29;
+    
+    let m_hijri = Math.floor((24 * i) / 709);
+    let d_hijri = i - Math.floor((709 * m_hijri) / 24);
+    let y_hijri = 30 * n + z - 30;
+
+    // Выводим результат. Теперь "Рамадан" будет 100%, так как это 9-й месяц в списке
+    document.getElementById('hijri-date').innerHTML = `🌙 ${d_hijri} ${months[m_hijri-1]} ${y_hijri} г.х.`;
+}
+            
             function initApp() {
+        updateHijriDate();
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js?v=10').then(() => console.log("VoltMaster V10 OK"));
         }
