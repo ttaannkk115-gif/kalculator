@@ -230,8 +230,10 @@
     ];
 
     const today = new Date();
-    // Смещение для Саудии (если дата отстает на день, можно поменять на 1 или 2)
-    const adjustment = 1; 
+    const currentHour = today.getHours();
+    
+    // Если время больше 18:00, считаем, что наступил следующий день по Хиджре
+    let adjustment = (currentHour >= 18) ? 2 : 1; 
     
     let day = today.getDate();
     let month = today.getMonth();
@@ -255,9 +257,12 @@
     let d_hijri = i - Math.floor((709 * m_hijri) / 24);
     let y_hijri = 30 * n + z - 30;
 
-    // Выводим результат. Теперь "Рамадан" будет 100%, так как это 9-й месяц в списке
-    document.getElementById('hijri-date').innerHTML = `🌙 ${d_hijri} ${months[m_hijri-1]} ${y_hijri} г.х.`;
+    const result = `🌙 ${d_hijri} ${months[m_hijri-1]} ${y_hijri} г.х.`;
+    document.getElementById('hijri-date').innerHTML = result;
 }
+
+// Запускаем проверку каждую минуту, чтобы дата сменилась ровно в 18:00 или в 00:00
+setInterval(updateHijriDate, 60000); 
             
             function initApp() {
         updateHijriDate();
@@ -313,7 +318,7 @@
         document.getElementById('global-modal').style.display = 'none';
     }
 
-    // АДМИНКА
+    // top
     function sendGlobalMsg() {
         const text = document.getElementById('new-global-msg').value;
         if(text) database.ref('global_message').set(text).then(() => alert("Объявление отправлено!"));
