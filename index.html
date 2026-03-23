@@ -166,7 +166,7 @@
         🌙 Загрузка...
     </div>
     
-    <button class="mini-btn" onclick="initNotifications()">🔔 Уведомления</button>
+    <button class="mini-btn" onclick="initNotifications(event)">🔔 Уведомления</button>
 </div>
 
     <div class="header" id="main-logo">
@@ -362,16 +362,35 @@ setInterval(updateHijriDate, 60000);
 
     // ОСТАЛЬНОЕ
     function initNotifications() {
-        const messaging = firebase.messaging();
+    const messaging = firebase.messaging();
+    const isSubscribed = localStorage.getItem('notifications_active') === 'true';
+
+    if (isSubscribed) {
+        database.ref('fcm_tokens/' + userID).remove().then(() => {
+            localStorage.setItem('notifications_active', 'false');
+            alert("🔕 Уведомления отключены");
+        });
+    } else {
         Notification.requestPermission().then((perm) => {
             if (perm === 'granted') {
                 navigator.serviceWorker.ready.then((reg) => {
-                    messaging.getToken({ serviceWorkerRegistration: reg, vapidKey: 'BGNQzIvGew0uQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKkYekWNL-3tgN_cQ' })
-                    .then((tok) => { if(tok) database.ref('fcm_tokens/' + userID).set(tok); alert("🔔 Уведомления включены!"); });
+                    messaging.getToken({ 
+                        serviceWorkerRegistration: reg, 
+                        vapidKey: 'BGNQzIvGew0uQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKkYekWNL-3tgN_cQ' 
+                    })
+                    .then((tok) => { 
+                        if (tok) {
+                            database.ref('fcm_tokens/' + userID).set(tok);
+                            localStorage.setItem('notifications_active', 'true');
+                            alert("🔔 Уведомления включены!");
+                        }
+                    });
                 });
             }
         });
     }
+}
+
 
     function openApp(name, url) {
         document.getElementById('overlay-title').innerText = name.toUpperCase();
