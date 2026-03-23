@@ -217,13 +217,14 @@
                 <div class="controls" style="display: flex; flex-wrap: wrap; gap: 8px;">
     ${!isArchive ? `
         <button class="btn btn-fin" style="flex: 1 1 100%;" onclick="adminFinish('${o.id}')">В АРХИВ</button>
-        
         ${isBusy ? `<button class="btn" style="background:#ff9800; color:#fff; flex: 1;" onclick="adminReject('${o.id}')">ОТКАЗАТЬ</button>` : ''}
-        
         <button class="btn btn-del" style="flex: 1;" onclick="adminDelete('${o.id}', false)">УДАЛИТЬ</button>
     ` : `
-        <button class="btn" style="background:#2196f3; color:#fff; flex:1;" onclick="adminRestore('${o.id}')">ВЕРНУТЬ</button>
-        <button class="btn btn-del" style="flex:1; margin-left:10px;" onclick="adminDelete('${o.id}', true)">УДАЛИТЬ</button>
+        <button class="btn" style="background:#2196f3; color:#fff; flex: 1;" onclick="adminRestore('${o.id}')">ВЕРНУТЬ</button>
+        
+        <button class="btn" style="background:#ff9800; color:#fff; flex: 1;" onclick="adminRestoreAndReject('${o.id}')">ВЕРНУТЬ (СВОБ.)</button>
+        
+        <button class="btn btn-del" style="flex: 1 1 100%;" onclick="adminDelete('${o.id}', true)">УДАЛИТЬ</button>
     `}
 </div>
 
@@ -297,6 +298,25 @@ function adminReject(id) {
         }).then(() => {
             console.log("Мастер отстранен, заказ свободен");
         }).catch(err => alert("Ошибка: " + err.message));
+    }
+}
+// Функция: Вернуть из архива и СРАЗУ сбросить мастера (сделать свободным)
+function adminRestoreAndReject(id) {
+    if (confirm("Вернуть заказ в активные и СБРОСИТЬ мастера? Он станет доступен всем.")) {
+        db.ref('shabashki/archive').orderByChild('id').equalTo(id).once('value', snap => {
+            snap.forEach(child => {
+                const data = child.val();
+                delete data.closedAt;
+                
+                // Принудительно ставим статус "свободен" и удаляем исполнителя
+                data.status = 'free';
+                data.workerID = null;
+
+                db.ref(`shabashki/active/${id}`).set(data).then(() => {
+                    child.ref.remove();
+                });
+            });
+        });
     }
 }
 
