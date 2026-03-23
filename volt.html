@@ -215,11 +215,17 @@
                 <div class="detail"><span>👷 Текущий мастер (ID):</span> <b style="color:var(--process)">${o.workerID || '—'}</b></div>
 
                 <div class="controls">
-                    ${!isArchive ? `<button class="btn btn-fin" onclick="adminFinish('${o.id}')">В АРХИВ</button>` : ''}
-                    <button class="btn btn-del" style="${isArchive ? 'width:100%' : ''}" onclick="adminDelete('${o.id}', ${isArchive})">
-                        ${isArchive ? 'УДАЛИТЬ ИЗ ИСТОРИИ' : 'УДАЛИТЬ'}
-                    </button>
-                </div>
+    ${!isArchive 
+        ? `<button class="btn btn-fin" onclick="adminFinish('${o.id}')">В АРХИВ</button>` 
+        : `<button class="btn" style="background:#2196f3; color:#fff; flex:1;" onclick="adminRestore('${o.id}')">ВЕРНУТЬ</button>`
+    }
+    
+    <button class="btn btn-del" 
+            style="${isArchive ? 'flex:1; margin-left:10px;' : ''}" 
+            onclick="adminDelete('${o.id}', ${isArchive})">
+        ${isArchive ? 'УДАЛИТЬ' : 'ОТМЕНИТЬ'}
+    </button>
+</div>
             `;
             container.appendChild(card);
         });
@@ -253,6 +259,35 @@
             });
         }
     }
+// Функция для возврата заказа из архива в активные
+function adminRestore(id) {
+    if (confirm("Вернуть этот заказ в список активных?")) {
+        // Поиск в архиве по полю id
+        db.ref('shabashki/archive').orderByChild('id').equalTo(id).once('value', snap => {
+            let orderData = null;
+            let archiveKey = null;
+
+            snap.forEach(child => {
+                orderData = child.val();
+                archiveKey = child.key;
+            });
+
+            if (orderData) {
+                // Убираем метку времени закрытия
+                delete orderData.closedAt;
+                
+                // 1. Копируем в активные
+                db.ref(`shabashki/active/${id}`).set(orderData)
+                    .then(() => {
+                        // 2. Только после успеха удаляем из архива
+                        db.ref(`shabashki/archive/${archiveKey}`).remove();
+                    })
+                    .catch(err => alert("Ошибка: " + err.message));
+            }
+        });
+    }
+}
+
 </script>
 </body>
 </html>
