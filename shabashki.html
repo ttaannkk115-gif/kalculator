@@ -246,14 +246,20 @@
     function takeOrder(id) { db.ref(`shabashki/active/${id}`).update({ status: 'busy', startTime: firebase.database.ServerValue.TIMESTAMP, workerID: userID }); }
     
     function finishOrder(id, startTime) {
-        if (Date.now() - startTime < 30 * 60 * 1000) return;
-        db.ref(`shabashki/active/${id}`).once('value', snap => {
-            const o = snap.val();
-            if(o.workerID != userID) return; 
-            db.ref('shabashki/archive').push({...o, closedAt: new Date().toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit'}), finisherID: userID});
-            db.ref(`shabashki/active/${id}`).remove();
+    if (Date.now() - startTime < 30 * 60 * 1000) return;
+    db.ref(`shabashki/active/${id}`).once('value', snap => {
+        const o = snap.val();
+        if(!o || o.workerID != userID) return; 
+        
+        db.ref('shabashki/archive').push({
+            ...o, 
+            closedAt: new Date().toLocaleString('ru-RU', {hour:'2-digit', minute:'2-digit'}), 
+            finisherID: userID, // для старой логики
+            workerID: userID    // для совместимости
         });
-    }
+        db.ref(`shabashki/active/${id}`).remove();
+    });
+}
 
     function deleteOrder(id) { if(confirm("Удалить этот заказ?")) db.ref(`shabashki/active/${id}`).remove(); }
 
@@ -289,14 +295,20 @@
     }
 
     function renderArchive(archived) {
-        document.getElementById('archive-list').innerHTML = archived.map(o => `
+    document.getElementById('archive-list').innerHTML = archived.map(o => {
+        // Проверяем оба варианта ключа: finisherID (из клиента) или workerID (из админки)
+        const executorID = o.finisherID || o.workerID || '---';
+        
+        return `
             <div class="card" style="opacity:0.6">
                 <div class="card-header"><span>${o.city}</span><span>${o.closedAt || ''}</span></div>
                 <div class="badge-status" style="background:rgba(76,175,80,0.2);color:var(--success)">✅ ВЫПОЛНЕНО</div>
                 <h3>${o.task}</h3>
                 <div class="addr">📍 ${o.addr}</div>
-                <div class="author-info">Автор: ID-${o.ownerID} | Исполнитель: ID-${o.finisherID || '---'}</div>
-            </div>`).join('') || '<div style="text-align:center;padding:50px;color:#444">Архив пуст</div>';
+                <div class="author-info">Автор: ID-${o.ownerID} | Исполнитель: ID-${executorID}</div>
+            </div>`;
+    }).join('') || '<div style="text-align:center;padding:50px;color:#444">Архив пуст</div>';
+    
     }
 
     function changeView(view, btn) {
