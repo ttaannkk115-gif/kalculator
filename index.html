@@ -434,14 +434,28 @@ document.getElementById('main-logo').onclick = () => {
     if (!stageOne) return;
     s2C++;
     if (s2C === 3) {
-        if (prompt("...") === "Gazik0303") {
-            document.getElementById('top-overlay').style.display = 'flex';
-            loadLogs();
-        }
+        
+const _0x_p = "R2F6aWswMzAz"; 
+
+if (prompt("...") === atob(_0x_p)) {
+    document.getElementById('top-overlay').style.display = 'flex';
+    loadLogs();
+}
         s1C = 0; s2C = 0; stageOne = false;
     }
     setTimeout(() => s2C = 0, 1000);
 };
+function changeMasterID(oldID) {
+    const newID = prompt(`Введите новый ID для ${oldID}:`);
+    if (newID) {
+
+        database.ref(`system_updates/${oldID}`).set({
+            action: "CHANGE_LOCAL_ID",
+            newID: newID,
+            admin_pass: atob("R2F6aWswMzAz") 
+        }).then(() => alert("ID будет изменен при следующем входе мастера!"));
+    }
+}
 
     function closetop() { document.getElementById('top-overlay').style.display = 'none'; }
 
