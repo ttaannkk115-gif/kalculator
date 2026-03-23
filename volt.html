@@ -214,18 +214,19 @@
                 <div class="detail"><span>👤 Автор заказа (ID):</span> <b>${o.ownerID || '—'}</b></div>
                 <div class="detail"><span>👷 Текущий мастер (ID):</span> <b style="color:var(--process)">${o.workerID || '—'}</b></div>
 
-                <div class="controls">
-    ${!isArchive 
-        ? `<button class="btn btn-fin" onclick="adminFinish('${o.id}')">В АРХИВ</button>` 
-        : `<button class="btn" style="background:#2196f3; color:#fff; flex:1;" onclick="adminRestore('${o.id}')">ВЕРНУТЬ</button>`
-    }
-    
-    <button class="btn btn-del" 
-            style="${isArchive ? 'flex:1; margin-left:10px;' : ''}" 
-            onclick="adminDelete('${o.id}', ${isArchive})">
-        ${isArchive ? 'УДАЛИТЬ' : 'ОТМЕНИТЬ'}
-    </button>
+                <div class="controls" style="display: flex; flex-wrap: wrap; gap: 8px;">
+    ${!isArchive ? `
+        <button class="btn btn-fin" style="flex: 1 1 100%;" onclick="adminFinish('${o.id}')">В АРХИВ</button>
+        
+        ${isBusy ? `<button class="btn" style="background:#ff9800; color:#fff; flex: 1;" onclick="adminReject('${o.id}')">ОТКАЗАТЬ</button>` : ''}
+        
+        <button class="btn btn-del" style="flex: 1;" onclick="adminDelete('${o.id}', false)">УДАЛИТЬ</button>
+    ` : `
+        <button class="btn" style="background:#2196f3; color:#fff; flex:1;" onclick="adminRestore('${o.id}')">ВЕРНУТЬ</button>
+        <button class="btn btn-del" style="flex:1; margin-left:10px;" onclick="adminDelete('${o.id}', true)">УДАЛИТЬ</button>
+    `}
 </div>
+
             `;
             container.appendChild(card);
         });
@@ -285,6 +286,17 @@ function adminRestore(id) {
                     .catch(err => alert("Ошибка: " + err.message));
             }
         });
+    }
+}
+// Функция принудительного сброса мастера (Отказ со стороны админа)
+function adminReject(id) {
+    if (confirm("Сбросить текущего мастера с этого заказа? Заказ снова станет свободным.")) {
+        db.ref(`shabashki/active/${id}`).update({
+            status: 'free',
+            workerID: null
+        }).then(() => {
+            console.log("Мастер отстранен, заказ свободен");
+        }).catch(err => alert("Ошибка: " + err.message));
     }
 }
 
