@@ -361,13 +361,16 @@ setInterval(updateHijriDate, 60000);
     }
 
     // ОСТАЛЬНОЕ
-    function initNotifications() {
+    function initNotifications(event) {
+    const btn = event.currentTarget; // Получаем саму кнопку
     const messaging = firebase.messaging();
     const isSubscribed = localStorage.getItem('notifications_active') === 'true';
 
     if (isSubscribed) {
+        // Если уже подписан — УДАЛЯЕМ
         database.ref('fcm_tokens/' + userID).remove().then(() => {
             localStorage.setItem('notifications_active', 'false');
+            btn.innerText = "🔔 Включить"; // Меняем текст на кнопке
             alert("🔕 Уведомления отключены");
         });
     } else {
