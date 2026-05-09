@@ -37,29 +37,37 @@
         }
         .file-item:active { transform: scale(0.98); background: rgba(255,255,255,0.12); }
 
-        .file-info { display: flex; align-items: center; gap: 15px; flex: 1; cursor: pointer; }
+        .file-info { display: flex; align-items: center; gap: 15px; flex: 1; cursor: pointer; height: 100%; }
         .file-icon { font-size: 20px; color: var(--main-gold); }
         .file-name { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 
         .btn-action {
             width: 35px; height: 35px; border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-weight: bold; border: none;
+            cursor: pointer; font-weight: bold; border: none; z-index: 5;
         }
         .btn-add { background: var(--main-gold); color: #000; }
         .btn-del { background: rgba(255, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
 
+        /* ВЬЮВЕР С ГРАНИЦАМИ */
         #viewer-container { display: none; position: fixed; inset: 0; background: #000; z-index: 100; touch-action: none; }
         .viewer-header {
             height: 60px; background: #000; display: flex; align-items: center;
             justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #222;
+            position: relative; z-index: 110;
         }
         #header-filename { color: var(--main-gold); font-weight: 800; font-size: 12px; text-transform: uppercase; }
         .close-view-btn { color: var(--danger); font-size: 28px; font-weight: bold; cursor: pointer; padding: 10px; }
 
-        #zoom-area { position: absolute; top: 60px; bottom: 0; left: 0; right: 0; overflow: hidden; background: #222; }
-        #viewer-wrapper { position: absolute; width: 100%; transform-origin: 0 0; will-change: transform; }
-        canvas { width: 100% !important; height: auto !important; display: block; margin-bottom: 5px; background: #fff; }
+        #zoom-area { 
+            position: absolute; top: 60px; bottom: 0; left: 0; right: 0; 
+            overflow: hidden; background: #1a1a1a; display: flex; justify-content: center;
+        }
+        #viewer-wrapper { 
+            position: absolute; width: 100%; transform-origin: 0 0; 
+            will-change: transform; display: flex; flex-direction: column; align-items: center;
+        }
+        canvas { width: 100% !important; height: auto !important; display: block; background: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
 
         #file-input { display: none; }
         .loader { color: var(--main-gold); font-size: 12px; text-align: center; margin-top: 50%; font-weight: bold; letter-spacing: 2px; }
@@ -92,11 +100,11 @@
     let scale = 1, posX = 0, posY = 0;
     let lastScale = 1, lastPosX = 0, lastPosY = 0;
     let touchType = null;
+    let startDist = 0, startMidX = 0, startMidY = 0;
 
     const wrapper = document.getElementById('viewer-wrapper');
     const zoomArea = document.getElementById('zoom-area');
 
-    // Названия файлов изменены на латиницу согласно вашему списку файлов
     const defaultFiles = {
         1: "prais2024.pdf",
         2: "prais2025.pdf",
@@ -108,12 +116,10 @@
     function createMenu() {
         const container = document.getElementById('slots-container');
         container.innerHTML = '';
-        
         for(let i=1; i<=5; i++) {
             const storedName = localStorage.getItem('volt_pdf_name_' + i);
             const isLoaded = localStorage.getItem('volt_pdf_data_' + i);
             const isSystem = !!defaultFiles[i];
-            
             const displayName = storedName || (isSystem ? defaultFiles[i].replace('.pdf', '').toUpperCase() : `ПУСТОЙ СЛОТ ${i}`);
 
             container.innerHTML += `
@@ -125,7 +131,7 @@
                     <div class="controls">
                         ${isLoaded 
                             ? `<button class="btn-action btn-del" onclick="deleteFile(${i})">✕</button>` 
-                            : (isSystem ? `<button class="btn-action btn-add" onclick="openSlot(${i})">↓</button>` : `<button class="btn-action btn-add" onclick="triggerInput(${i})">+</button>`)
+                            : (!isSystem ? `<button class="btn-action btn-add" onclick="triggerInput(${i})">+</button>` : '')
                         }
                     </div>
                 </div>`;
@@ -139,52 +145,29 @@
         if (!data) {
             if (defaultFiles[s]) {
                 try {
-                    // Используем прямую ссылку на файл в той же папке
                     const response = await fetch("./" + defaultFiles[s]);
                     if (!response.ok) throw new Error();
                     const blob = await response.blob();
-                    
-                    data = await new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result);
-                        reader.readAsDataURL(blob);
-                    });
-
+                    data = await new Promise(r => { const f = new FileReader(); f.onloadend = () => r(f.result); f.readAsDataURL(blob); });
                     localStorage.setItem('volt_pdf_data_' + s, data);
                     localStorage.setItem('volt_pdf_name_' + s, defaultFiles[s]);
                     createMenu();
-                } catch (e) {
-                    alert("Файл " + defaultFiles[s] + " не найден в папке проекта.");
-                    return;
-                }
-            } else {
-                triggerInput(s);
-                return;
-            }
+                } catch (e) { alert("Файл не найден."); return; }
+            } else { triggerInput(s); return; }
         }
         renderPDF(data, name);
     }
 
     function triggerInput(s) { activeSlot = s; document.getElementById('file-input').click(); }
-
-    function deleteFile(s) { 
-        if(confirm("Удалить файл из памяти?")) { 
-            localStorage.removeItem('volt_pdf_data_'+s); 
-            localStorage.removeItem('volt_pdf_name_'+s); 
-            createMenu(); 
-        } 
-    }
+    function deleteFile(s) { if(confirm("Удалить?")) { localStorage.removeItem('volt_pdf_data_'+s); localStorage.removeItem('volt_pdf_name_'+s); createMenu(); } }
 
     document.getElementById('file-input').onchange = (e) => {
         const f = e.target.files[0]; if(!f) return;
         const r = new FileReader();
         r.onload = () => {
-            try {
-                localStorage.setItem('volt_pdf_data_'+activeSlot, r.result);
-                localStorage.setItem('volt_pdf_name_'+activeSlot, f.name);
-                createMenu(); 
-                renderPDF(r.result, f.name);
-            } catch (err) { alert("Ошибка: файл слишком большой."); }
+            localStorage.setItem('volt_pdf_data_'+activeSlot, r.result);
+            localStorage.setItem('volt_pdf_name_'+activeSlot, f.name);
+            createMenu(); renderPDF(r.result, f.name);
         };
         r.readAsDataURL(f);
     };
@@ -196,25 +179,26 @@
         scale = 1; posX = 0; posY = 0;
         updateTransform();
 
-        try {
-            const pdf = await pdfjsLib.getDocument(data).promise;
-            wrapper.innerHTML = '';
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const vp = page.getViewport({ scale: 2 }); 
-                const canvas = document.createElement('canvas');
-                canvas.width = vp.width; canvas.height = vp.height;
-                wrapper.appendChild(canvas);
-                await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-            }
-        } catch (e) { alert("Ошибка при чтении PDF."); closeViewer(); }
+        const pdf = await pdfjsLib.getDocument(data).promise;
+        wrapper.innerHTML = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const vp = page.getViewport({ scale: 2 });
+            const canvas = document.createElement('canvas');
+            canvas.width = vp.width; canvas.height = vp.height;
+            wrapper.appendChild(canvas);
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+        }
     }
 
+    // УМНЫЙ ЗУМ В ТОЧКУ КАСАНИЯ И ГРАНИЦЫ
     zoomArea.addEventListener('touchstart', e => {
         if (e.touches.length === 2) {
             touchType = 'zoom';
-            this.startDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-            lastScale = scale;
+            startDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            startMidX = (e.touches[0].pageX + e.touches[1].pageX) / 2;
+            startMidY = (e.touches[0].pageY + e.touches[1].pageY) / 2;
+            lastScale = scale; lastPosX = posX; lastPosY = posY;
         } else {
             touchType = 'drag';
             this.startX = e.touches[0].pageX - posX;
@@ -226,7 +210,15 @@
         e.preventDefault();
         if (touchType === 'zoom' && e.touches.length === 2) {
             const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-            scale = Math.min(Math.max(lastScale * (dist / this.startDist), 1), 6);
+            const midX = (e.touches[0].pageX + e.touches[1].pageX) / 2;
+            const midY = (e.touches[0].pageY + e.touches[1].pageY) / 2;
+            
+            const newScale = Math.min(Math.max(lastScale * (dist / startDist), 1), 6);
+            
+            // Зум в точку между пальцами
+            posX = midX - (startMidX - lastPosX) * (newScale / lastScale);
+            posY = midY - (startMidY - lastPosY) * (newScale / lastScale);
+            scale = newScale;
         } else if (touchType === 'drag') {
             posX = e.touches[0].pageX - this.startX;
             posY = e.touches[0].pageY - this.startY;
@@ -235,6 +227,27 @@
     });
 
     function updateTransform() {
+        const wWidth = wrapper.offsetWidth * scale;
+        const wHeight = wrapper.offsetHeight * scale;
+        const containerWidth = zoomArea.offsetWidth;
+        const containerHeight = zoomArea.offsetHeight;
+
+        // Ограничение по горизонтали (чтобы не уходило за края)
+        if (wWidth <= containerWidth) {
+            posX = (containerWidth - wWidth) / 2;
+        } else {
+            if (posX > 0) posX = 0;
+            if (posX < containerWidth - wWidth) posX = containerWidth - wWidth;
+        }
+
+        // Ограничение по вертикали
+        if (wHeight <= containerHeight) {
+            posY = 0;
+        } else {
+            if (posY > 0) posY = 0;
+            if (posY < containerHeight - wHeight) posY = containerHeight - wHeight;
+        }
+
         wrapper.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
     }
 
