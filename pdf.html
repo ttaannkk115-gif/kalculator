@@ -6,25 +6,56 @@
     <title>VoltMaster Pro Full</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        :root { --bg-color: #000; --card-bg: #1a1a1a; --text-gold: #f1c40f; --danger: #ff3b30; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color); font-family: -apple-system, sans-serif; overflow: hidden; }
+        :root { 
+            --bg-color: #000; 
+            --card-bg: #1a1a1a; 
+            --text-gold: #f1c40f; 
+            --danger: #ff3b30; 
+            --accent: #3498db;
+        }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: var(--bg-color); font-family: -apple-system, sans-serif; 
+            overflow: hidden; overscroll-behavior-y: contain;
+        }
 
-        #menu-screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; z-index: 2000; background: var(--bg-color); overflow-y: auto; }
-        .logo { font-size: 28px; font-weight: bold; color: var(--text-gold); margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; }
+        /* Главное меню */
+        #menu-screen { 
+            position: fixed; inset: 0; display: flex; flex-direction: column; 
+            align-items: center; padding: 40px 20px; z-index: 2000; 
+            background: var(--bg-color); overflow-y: auto; 
+        }
+        .logo { 
+            font-size: 28px; font-weight: bold; color: var(--text-gold); 
+            margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; 
+        }
         .file-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
-        .file-item { background: var(--card-bg); padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #333; }
+        .file-item { 
+            background: var(--card-bg); padding: 15px; border-radius: 12px; 
+            display: flex; align-items: center; justify-content: space-between; 
+            border: 1px solid #333; transition: background 0.2s;
+        }
+        .file-item:active { background: #252525; }
 
+        /* Вьювер PDF */
         #viewer-container { display: none; position: fixed; inset: 0; background: #000; z-index: 3000; touch-action: none; }
-        .viewer-header { height: 60px; background: #000; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #222; position: relative; z-index: 4001; }
+        .viewer-header { 
+            height: 60px; background: #000; display: flex; align-items: center; 
+            justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #222; 
+            position: relative; z-index: 4001; 
+        }
         #header-filename { color: var(--text-gold); font-weight: bold; font-size: 14px; text-transform: uppercase; }
-        .btn-close-top { color: var(--danger); font-size: 32px; font-weight: bold; cursor: pointer; }
+        .btn-close-top { color: var(--danger); font-size: 32px; font-weight: bold; cursor: pointer; padding: 5px 10px; }
 
         #zoom-area { position: absolute; top: 60px; bottom: 0; left: 0; right: 0; overflow: hidden; background: #fff; }
         #viewer-wrapper { position: absolute; width: 100%; transform-origin: 0 0; will-change: transform; }
         canvas { width: 100% !important; height: auto !important; display: block; border-bottom: 2px solid #ddd; }
 
-        .btn-action { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .btn-add { background: #3498db; color: white; }
+        .btn-action { 
+            width: 32px; height: 32px; border-radius: 8px; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer; 
+        }
+        .btn-add { background: var(--accent); color: white; }
         .btn-del { background: var(--danger); color: white; }
         #file-input { display: none; }
     </style>
@@ -61,7 +92,13 @@
     const wrapper = document.getElementById('viewer-wrapper');
     const zoomArea = document.getElementById('zoom-area');
 
-    // 1. ПРИ ЗАГРУЗКЕ — ВОССТАНАВЛИВАЕМ ДАННЫЕ
+    // Файлы, встроенные в программу по умолчанию
+    const defaultFiles = {
+        1: "Прайс 2024.pdf",
+        2: "Прайс 2025.pdf",
+        3: "Прайс 2026.pdf"
+    };
+
     window.onload = () => {
         createMenu();
     };
@@ -69,31 +106,71 @@
     function createMenu() {
         const container = document.getElementById('slots-container');
         container.innerHTML = '';
+        
         for(let i=1; i<=5; i++) {
-            const name = localStorage.getItem('pdf_name_' + i);
+            const storedName = localStorage.getItem('pdf_name_' + i);
+            const isLoaded = localStorage.getItem('pdf_data_' + i);
+            
+            const displayName = storedName || defaultFiles[i] || 'Пустой слот';
+            const isSystemPrice = !!defaultFiles[i]; // Слот 1, 2 или 3
+
             container.innerHTML += `
                 <div class="file-item">
                     <div class="file-info" style="flex:1; display:flex; align-items:center; gap:10px;" onclick="openSlot(${i})">
                         <span style="color:var(--text-gold)">${i}.</span>
-                        <div style="font-size:14px;color:#eee;">${name ? name : 'Пустой слот'}</div>
+                        <div style="font-size:14px; color:#eee;">${displayName}</div>
                     </div>
                     <div class="controls">
-                        ${name ? `<div class="btn-action btn-del" onclick="deleteFile(${i})">✕</div>` : `<div class="btn-action btn-add" onclick="triggerInput(${i})">+</div>`}
+                        ${isLoaded 
+                            ? `<div class="btn-action btn-del" onclick="deleteFile(${i})">✕</div>` 
+                            : (isSystemPrice ? '' : `<div class="btn-action btn-add" onclick="triggerInput(${i})">+</div>`)
+                        }
                     </div>
                 </div>`;
         }
     }
 
-    function triggerInput(s) { activeSlot = s; document.getElementById('file-input').click(); }
-    
-    function openSlot(s) { 
-        const d = localStorage.getItem('pdf_data_'+s); 
-        const n = localStorage.getItem('pdf_name_'+s); 
-        if(d) renderPDF(d, n); 
+    async function openSlot(s) {
+        let data = localStorage.getItem('pdf_data_' + s);
+        let name = localStorage.getItem('pdf_name_' + s) || defaultFiles[s];
+
+        if (!data) {
+            if (defaultFiles[s]) {
+                // Пытаемся автоматически загрузить файл из папки проекта
+                try {
+                    const response = await fetch(defaultFiles[s]);
+                    if (!response.ok) throw new Error();
+                    const blob = await response.blob();
+                    
+                    data = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
+                    });
+
+                    // Сохраняем в localStorage согласно настройкам
+                    localStorage.setItem('pdf_data_' + s, data);
+                    localStorage.setItem('pdf_name_' + s, defaultFiles[s]);
+                    createMenu();
+                } catch (e) {
+                    alert("Ошибка: Файл '" + defaultFiles[s] + "' не найден в папке программы.");
+                    return;
+                }
+            } else {
+                alert("Слот пуст. Нажмите '+', чтобы добавить PDF.");
+                return;
+            }
+        }
+        renderPDF(data, name);
+    }
+
+    function triggerInput(s) { 
+        activeSlot = s; 
+        document.getElementById('file-input').click(); 
     }
 
     function deleteFile(s) { 
-        if(confirm("Удалить файл из памяти?")) { 
+        if(confirm("Удалить файл из памяти браузера?")) { 
             localStorage.removeItem('pdf_data_'+s); 
             localStorage.removeItem('pdf_name_'+s); 
             createMenu(); 
@@ -104,11 +181,14 @@
         const f = e.target.files[0]; if(!f) return;
         const r = new FileReader();
         r.onload = () => {
-            // 2. АВТОМАТИЧЕСКОЕ СОХРАНЕНИЕ В ПАМЯТЬ БРАУЗЕРА
-            localStorage.setItem('pdf_data_'+activeSlot, r.result);
-            localStorage.setItem('pdf_name_'+activeSlot, f.name);
-            createMenu(); 
-            renderPDF(r.result, f.name);
+            try {
+                localStorage.setItem('pdf_data_'+activeSlot, r.result);
+                localStorage.setItem('pdf_name_'+activeSlot, f.name);
+                createMenu(); 
+                renderPDF(r.result, f.name);
+            } catch (err) {
+                alert("Ошибка сохранения: Файл слишком большой.");
+            }
         };
         r.readAsDataURL(f);
     };
@@ -117,23 +197,28 @@
         document.getElementById('menu-screen').style.display = 'none';
         document.getElementById('viewer-container').style.display = 'block';
         document.getElementById('header-filename').innerText = filename;
-        wrapper.innerHTML = '<div style="color:black; padding:20px;">Загрузка...</div>';
+        wrapper.innerHTML = '<div style="color:black; padding:20px; text-align:center;">Загрузка...</div>';
         scale = 1; posX = 0; posY = 0;
         updateTransform();
 
-        const pdf = await pdfjsLib.getDocument(data).promise;
-        wrapper.innerHTML = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const vp = page.getViewport({ scale: 2.2 }); 
-            const canvas = document.createElement('canvas');
-            canvas.width = vp.width; canvas.height = vp.height;
-            wrapper.appendChild(canvas);
-            await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+        try {
+            const pdf = await pdfjsLib.getDocument(data).promise;
+            wrapper.innerHTML = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const vp = page.getViewport({ scale: 2.2 }); 
+                const canvas = document.createElement('canvas');
+                canvas.width = vp.width; canvas.height = vp.height;
+                wrapper.appendChild(canvas);
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+            }
+        } catch (e) {
+            alert("Ошибка рендеринга PDF.");
+            closeViewer();
         }
     }
 
-    // ЛОГИКА ЖЕСТОВ С ИНЕРЦИЕЙ И ТОЧНЫМ ЗУМОМ
+    // УПРАВЛЕНИЕ ЖЕСТАМИ (ZOOM И SCROLL)
     zoomArea.addEventListener('touchstart', e => {
         stopInertia();
         if (e.touches.length === 2) {
@@ -161,7 +246,7 @@
             const dist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
             const midX = (t1.pageX + t2.pageX) / 2;
             const midY = (t1.pageY + t2.pageY) / 2;
-            scale = Math.min(Math.max(lastScale * (dist / this.startDist), 1), 10);
+            scale = Math.min(Math.max(lastScale * (dist / this.startDist), 1), 8);
             posX = midX - (this.startMidX - lastPosX) * (scale / lastScale);
             posY = midY - (this.startMidY - lastPosY) * (scale / lastScale);
         } else if (touchType === 'drag' && e.touches.length === 1) {
