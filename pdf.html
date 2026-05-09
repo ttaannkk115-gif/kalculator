@@ -3,74 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>VoltMaster Pro Full</title>
+    <title>VoltMaster Files</title>
+    <!-- Библиотека для отрисовки PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        :root { 
-            --bg-color: #000; 
-            --card-bg: #1a1a1a; 
-            --text-gold: #f1c40f; 
-            --danger: #ff3b30; 
-            --accent: #3498db;
-        }
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: var(--bg-color); font-family: -apple-system, sans-serif; 
-            overflow: hidden; overscroll-behavior-y: contain;
+        :root {
+            --main-gold: #ffc107;
+            --dark-bg: #0f0f0f;
+            --card-bg: rgba(255, 255, 255, 0.07);
+            --text-main: #ffffff;
+            --danger: #ff4444;
         }
 
-        /* Главное меню */
-        #menu-screen { 
-            position: fixed; inset: 0; display: flex; flex-direction: column; 
-            align-items: center; padding: 40px 20px; z-index: 2000; 
-            background: var(--bg-color); overflow-y: auto; 
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background: var(--dark-bg); color: var(--text-main);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
         }
-        .logo { 
-            font-size: 28px; font-weight: bold; color: var(--text-gold); 
-            margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; 
+
+        /* Экран выбора файлов */
+        #menu-screen {
+            position: fixed; inset: 0; display: flex; flex-direction: column;
+            align-items: center; padding: 20px; z-index: 10;
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 100%);
+            overflow-y: auto;
         }
-        .file-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
-        .file-item { 
-            background: var(--card-bg); padding: 15px; border-radius: 12px; 
-            display: flex; align-items: center; justify-content: space-between; 
-            border: 1px solid #333; transition: background 0.2s;
+
+        .file-list { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+        
+        .file-item {
+            background: var(--card-bg); border: 1px solid rgba(255, 193, 7, 0.1);
+            border-radius: 15px; padding: 18px; display: flex; align-items: center;
+            justify-content: space-between; transition: 0.2s;
         }
-        .file-item:active { background: #252525; }
+        .file-item:active { transform: scale(0.98); background: rgba(255,255,255,0.12); }
+
+        .file-info { display: flex; align-items: center; gap: 15px; flex: 1; cursor: pointer; }
+        .file-icon { font-size: 20px; color: var(--main-gold); }
+        .file-name { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .btn-action {
+            width: 35px; height: 35px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-weight: bold; border: none;
+        }
+        .btn-add { background: var(--main-gold); color: #000; }
+        .btn-del { background: rgba(255, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
 
         /* Вьювер PDF */
-        #viewer-container { display: none; position: fixed; inset: 0; background: #000; z-index: 3000; touch-action: none; }
-        .viewer-header { 
-            height: 60px; background: #000; display: flex; align-items: center; 
-            justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #222; 
-            position: relative; z-index: 4001; 
+        #viewer-container { display: none; position: fixed; inset: 0; background: #000; z-index: 100; touch-action: none; }
+        .viewer-header {
+            height: 60px; background: #000; display: flex; align-items: center;
+            justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #222;
         }
-        #header-filename { color: var(--text-gold); font-weight: bold; font-size: 14px; text-transform: uppercase; }
-        .btn-close-top { color: var(--danger); font-size: 32px; font-weight: bold; cursor: pointer; padding: 5px 10px; }
+        #header-filename { color: var(--main-gold); font-weight: 800; font-size: 12px; text-transform: uppercase; }
+        .close-view-btn { color: var(--danger); font-size: 28px; font-weight: bold; cursor: pointer; padding: 10px; }
 
-        #zoom-area { position: absolute; top: 60px; bottom: 0; left: 0; right: 0; overflow: hidden; background: #fff; }
+        #zoom-area { position: absolute; top: 60px; bottom: 0; left: 0; right: 0; overflow: hidden; background: #222; }
         #viewer-wrapper { position: absolute; width: 100%; transform-origin: 0 0; will-change: transform; }
-        canvas { width: 100% !important; height: auto !important; display: block; border-bottom: 2px solid #ddd; }
+        canvas { width: 100% !important; height: auto !important; display: block; margin-bottom: 5px; background: #fff; }
 
-        .btn-action { 
-            width: 32px; height: 32px; border-radius: 8px; 
-            display: flex; align-items: center; justify-content: center; cursor: pointer; 
-        }
-        .btn-add { background: var(--accent); color: white; }
-        .btn-del { background: var(--danger); color: white; }
         #file-input { display: none; }
+
+        /* Индикатор загрузки */
+        .loader { color: var(--main-gold); font-size: 12px; text-align: center; margin-top: 50%; font-weight: bold; letter-spacing: 2px; }
     </style>
 </head>
 <body>
 
 <div id="menu-screen">
-    <div class="logo">VOLTMASTER</div>
+    <div style="color: var(--main-gold); font-weight: 900; font-size: 18px; letter-spacing: 2px; margin-top: 10px;">АРХИВ ФАЙЛОВ</div>
     <div id="slots-container" class="file-list"></div>
 </div>
 
 <div id="viewer-container">
     <div class="viewer-header">
-        <div id="header-filename">ФАЙЛ</div>
-        <div class="btn-close-top" onclick="closeViewer()">✕</div>
+        <div id="header-filename">ДОКУМЕНТ</div>
+        <div class="close-view-btn" onclick="closeViewer()">&times;</div>
     </div>
     <div id="zoom-area">
         <div id="viewer-wrapper"></div>
@@ -86,44 +96,41 @@
     let activeSlot = null;
     let scale = 1, posX = 0, posY = 0;
     let lastScale = 1, lastPosX = 0, lastPosY = 0;
-    let velocityY = 0, lastTouchY = 0, lastTouchTime = 0, animationId = null;
     let touchType = null;
 
     const wrapper = document.getElementById('viewer-wrapper');
     const zoomArea = document.getElementById('zoom-area');
 
-    // Файлы, встроенные в программу по умолчанию
+    // ПУТИ К ВАШИМ ПРАЙСАМ
     const defaultFiles = {
         1: "Прайс 2024.pdf",
         2: "Прайс 2025.pdf",
         3: "Прайс 2026.pdf"
     };
 
-    window.onload = () => {
-        createMenu();
-    };
+    window.onload = () => createMenu();
 
     function createMenu() {
         const container = document.getElementById('slots-container');
         container.innerHTML = '';
         
         for(let i=1; i<=5; i++) {
-            const storedName = localStorage.getItem('pdf_name_' + i);
-            const isLoaded = localStorage.getItem('pdf_data_' + i);
+            const storedName = localStorage.getItem('volt_pdf_name_' + i);
+            const isLoaded = localStorage.getItem('volt_pdf_data_' + i);
+            const isSystem = !!defaultFiles[i];
             
-            const displayName = storedName || defaultFiles[i] || 'Пустой слот';
-            const isSystemPrice = !!defaultFiles[i]; // Слот 1, 2 или 3
+            const displayName = storedName || (isSystem ? defaultFiles[i].replace('.pdf', '') : `ПУСТОЙ СЛОТ ${i}`);
 
             container.innerHTML += `
                 <div class="file-item">
-                    <div class="file-info" style="flex:1; display:flex; align-items:center; gap:10px;" onclick="openSlot(${i})">
-                        <span style="color:var(--text-gold)">${i}.</span>
-                        <div style="font-size:14px; color:#eee;">${displayName}</div>
+                    <div class="file-info" onclick="openSlot(${i})">
+                        <div class="file-icon">📄</div>
+                        <div class="file-name">${displayName}</div>
                     </div>
                     <div class="controls">
                         ${isLoaded 
-                            ? `<div class="btn-action btn-del" onclick="deleteFile(${i})">✕</div>` 
-                            : (isSystemPrice ? '' : `<div class="btn-action btn-add" onclick="triggerInput(${i})">+</div>`)
+                            ? `<button class="btn-action btn-del" onclick="deleteFile(${i})">✕</button>` 
+                            : (isSystem ? `<button class="btn-action btn-add" onclick="openSlot(${i})">↓</button>` : `<button class="btn-action btn-add" onclick="triggerInput(${i})">+</button>`)
                         }
                     </div>
                 </div>`;
@@ -131,14 +138,13 @@
     }
 
     async function openSlot(s) {
-        let data = localStorage.getItem('pdf_data_' + s);
-        let name = localStorage.getItem('pdf_name_' + s) || defaultFiles[s];
+        let data = localStorage.getItem('volt_pdf_data_' + s);
+        let name = localStorage.getItem('volt_pdf_name_' + s) || defaultFiles[s];
 
         if (!data) {
             if (defaultFiles[s]) {
-                // Пытаемся автоматически загрузить файл из папки проекта
                 try {
-                    const response = await fetch(defaultFiles[s]);
+                    const response = await fetch(encodeURIComponent(defaultFiles[s]));
                     if (!response.ok) throw new Error();
                     const blob = await response.blob();
                     
@@ -148,31 +154,27 @@
                         reader.readAsDataURL(blob);
                     });
 
-                    // Сохраняем в localStorage согласно настройкам
-                    localStorage.setItem('pdf_data_' + s, data);
-                    localStorage.setItem('pdf_name_' + s, defaultFiles[s]);
+                    localStorage.setItem('volt_pdf_data_' + s, data);
+                    localStorage.setItem('volt_pdf_name_' + s, defaultFiles[s]);
                     createMenu();
                 } catch (e) {
-                    alert("Ошибка: Файл '" + defaultFiles[s] + "' не найден в папке программы.");
+                    alert("Файл " + defaultFiles[s] + " не найден в папке проекта.");
                     return;
                 }
             } else {
-                alert("Слот пуст. Нажмите '+', чтобы добавить PDF.");
+                triggerInput(s);
                 return;
             }
         }
         renderPDF(data, name);
     }
 
-    function triggerInput(s) { 
-        activeSlot = s; 
-        document.getElementById('file-input').click(); 
-    }
+    function triggerInput(s) { activeSlot = s; document.getElementById('file-input').click(); }
 
     function deleteFile(s) { 
-        if(confirm("Удалить файл из памяти браузера?")) { 
-            localStorage.removeItem('pdf_data_'+s); 
-            localStorage.removeItem('pdf_name_'+s); 
+        if(confirm("Удалить файл из памяти?")) { 
+            localStorage.removeItem('volt_pdf_data_'+s); 
+            localStorage.removeItem('volt_pdf_name_'+s); 
             createMenu(); 
         } 
     }
@@ -182,22 +184,19 @@
         const r = new FileReader();
         r.onload = () => {
             try {
-                localStorage.setItem('pdf_data_'+activeSlot, r.result);
-                localStorage.setItem('pdf_name_'+activeSlot, f.name);
+                localStorage.setItem('volt_pdf_data_'+activeSlot, r.result);
+                localStorage.setItem('volt_pdf_name_'+activeSlot, f.name);
                 createMenu(); 
                 renderPDF(r.result, f.name);
-            } catch (err) {
-                alert("Ошибка сохранения: Файл слишком большой.");
-            }
+            } catch (err) { alert("Файл слишком большой для памяти браузера."); }
         };
         r.readAsDataURL(f);
     };
 
     async function renderPDF(data, filename) {
-        document.getElementById('menu-screen').style.display = 'none';
         document.getElementById('viewer-container').style.display = 'block';
         document.getElementById('header-filename').innerText = filename;
-        wrapper.innerHTML = '<div style="color:black; padding:20px; text-align:center;">Загрузка...</div>';
+        wrapper.innerHTML = '<div class="loader">ЗАГРУЗКА СТРАНИЦ...</div>';
         scale = 1; posX = 0; posY = 0;
         updateTransform();
 
@@ -206,95 +205,47 @@
             wrapper.innerHTML = '';
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
-                const vp = page.getViewport({ scale: 2.2 }); 
+                const vp = page.getViewport({ scale: 2 }); 
                 const canvas = document.createElement('canvas');
                 canvas.width = vp.width; canvas.height = vp.height;
                 wrapper.appendChild(canvas);
                 await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
             }
-        } catch (e) {
-            alert("Ошибка рендеринга PDF.");
-            closeViewer();
-        }
+        } catch (e) { alert("Ошибка PDF."); closeViewer(); }
     }
 
-    // УПРАВЛЕНИЕ ЖЕСТАМИ (ZOOM И SCROLL)
+    // УПРАВЛЕНИЕ ЗУМОМ И СВАЙПАМИ
     zoomArea.addEventListener('touchstart', e => {
-        stopInertia();
         if (e.touches.length === 2) {
             touchType = 'zoom';
-            const t1 = e.touches[0], t2 = e.touches[1];
-            this.startDist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
-            this.startMidX = (t1.pageX + t2.pageX) / 2;
-            this.startMidY = (t1.pageY + t2.pageY) / 2;
-            lastScale = scale; lastPosX = posX; lastPosY = posY;
+            this.startDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            lastScale = scale;
         } else {
             touchType = 'drag';
-            this.startX1 = e.touches[0].pageX - posX;
-            this.startY1 = e.touches[0].pageY - posY;
-            lastTouchY = e.touches[0].pageY;
-            lastTouchTime = Date.now();
-            velocityY = 0;
+            this.startX = e.touches[0].pageX - posX;
+            this.startY = e.touches[0].pageY - posY;
         }
     });
 
     zoomArea.addEventListener('touchmove', e => {
         e.preventDefault();
-        const now = Date.now();
         if (touchType === 'zoom' && e.touches.length === 2) {
-            const t1 = e.touches[0], t2 = e.touches[1];
-            const dist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
-            const midX = (t1.pageX + t2.pageX) / 2;
-            const midY = (t1.pageY + t2.pageY) / 2;
-            scale = Math.min(Math.max(lastScale * (dist / this.startDist), 1), 8);
-            posX = midX - (this.startMidX - lastPosX) * (scale / lastScale);
-            posY = midY - (this.startMidY - lastPosY) * (scale / lastScale);
-        } else if (touchType === 'drag' && e.touches.length === 1) {
-            const currentY = e.touches[0].pageY;
-            const dt = now - lastTouchTime;
-            if (dt > 0) velocityY = (currentY - lastTouchY) / dt;
-            posX = e.touches[0].pageX - this.startX1;
-            posY = e.touches[0].pageY - this.startY1;
-            lastTouchY = currentY;
-            lastTouchTime = now;
+            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            scale = Math.min(Math.max(lastScale * (dist / this.startDist), 1), 5);
+        } else if (touchType === 'drag') {
+            posX = e.touches[0].pageX - this.startX;
+            posY = e.touches[0].pageY - this.startY;
         }
         updateTransform();
     });
 
-    zoomArea.addEventListener('touchend', () => {
-        if (scale <= 1.05 && Math.abs(velocityY) > 0.1) startInertia();
-        if (scale < 1.05) { scale = 1; posX = 0; updateTransform(); }
-        touchType = null;
-    });
-
-    function startInertia() {
-        const friction = 0.95;
-        function step() {
-            if (Math.abs(velocityY) < 0.01) return;
-            posY += velocityY * 16;
-            velocityY *= friction;
-            updateTransform();
-            animationId = requestAnimationFrame(step);
-        }
-        animationId = requestAnimationFrame(step);
-    }
-
-    function stopInertia() { cancelAnimationFrame(animationId); velocityY = 0; }
-
     function updateTransform() {
-        if (scale <= 1.05) {
-            posX = 0;
-            if (posY > 0) { posY = 0; velocityY = 0; }
-            const limit = zoomArea.offsetHeight - wrapper.offsetHeight;
-            if (posY < limit && wrapper.offsetHeight > zoomArea.offsetHeight) { posY = limit; velocityY = 0; }
-        }
         wrapper.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
     }
 
     function closeViewer() {
-        document.getElementById('menu-screen').style.display = 'flex';
         document.getElementById('viewer-container').style.display = 'none';
-        stopInertia();
+        wrapper.innerHTML = '';
     }
 </script>
 </body>
