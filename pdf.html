@@ -19,6 +19,7 @@
             background: var(--dark-bg); color: var(--text-main);
             font-family: 'Segoe UI', Roboto, sans-serif;
             overflow: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
         #menu-screen {
@@ -37,37 +38,36 @@
         }
         .file-item:active { transform: scale(0.98); background: rgba(255,255,255,0.12); }
 
-        .file-info { display: flex; align-items: center; gap: 15px; flex: 1; cursor: pointer; height: 100%; }
+        .file-info { display: flex; align-items: center; gap: 15px; flex: 1; cursor: pointer; }
         .file-icon { font-size: 20px; color: var(--main-gold); }
         .file-name { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 
         .btn-action {
             width: 35px; height: 35px; border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-weight: bold; border: none; z-index: 5;
+            cursor: pointer; font-weight: bold; border: none;
         }
         .btn-add { background: var(--main-gold); color: #000; }
         .btn-del { background: rgba(255, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
 
-        /* ВЬЮВЕР С ГРАНИЦАМИ */
         #viewer-container { display: none; position: fixed; inset: 0; background: #000; z-index: 100; touch-action: none; }
         .viewer-header {
             height: 60px; background: #000; display: flex; align-items: center;
             justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #222;
-            position: relative; z-index: 110;
+            z-index: 110; position: relative;
         }
         #header-filename { color: var(--main-gold); font-weight: 800; font-size: 12px; text-transform: uppercase; }
         .close-view-btn { color: var(--danger); font-size: 28px; font-weight: bold; cursor: pointer; padding: 10px; }
 
         #zoom-area { 
             position: absolute; top: 60px; bottom: 0; left: 0; right: 0; 
-            overflow: hidden; background: #1a1a1a; display: flex; justify-content: center;
+            overflow: hidden; background: #000;
         }
         #viewer-wrapper { 
             position: absolute; width: 100%; transform-origin: 0 0; 
-            will-change: transform; display: flex; flex-direction: column; align-items: center;
+            will-change: transform; pointer-events: none;
         }
-        canvas { width: 100% !important; height: auto !important; display: block; background: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        canvas { width: 100% !important; height: auto !important; display: block; background: #fff; margin-bottom: 2px; }
 
         #file-input { display: none; }
         .loader { color: var(--main-gold); font-size: 12px; text-align: center; margin-top: 50%; font-weight: bold; letter-spacing: 2px; }
@@ -120,7 +120,7 @@
             const storedName = localStorage.getItem('volt_pdf_name_' + i);
             const isLoaded = localStorage.getItem('volt_pdf_data_' + i);
             const isSystem = !!defaultFiles[i];
-            const displayName = storedName || (isSystem ? defaultFiles[i].replace('.pdf', '').toUpperCase() : `ПУСТОЙ СЛОТ ${i}`);
+            const displayName = (storedName || (isSystem ? defaultFiles[i] : `ПУСТОЙ СЛОТ ${i}`)).replace('.pdf', '').toUpperCase();
 
             container.innerHTML += `
                 <div class="file-item">
@@ -129,9 +129,9 @@
                         <div class="file-name">${displayName}</div>
                     </div>
                     <div class="controls">
-                        ${isLoaded 
-                            ? `<button class="btn-action btn-del" onclick="deleteFile(${i})">✕</button>` 
-                            : (!isSystem ? `<button class="btn-action btn-add" onclick="triggerInput(${i})">+</button>` : '')
+                        ${!isSystem && isLoaded 
+                            ? `<button class="btn-action btn-del" onclick="deleteFile(${i}); event.stopPropagation();">✕</button>` 
+                            : (!isSystem ? `<button class="btn-action btn-add" onclick="triggerInput(${i}); event.stopPropagation();">+</button>` : '')
                         }
                     </div>
                 </div>`;
@@ -159,7 +159,7 @@
     }
 
     function triggerInput(s) { activeSlot = s; document.getElementById('file-input').click(); }
-    function deleteFile(s) { if(confirm("Удалить?")) { localStorage.removeItem('volt_pdf_data_'+s); localStorage.removeItem('volt_pdf_name_'+s); createMenu(); } }
+    function deleteFile(s) { if(confirm("Удалить файл?")) { localStorage.removeItem('volt_pdf_data_'+s); localStorage.removeItem('volt_pdf_name_'+s); createMenu(); } }
 
     document.getElementById('file-input').onchange = (e) => {
         const f = e.target.files[0]; if(!f) return;
@@ -174,8 +174,8 @@
 
     async function renderPDF(data, filename) {
         document.getElementById('viewer-container').style.display = 'block';
-        document.getElementById('header-filename').innerText = filename;
-        wrapper.innerHTML = '<div class="loader">ПОДГОТОВКА СТРАНИЦ...</div>';
+        document.getElementById('header-filename').innerText = filename.toUpperCase();
+        wrapper.innerHTML = '<div class="loader">ЗАГРУЗКА...</div>';
         scale = 1; posX = 0; posY = 0;
         updateTransform();
 
@@ -183,15 +183,16 @@
         wrapper.innerHTML = '';
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
-            const vp = page.getViewport({ scale: 2 });
+            const vp = page.getViewport({ scale: 1.5 });
             const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
             canvas.width = vp.width; canvas.height = vp.height;
             wrapper.appendChild(canvas);
-            await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+            await page.render({ canvasContext: ctx, viewport: vp }).promise;
         }
     }
 
-    // УМНЫЙ ЗУМ В ТОЧКУ КАСАНИЯ И ГРАНИЦЫ
+    // БЫСТРЫЙ И ПЛАВНЫЙ СКРОЛЛ/ЗУМ
     zoomArea.addEventListener('touchstart', e => {
         if (e.touches.length === 2) {
             touchType = 'zoom';
@@ -204,7 +205,7 @@
             this.startX = e.touches[0].pageX - posX;
             this.startY = e.touches[0].pageY - posY;
         }
-    });
+    }, { passive: false });
 
     zoomArea.addEventListener('touchmove', e => {
         e.preventDefault();
@@ -212,10 +213,7 @@
             const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             const midX = (e.touches[0].pageX + e.touches[1].pageX) / 2;
             const midY = (e.touches[0].pageY + e.touches[1].pageY) / 2;
-            
-            const newScale = Math.min(Math.max(lastScale * (dist / startDist), 1), 6);
-            
-            // Зум в точку между пальцами
+            const newScale = Math.min(Math.max(lastScale * (dist / startDist), 1), 5);
             posX = midX - (startMidX - lastPosX) * (newScale / lastScale);
             posY = midY - (startMidY - lastPosY) * (newScale / lastScale);
             scale = newScale;
@@ -223,32 +221,28 @@
             posX = e.touches[0].pageX - this.startX;
             posY = e.touches[0].pageY - this.startY;
         }
-        updateTransform();
-    });
+        requestAnimationFrame(updateTransform);
+    }, { passive: false });
 
     function updateTransform() {
         const wWidth = wrapper.offsetWidth * scale;
         const wHeight = wrapper.offsetHeight * scale;
-        const containerWidth = zoomArea.offsetWidth;
-        const containerHeight = zoomArea.offsetHeight;
+        const cWidth = zoomArea.offsetWidth;
+        const cHeight = zoomArea.offsetHeight;
 
-        // Ограничение по горизонтали (чтобы не уходило за края)
-        if (wWidth <= containerWidth) {
-            posX = (containerWidth - wWidth) / 2;
-        } else {
+        if (wWidth <= cWidth) posX = (cWidth - wWidth) / 2;
+        else {
             if (posX > 0) posX = 0;
-            if (posX < containerWidth - wWidth) posX = containerWidth - wWidth;
+            if (posX < cWidth - wWidth) posX = cWidth - wWidth;
         }
 
-        // Ограничение по вертикали
-        if (wHeight <= containerHeight) {
-            posY = 0;
-        } else {
+        if (wHeight <= cHeight) posY = 0;
+        else {
             if (posY > 0) posY = 0;
-            if (posY < containerHeight - wHeight) posY = containerHeight - wHeight;
+            if (posY < cHeight - wHeight) posY = cHeight - wHeight;
         }
 
-        wrapper.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+        wrapper.style.transform = `translate3d(${posX}px, ${posY}px, 0) scale(${scale})`;
     }
 
     function closeViewer() {
