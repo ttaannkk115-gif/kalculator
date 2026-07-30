@@ -2,378 +2,658 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VOLT MASTER - ОБЪЯВЛЕНИЯ</title>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Товарный чек - VoltMaster</title>
     <style>
-        :root { 
-            --gold: #ffc107; --bg: #0f0f0f; --card: rgba(255,255,255,0.07); --danger: #ff4444; 
-            --tg-grad: linear-gradient(135deg, #0088cc 0%, #00aaff 100%);
-            --wa-grad: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+        * {
+            box-sizing: border-box;
+            font-family: 'Arial', 'Helvetica', sans-serif;
         }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: #fff; margin: 0; padding: 0; overflow-x: hidden; }
-        
-        /* БАННЕР МАХАЧКАЛА */
-        .banner-container { padding: 15px; background: var(--bg); display: flex; justify-content: center; }
-        .banner-content { 
-            width: 100%; max-width: 500px; 
-            background: linear-gradient(180deg, #1a1a14 0%, #0f0f0f 100%); 
-            border: 1px solid #4a3f20; border-radius: 25px; 
-            padding: 20px 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
-        }
-        .banner-subtitle { color: var(--gold); font-size: 11px; font-weight: 800; letter-spacing: 3px; margin-bottom: 5px; text-transform: uppercase; }
-        .banner-title { color: #fff; font-size: 26px; font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
-        .site-stats { background: #000; color: #777; font-size: 10px; text-align: center; padding: 8px; border-bottom: 1px solid #222; display: flex; justify-content: center; gap: 12px; text-transform: uppercase; }
-        .site-stats b { color: var(--gold); }
-        
-        .tabs { display: flex; background: #161616; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
-        .tab { flex: 1; padding: 18px; text-align: center; font-weight: bold; color: #888; cursor: pointer; font-size: 13px; transition: 0.3s; }
-        .tab.active { color: var(--gold); border-bottom: 3px solid var(--gold); background: rgba(255,193,7,0.05); }
-        
-        .search-container { padding: 10px 15px; background: #111; }
-        .search-input { width: 100%; padding: 12px; background: #000; border: 1px solid #333; border-radius: 10px; color: #fff; outline: none; box-sizing: border-box; }
-        
-        .container { padding: 15px; max-width: 500px; margin: auto; min-height: 80vh; }
-        .section { display: none; animation: fadeIn 0.3s ease; }
-        .section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .card { background: var(--card); border-radius: 18px; overflow: hidden; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08); position: relative; transition: 0.3s; }
-        .card.is-mine { border: 1px solid rgba(255, 193, 7, 0.3); box-shadow: 0 0 15px rgba(255, 193, 7, 0.05); }
-        .card img { width: 100%; height: auto; max-height: 400px; object-fit: contain; background: #000; display: block; }
-        
-        .info { padding: 15px; }
-        .price { color: var(--gold); font-size: 22px; font-weight: 900; }
-        .price.neg { color: #aaa; font-size: 15px; font-weight: 400; font-style: italic; }
-        .title { font-size: 18px; font-weight: 600; margin: 5px 0; color: #fff; }
-        .desc { font-size: 13px; color: #aaa; white-space: pre-wrap; margin-top: 8px; line-height: 1.4; }
-        
-        .contact-btn { 
-            display: flex !important; align-items: center; justify-content: center; gap: 10px;
-            width: 100%; padding: 14px 0; margin: 15px 0 5px 0; 
-            color: #fff !important; text-align: center; text-decoration: none !important; 
-            border-radius: 14px !important; font-weight: 800; font-size: 14px; 
-            text-transform: uppercase; letter-spacing: 0.5px; border: none !important;
-            box-sizing: border-box; transition: all 0.2s ease;
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
         }
-        .btn-tg { background: var(--tg-grad) !important; box-shadow: 0 4px 15px rgba(0, 136, 204, 0.4); }
-        .btn-wa { background: var(--wa-grad) !important; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); }
-        
-        .timer-bottom { text-align: center; padding: 10px; font-size: 11px; font-family: monospace; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.3); color: #777; }
-        .actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; z-index: 10; }
-        .btn-sm { width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        
-        .form { background: #161616; padding: 20px; border-radius: 20px; border: 1px solid #333; }
-        input, textarea, select { width: 100%; margin-bottom: 12px; padding: 14px; border: 1px solid #333; border-radius: 12px; background: #000; color: #fff; box-sizing: border-box; }
-        .btn-main { width: 100%; padding: 16px; background: var(--gold); border: none; border-radius: 12px; font-weight: 800; cursor: pointer; color: #000; }
-        .tag-item { background: rgba(255,193,7,0.1); border: 1px solid var(--gold); color: var(--gold); padding: 10px; border-radius: 12px; font-size: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+
+        body {
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 10px 5px;
+            color: #000;
+        }
+
+        .receipt-card {
+            width: 100%;
+            max-width: 850px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        @media (min-width: 600px) {
+            body {
+                padding: 15px;
+            }
+            .receipt-card {
+                padding: 25px 30px;
+            }
+        }
+
+        /* Верхний блок: заголовок и логотип */
+        .header-section {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .title-block {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            max-width: 100%;
+        }
+
+        .title-text {
+            white-space: nowrap;
+        }
+
+        .title-block input[type="text"] {
+            font-size: 16px;
+            font-weight: bold;
+            width: 70px;
+            border: none;
+            border-bottom: 1px dashed #999;
+            padding: 0 2px;
+            text-align: center;
+        }
+
+        .title-block input[type="date"] {
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            border-bottom: 1px dashed #999;
+            padding: 0 2px;
+            max-width: 145px;
+        }
+
+        .logo-block {
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            color: #111;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .logo-block span {
+            color: #0056b3;
+        }
+
+        .logo-icon {
+            font-size: 18px;
+        }
+
+        .divider {
+            border-top: 2px solid #000;
+            margin-bottom: 12px;
+        }
+
+        /* Поля Продавец / Покупатель */
+        .info-table {
+            width: 100%;
+            margin-bottom: 15px;
+            font-size: 13px;
+            border-collapse: collapse;
+        }
+
+        .info-table td {
+            padding: 4px 0;
+            vertical-align: middle;
+        }
+
+        .info-label {
+            font-weight: bold;
+            width: 90px;
+            white-space: nowrap;
+            padding-right: 5px;
+        }
+
+        .info-input {
+            width: 100%;
+            border: 1px solid #ccc;
+            padding: 5px 6px;
+            font-size: 13px;
+            border-radius: 2px;
+        }
+
+        /* Таблица товаров */
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            margin-bottom: 10px;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid #000;
+        }
+
+        table.items-table {
+            width: 100%;
+            min-width: 550px;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        table.items-table th, 
+        table.items-table td {
+            border: 1px solid #000;
+            padding: 4px 5px;
+        }
+
+        table.items-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .col-num { width: 30px; text-align: center; }
+        .col-qty { width: 100px; }
+        .col-price { width: 85px; }
+        .col-sum { width: 95px; }
+        .col-remove { width: 28px; text-align: center; border: none !important; }
+
+        .items-table input {
+            border: none;
+            width: 100%;
+            font-size: 12px;
+            background: transparent;
+        }
+
+        .items-table input:focus {
+            outline: 1px solid #0056b3;
+            background: #fff;
+        }
+
+        /* Итоговая секция */
+        .summary-section {
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .total-row .total-val {
+            font-size: 16px;
+            margin-left: 10px;
+        }
+
+        .count-summary {
+            font-size: 12px;
+            margin-bottom: 3px;
+        }
+
+        .words-summary {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            word-wrap: break-word;
+        }
+
+        /* Предупреждение */
+        .notice-block {
+            font-size: 11px;
+            font-style: italic;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        /* Подписи */
+        .signatures-flex {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        .sig-item {
+            display: flex;
+            align-items: flex-end;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .sig-line-input {
+            border: none;
+            border-bottom: 1px solid #000;
+            flex: 1;
+            margin-left: 6px;
+            min-width: 50px;
+        }
+
+        /* Кнопки управления */
+        .btn-panel {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 15px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .btn-add {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .btn-reset {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-print {
+            background-color: #2c3e50;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-remove {
+            background-color: #e74c3c;
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        /* Печатный вид */
+        @media print {
+            body, html {
+                background: white;
+                padding: 0;
+                overflow: visible;
+            }
+
+            .receipt-card {
+                box-shadow: none;
+                padding: 0;
+                width: 100%;
+                max-width: none;
+                overflow: visible;
+            }
+
+            .btn-panel, .col-remove, .btn-remove-cell {
+                display: none !important;
+            }
+
+            .table-wrapper {
+                overflow: visible;
+                border: none;
+            }
+
+            table.items-table {
+                min-width: 100%;
+            }
+
+            input {
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+            }
+
+            table.items-table th, 
+            table.items-table td {
+                border: 1px solid #000 !important;
+            }
+
+            .notice-block {
+                border-bottom: 1px solid #000 !important;
+            }
+
+            .signatures-flex {
+                flex-wrap: nowrap;
+            }
+        }
     </style>
 </head>
 <body>
 
-<div class="banner-container">
-    <div class="banner-content">
-        <div class="banner-subtitle">БЕСПЛАТНЫЕ ОБЪЯВЛЕНИЯ</div>
-        <div class="banner-title">🌴 МАХАЧКАЛА</div>
+<div class="receipt-card">
+    <!-- Шапка -->
+    <div class="header-section">
+        <div class="title-block">
+            <span class="title-text">Товарный чек №</span> 
+            <input type="text" id="doc-number" value="" placeholder="16618" oninput="saveData()"> 
+            <span class="title-text">от</span> 
+            <input type="date" id="doc-date" onchange="saveData()">
+        </div>
+        <div class="logo-block">
+            volt<span>Master</span> <div class="logo-icon">⚡</div>
+        </div>
     </div>
-</div>
 
-<div class="site-stats">
-    <span id="site-counter">ВИЗИТЫ: <b>...</b></span>
-    <span id="user-counter">ЮЗЕРЫ: <b>...</b></span>
-    <span id="my-id-display">ID: <b>...</b></span>
-</div>
+    <div class="divider"></div>
 
-<div class="tabs">
-    <div id="t-view" class="tab active" onclick="tab('view')">📢 СТЕНА</div>
-    <div id="t-create" class="tab" onclick="handleAdminAuth()">➕ ПОДАТЬ</div>
-</div>
+    <!-- Инфо продавца и покупателя -->
+    <table class="info-table">
+        <tr>
+            <td class="info-label">Продавец:</td>
+            <td><input type="text" class="info-input" id="seller" value="" placeholder="ФИО / ИП / Компания" oninput="saveData()"></td>
+        </tr>
+        <tr>
+            <td class="info-label">Покупатель:</td>
+            <td><input type="text" class="info-input" id="buyer" value="" placeholder="ФИО / Номер телефона / Данные" oninput="saveData()"></td>
+        </tr>
+    </table>
 
-<div id="search-bar" class="search-container">
-    <input type="text" id="searchInput" class="search-input" placeholder="Поиск по объявлениям..." oninput="render()">
-</div>
+    <!-- Верхняя панель управления -->
+    <div class="btn-panel" style="margin-bottom: 12px; margin-top: 0;">
+        <button class="btn btn-add" onclick="addRow(); saveData();">+ Добавить товар</button>
+        <button class="btn btn-reset" onclick="resetForm()">Сброс</button>
+    </div>
 
-<div class="container">
-    <div id="view" class="section active"><div id="feed"></div></div>
-    <div id="create" class="section">
-        <div id="admin-area"></div>
-        <form id="adForm" class="form" onsubmit="return false;">
-            <div id="edit-type-container" style="display:none; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">
-                <label style="color:var(--gold); font-size:11px; font-weight:bold;">СТАТУС (АДМИН):</label>
-                <select id="edit-p-type" style="margin-top:5px"><option value="n">Обычное (24ч)</option><option value="e">Вечное (⭐)</option></select>
-            </div>
-            <input type="text" id="inp-t" placeholder="Название товара" required>
-            <input type="number" id="inp-p" placeholder="Цена (пусто — договорная)">
-            <input type="text" id="inp-contact" placeholder="Ник TG или номер WA">
-            <textarea id="inp-d" rows="4" placeholder="Описание товара..."></textarea>
-            <input type="file" id="inp-f" accept="image/*" style="display:none" onchange="prepImg()">
-            <button type="button" class="btn-main" style="background:#222; color:var(--gold); margin-bottom:12px; border: 1px solid #444;" onclick="document.getElementById('inp-f').click()">📸 ФОТО</button>
-            <div id="img-st" style="text-align:center; font-size:12px; margin-bottom:15px; color:var(--gold); font-weight:bold;"></div>
-            <button type="button" id="btn-save" class="btn-main" onclick="save()">ОПУБЛИКОВАТЬ</button>
-        </form>
+    <!-- Таблица товаров -->
+    <div class="table-wrapper">
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th class="col-num">№</th>
+                    <th>Товар</th>
+                    <th class="col-qty">Количество</th>
+                    <th class="col-price">Цена</th>
+                    <th class="col-sum">Сумма</th>
+                    <th class="col-remove"></th>
+                </tr>
+            </thead>
+            <tbody id="items-body">
+                <!-- Товарные позиции -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Итоги -->
+    <div class="summary-section">
+        <div class="total-row">
+            ИТОГО: <span class="total-val" id="grand-total">0,00</span>
+        </div>
+
+        <div class="count-summary" id="count-summary-text">
+            Всего наименований 0, на сумму 0,00 руб.
+        </div>
+
+        <div class="words-summary" id="words-summary-text">
+            Ноль рублей 00 копеек
+        </div>
+    </div>
+
+    <!-- Предупреждение -->
+    <div class="notice-block">
+        Внимание: Возврат товара возможен в течение 14 календарных дней, при условии сохранения товарного вида.<br>
+        Для оформления возврата потребуются паспортные данные!
+    </div>
+
+    <!-- Подписи -->
+    <div class="signatures-flex">
+        <div class="sig-item">
+            Отпустил <input type="text" class="sig-line-input">
+        </div>
+        <div class="sig-item">
+            Получил <input type="text" class="sig-line-input">
+        </div>
+    </div>
+
+    <!-- Печать -->
+    <div class="btn-panel" style="margin-top: 25px;">
+        <button class="btn btn-print" onclick="window.print()">Распечатать / Сохранить в PDF</button>
     </div>
 </div>
 
 <script>
-    const firebaseConfig = { databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com" };
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+    const STORAGE_KEY = 'voltmaster_receipt_data_v4';
 
-    const DB_PATH = "marketplace_ads", ADMIN_PATH = "marketplace_settings", MS_IN_24H = 86400000, ETERNAL_VAL = 9999999999999;
-    
-    // 1. ИДЕНТИФИКАЦИЯ И РЕГИСТРАЦИЯ ЮЗЕРА
-    let MY_ID = localStorage.getItem('volt_master_uid');
-    if (!MY_ID) {
-        MY_ID = Math.floor(1000 + Math.random() * 9000).toString();
-        localStorage.setItem('volt_master_uid', MY_ID);
-    }
-    database.ref(`${ADMIN_PATH}/users/${MY_ID}`).set(true); 
-    document.getElementById('my-id-display').innerHTML = `ID: <b>${MY_ID}</b>`;
+    function numberToWordsRubles(num) {
+        const rubles = Math.floor(num);
+        const kopecks = Math.round((num - rubles) * 100);
 
-    let ads = [], whitelist = {}, curImg = "", editId = null, isAdmin = false, clickCount = 0, timerInt = null;
-    let viewedAds = new Set();
+        if (rubles === 0) return 'Ноль рублей ' + String(kopecks).padStart(2, '0') + ' копеек';
 
-    // 2. АВТОСОХРАНЕНИЕ В ПАМЯТЬ БРАУЗЕРА
-    function autoSaveCode() { localStorage.setItem('voltmaster_code_v1', document.documentElement.outerHTML); }
-    setInterval(autoSaveCode, 60000);
+        const units = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+        const unitsFem = ['', 'одна', 'две', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+        const teens = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать', 'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
+        const tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+        const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
 
-    function saveDraft() {
-        if (editId) return;
-        const draft = {
-            t: document.getElementById('inp-t').value,
-            p: document.getElementById('inp-p').value,
-            c: document.getElementById('inp-contact').value,
-            d: document.getElementById('inp-d').value,
-            img: curImg
-        };
-        localStorage.setItem('vm_market_draft', JSON.stringify(draft));
-    }
+        function declension(n, forms) {
+            n = Math.abs(n) % 100;
+            const n1 = n % 10;
+            if (n > 10 && n < 20) return forms[2];
+            if (n1 > 1 && n1 < 5) return forms[1];
+            if (n1 === 1) return forms[0];
+            return forms[2];
+        }
 
-    function loadDraft() {
-        const draft = JSON.parse(localStorage.getItem('vm_market_draft') || '{}');
-        if(draft.t) document.getElementById('inp-t').value = draft.t;
-        if(draft.p) document.getElementById('inp-p').value = draft.p;
-        if(draft.c) document.getElementById('inp-contact').value = draft.c;
-        if(draft.d) document.getElementById('inp-d').value = draft.d;
-        if(draft.img) { curImg = draft.img; document.getElementById('img-st').innerText = "ЧЕРНОВИК ФОТО ВОССТАНОВЛЕН ✅"; }
-    }
+        function convertGroup(n, isFemale) {
+            let result = '';
+            const h = Math.floor(n / 100);
+            const t = Math.floor((n % 100) / 10);
+            const u = n % 10;
 
-    document.querySelectorAll('#adForm input, #adForm textarea').forEach(el => {
-        el.addEventListener('input', saveDraft);
-    });
+            if (h > 0) result += hundreds[h] + ' ';
+            if (t === 1) {
+                result += teens[u] + ' ';
+            } else {
+                if (t > 0) result += tens[t] + ' ';
+                if (u > 0) result += (isFemale ? unitsFem[u] : units[u]) + ' ';
+            }
+            return result;
+        }
 
-    // 3. АДМИН ПАНЕЛЬ
-    function handleAdminAuth() {
-        clickCount++;
-        if (clickCount === 3) {
-            if (prompt("Пароль:") === "Gazik0303") { isAdmin = !isAdmin; render(); alert("АДМИН: " + (isAdmin ? "ВКЛ" : "ВЫКЛ")); }
-            clickCount = 0;
-        } else { setTimeout(() => clickCount = 0, 1000); }
-        tab('create');
-    }
+        let str = '';
+        const millions = Math.floor(rubles / 1000000);
+        const thousands = Math.floor((rubles % 1000000) / 1000);
+        const remainder = rubles % 1000;
 
-    function tab(n) {
-        document.querySelectorAll('.tab, .section').forEach(el => el.classList.remove('active'));
-        document.getElementById('t-'+n).classList.add('active');
-        document.getElementById(n).classList.add('active');
-        document.getElementById('search-bar').style.display = (n === 'view') ? 'block' : 'none';
-        document.getElementById('edit-type-container').style.display = isAdmin ? 'block' : 'none';
-        if (n === 'create' && !editId) loadDraft();
-        if (n === 'view') { startTick(); } else { stopTick(); }
+        if (millions > 0) {
+            str += convertGroup(millions, false) + declension(millions, ['миллион', 'миллиона', 'миллионов']) + ' ';
+        }
+        if (thousands > 0) {
+            str += convertGroup(thousands, true) + declension(thousands, ['тысяча', 'тысячи', 'тысяч']) + ' ';
+        }
+        if (remainder > 0) {
+            str += convertGroup(remainder, false);
+        }
+
+        str = str.trim();
+        str = str.charAt(0).toUpperCase() + str.slice(1);
+
+        const rubWord = declension(rubles, ['рубль', 'рубля', 'рублей']);
+        const kopWord = declension(kopecks, ['копейка', 'копейки', 'копеек']);
+
+        return `${str} ${rubWord} ${String(kopecks).padStart(2, '0')} ${kopWord}`;
     }
 
-    // 4. УЧЕТ ПРОСМОТРОВ (ОТСЛЕЖИВАНИЕ СКРОЛЛА)
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const id = entry.target.getAttribute('data-id');
-                if (id && !viewedAds.has(id)) {
-                    viewedAds.add(id);
-                    database.ref(`${DB_PATH}/${id}/views`).transaction(c => (c || 0) + 1);
-                }
+    function updateIndexes() {
+        const rows = document.querySelectorAll('#items-body tr');
+        rows.forEach((row, index) => {
+            row.querySelector('.row-index').innerText = index + 1;
+        });
+    }
+
+    function addRow(name = '', qty = '', unit = 'шт', price = '') {
+        const tbody = document.getElementById('items-body');
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+            <td class="col-num row-index">1</td>
+            <td><input type="text" class="item-name" placeholder="Наименование товара" value="${name}" oninput="calculateRow(this); saveData()"></td>
+            <td class="col-qty">
+                <div style="display:flex; gap:2px;">
+                    <input type="number" class="item-qty" value="${qty}" placeholder="1" min="0.1" step="any" style="text-align:right; width:60%;" oninput="calculateRow(this); saveData()">
+                    <input type="text" class="item-unit" value="${unit}" style="width:40%; text-align:center;" oninput="saveData()">
+                </div>
+            </td>
+            <td class="col-price"><input type="number" class="item-price" value="${price}" placeholder="0" min="0" step="0.01" style="text-align:right;" oninput="calculateRow(this); saveData()"></td>
+            <td class="col-sum"><input type="text" class="item-sum" value="0,00" style="text-align:right;" readonly></td>
+            <td class="col-remove btn-remove-cell">
+                <button class="btn btn-remove" onclick="removeRow(this)">✕</button>
+            </td>
+        `;
+
+        tbody.appendChild(row);
+        updateIndexes();
+        calculateRow(row.querySelector('.item-qty'));
+    }
+
+    function removeRow(button) {
+        const row = button.closest('tr');
+        row.remove();
+        updateIndexes();
+        calculateTotal();
+        saveData();
+    }
+
+    function calculateRow(input) {
+        const row = input.closest('tr');
+        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+        const price = parseFloat(row.querySelector('.item-price').value) || 0;
+        const sumField = row.querySelector('.item-sum');
+
+        const total = qty * price;
+        sumField.value = total.toFixed(2).replace('.', ',');
+
+        calculateTotal();
+    }
+
+    function calculateTotal() {
+        const rows = document.querySelectorAll('#items-body tr');
+        let grandTotal = 0;
+        let count = 0;
+
+        rows.forEach(row => {
+            const sumVal = parseFloat(row.querySelector('.item-sum').value.replace(',', '.')) || 0;
+            if (row.querySelector('.item-name').value.trim() !== '' || sumVal > 0) {
+                grandTotal += sumVal;
+                count++;
             }
         });
-    }, { threshold: 0.5 });
 
-    // 5. ЗАГРУЗКА ИЗ БАЗЫ
-    function load() {
-        const cache = localStorage.getItem('vm_ads_cache');
-        if(cache) { ads = JSON.parse(cache); render(); }
+        const formattedTotal = grandTotal.toFixed(2).replace('.', ',');
+        document.getElementById('grand-total').innerText = formattedTotal;
+        document.getElementById('count-summary-text').innerText = `Всего наименований ${count}, на сумму ${formattedTotal} руб.`;
+        document.getElementById('words-summary-text').innerText = numberToWordsRubles(grandTotal);
+    }
 
-        database.ref(DB_PATH).on('value', snap => {
-            const data = snap.val(), now = Date.now();
-            ads = data ? Object.keys(data).map(k => ({...data[k], id: k})) : [];
-            ads = ads.filter(a => {
-                if (a.ts !== ETERNAL_VAL && (now - a.ts) >= MS_IN_24H) { database.ref(`${DB_PATH}/${a.id}`).remove(); return false; }
-                return true;
+    // Сохранение всех данных в localStorage
+    function saveData() {
+        const rows = document.querySelectorAll('#items-body tr');
+        const items = [];
+
+        rows.forEach(row => {
+            items.push({
+                name: row.querySelector('.item-name').value,
+                qty: row.querySelector('.item-qty').value,
+                unit: row.querySelector('.item-unit').value,
+                price: row.querySelector('.item-price').value
             });
-            localStorage.setItem('vm_ads_cache', JSON.stringify(ads));
-            render();
         });
 
-        database.ref(`${ADMIN_PATH}/whitelist`).on('value', snap => { whitelist = snap.val() || {}; if(isAdmin) renderWhitelist(); });
-        
-        // СТАТИСТИКА
-        database.ref(`${ADMIN_PATH}/totalVisits`).transaction(c => (c || 0) + 1);
-        database.ref(`${ADMIN_PATH}/totalVisits`).on('value', s => document.getElementById('site-counter').innerHTML = `ВИЗИТЫ: <b>${s.val() || 0}</b>`);
-        database.ref(`${ADMIN_PATH}/users`).on('value', snap => {
-            const uCount = snap.val() ? Object.keys(snap.val()).length : 0;
-            document.getElementById('user-counter').innerHTML = `ЮЗЕРЫ: <b>${uCount}</b>`;
-        });
+        const data = {
+            docNumber: document.getElementById('doc-number').value,
+            docDate: document.getElementById('doc-date').value,
+            seller: document.getElementById('seller').value,
+            buyer: document.getElementById('buyer').value,
+            items: items
+        };
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
 
-    function render() {
-        const query = document.getElementById('searchInput').value.toLowerCase();
-        const adminArea = document.getElementById('admin-area');
-        const feed = document.getElementById('feed');
-        
-        if(isAdmin) {
-            adminArea.innerHTML = `<div class="form" style="margin-bottom:20px; border:1px solid var(--gold)">
-                <div id="whitelist-tags"></div>
-                <div style="display:flex; gap:8px; margin-top:10px">
-                    <input type="text" id="w-id" placeholder="ID юзера" style="margin:0">
-                    <select id="p-type" style="margin:0; width:100px"><option value="n">Врем.</option><option value="e">Вечн.</option></select>
-                    <button class="btn-main" style="width:50px; padding:0" onclick="addW()">+</button>
-                </div>
-            </div>`;
-            renderWhitelist();
-        } else { adminArea.innerHTML = ''; }
+    // Загрузка данных при старте / обновлении страницы
+    function loadData() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                document.getElementById('doc-number').value = data.docNumber || '';
+                document.getElementById('seller').value = data.seller || '';
+                document.getElementById('buyer').value = data.buyer || '';
 
-        const filtered = ads.filter(a => a.title.toLowerCase().includes(query) || a.desc.toLowerCase().includes(query)).sort((a,b) => b.ts - a.ts);
-        
-        feed.innerHTML = filtered.length ? filtered.map(a => {
-            const isMine = a.owner === MY_ID;
-            const isEternal = a.ts === ETERNAL_VAL;
-            let contactLink = "#", contactClass = "btn-tg", contactText = "Telegram";
-            if (a.contact) {
-                const clean = a.contact.replace(/\D/g,'');
-                if (clean.length >= 10 && /^\d+$/.test(clean)) { contactLink = `https://wa.me/${clean}`; contactClass = "btn-wa"; contactText = "WhatsApp"; }
-                else { contactLink = a.contact.startsWith('http') ? a.contact : `https://t.me/${a.contact.replace('@','')}`; contactClass = "btn-tg"; contactText = "Telegram"; }
+                if (data.docDate) {
+                    document.getElementById('doc-date').value = data.docDate;
+                } else {
+                    document.getElementById('doc-date').valueAsDate = new Date();
+                }
+
+                document.getElementById('items-body').innerHTML = '';
+                if (data.items && data.items.length > 0) {
+                    data.items.forEach(item => {
+                        addRow(item.name, item.qty, item.unit || 'шт', item.price);
+                    });
+                } else {
+                    addEmptyRows();
+                }
+            } catch (e) {
+                setDefaultData();
             }
-            
-            return `<div class="card ${isMine ? 'is-mine' : ''}" data-id="${a.id}">
-                ${(isAdmin || isMine) ? `<div class="actions">
-                    ${isAdmin ? `<button class="btn-sm" style="background:#2196f3; color:#fff" onclick="up('${a.id}')">↑</button>` : ''}
-                    <button class="btn-sm" style="background:var(--gold)" onclick="edit('${a.id}')">✎</button>
-                    <button class="btn-sm" style="background:var(--danger); color:#fff" onclick="del('${a.id}')">×</button>
-                </div>` : ''}
-                ${a.img ? `<img src="${a.img}" loading="lazy">` : ''}
-                <div class="info">
-                    <div style="display:flex; justify-content:space-between">
-                        ${a.price > 0 ? `<span class="price">${Number(a.price).toLocaleString()} ₽</span>` : `<span class="price neg">Цена договорная</span>`}
-                        <span style="color:#666; font-size:11px">👁 ${a.views || 0}</span>
-                    </div>
-                    <div class="title">${a.title}</div>
-                    <div class="desc">${a.desc}</div>
-                    ${a.contact ? `<a href="${contactLink}" target="_blank" class="contact-btn ${contactClass}"><span>💬</span> ${contactText}</a>` : ''}
-                </div>
-                ${(isAdmin || isMine) ? `<div class="timer-bottom" style="${isEternal ? 'color:var(--gold); font-weight:bold' : ''}">${isEternal ? '⭐ ВЕЧНОЕ ОБЪЯВЛЕНИЕ' : `<span id="timer-${a.id}">...</span>`}</div>` : ''}
-            </div>`;
-        }).join('') : '<div style="text-align:center; padding:50px; color:#555">Объявлений нет</div>';
-        document.querySelectorAll('.card').forEach(c => observer.observe(c));
-    }
-
-    // ТАЙМЕРЫ
-    function tick() {
-        const now = Date.now();
-        ads.forEach(a => {
-            const el = document.getElementById(`timer-${a.id}`);
-            if(!el || a.ts === ETERNAL_VAL) return;
-            const diff = MS_IN_24H - (now - a.ts);
-            if(diff <= 0) { el.innerText = "УДАЛЕНИЕ..."; return; }
-            const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
-            el.innerText = `УДАЛИТСЯ ЧЕРЕЗ: ${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-        });
-    }
-    function startTick() { stopTick(); timerInt = setInterval(tick, 1000); tick(); }
-    function stopTick() { clearInterval(timerInt); }
-
-    // ФОТО И СОХРАНЕНИЕ
-    function prepImg() {
-        const file = document.getElementById('inp-f').files[0]; if(!file) return;
-        document.getElementById('img-st').innerText = "СЖАТИЕ...";
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas'); const MAX = 800; let w = img.width, h = img.height;
-                if (w > MAX) { h *= MAX/w; w = MAX; }
-                canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                curImg = canvas.toDataURL('image/jpeg', 0.7); document.getElementById('img-st').innerText = "ГОТОВО ✅";
-                saveDraft();
-            }; img.src = e.target.result;
-        }; reader.readAsDataURL(file);
-    }
-
-    async function save() {
-        const title = document.getElementById('inp-t').value.trim();
-        const price = document.getElementById('inp-p').value || 0;
-        const desc = document.getElementById('inp-d').value.trim();
-        const contact = document.getElementById('inp-contact').value.trim();
-        const now = Date.now();
-        const userStatus = whitelist[MY_ID];
-        if(!title) return alert("Введите название!");
-
-        if (!editId && !isAdmin && !userStatus) { 
-            if (ads.some(a => a.owner === MY_ID)) return alert("Лимит: 1 активный пост.");
-        }
-
-        let finalTs = now;
-        if (editId) {
-            const old = ads.find(x => x.id === editId);
-            finalTs = isAdmin ? (document.getElementById('edit-p-type').value === 'e' ? ETERNAL_VAL : now) : old.ts;
         } else {
-            finalTs = (isAdmin && document.getElementById('p-type').value === 'e') || userStatus === 'eternal' ? ETERNAL_VAL : now;
+            setDefaultData();
         }
-
-        const data = { title, price, desc, contact, img: curImg, owner: editId ? ads.find(x => x.id === editId).owner : MY_ID, views: editId ? (ads.find(x => x.id === editId).views || 0) : 0, ts: finalTs };
-        await database.ref(`${DB_PATH}/${editId || database.ref(DB_PATH).push().key}`).set(data);
-        resetForm(); tab('view');
     }
 
-    // ФУНКЦИИ АДМИНКИ
-    async function up(id) { await database.ref(`${DB_PATH}/${id}`).update({ ts: Date.now() }); }
-    async function del(id) { if(confirm("Удалить?")) await database.ref(`${DB_PATH}/${id}`).remove(); }
-    async function addW() { 
-        const id = document.getElementById('w-id').value.trim();
-        const status = document.getElementById('p-type').value === 'e' ? 'eternal' : 'temporary';
-        if(id) { await database.ref(`${ADMIN_PATH}/whitelist/${id}`).set(status); document.getElementById('w-id').value = ""; }
-    }
-    async function toggleW(id, cur) { await database.ref(`${ADMIN_PATH}/whitelist/${id}`).set(cur === 'eternal' ? 'temporary' : 'eternal'); }
-    async function delW(id) { if(confirm("Удалить пользователя?")) await database.ref(`${ADMIN_PATH}/whitelist/${id}`).remove(); }
-    
-    function renderWhitelist() { 
-        const c = document.getElementById('whitelist-tags'); if(!c) return;
-        c.innerHTML = Object.keys(whitelist).map(id => `
-            <div class="tag-item">
-                <span><b>${id}</b> [${whitelist[id] === 'eternal' ? 'ВЕЧН' : 'ВРЕМ'}]</span>
-                <div>
-                    <button onclick="toggleW('${id}', '${whitelist[id]}')" style="border:none; background:none; color:#fff; cursor:pointer; margin-right:10px">🔄</button>
-                    <button onclick="delW('${id}')" style="border:none; background:none; color:var(--danger); cursor:pointer">✖</button>
-                </div>
-            </div>`).join('');
+    function setDefaultData() {
+        document.getElementById('doc-date').valueAsDate = new Date();
+        document.getElementById('seller').value = '';
+        document.getElementById('buyer').value = '';
+        document.getElementById('doc-number').value = '';
+        document.getElementById('items-body').innerHTML = '';
+        addEmptyRows();
     }
 
-    function edit(id) { 
-        const a = ads.find(x => x.id === id); if(!a) return;
-        editId = id; document.getElementById('inp-t').value = a.title; 
-        document.getElementById('inp-p').value = a.price > 0 ? a.price : ""; document.getElementById('inp-d').value = a.desc;
-        document.getElementById('inp-contact').value = a.contact || ""; curImg = a.img || "";
-        if(isAdmin) document.getElementById('edit-p-type').value = a.ts === ETERNAL_VAL ? 'e' : 'n';
-        document.getElementById('btn-save').innerText = "СОХРАНИТЬ"; tab('create');
+    function addEmptyRows() {
+        addRow('', '', 'шт', '');
     }
 
+    // Функция Сброса: очищает товары и номер, но ОСТАВЛЯЕТ Покупателя и Продавца
     function resetForm() {
-        editId = null; curImg = "";
-        document.getElementById('adForm').reset();
-        document.getElementById('img-st').innerText = "";
-        document.getElementById('btn-save').innerText = "ОПУБЛИКОВАТЬ";
-        localStorage.removeItem('vm_market_draft');
+        if (confirm('Очистить чек? Имя покупателя и продавца останется.')) {
+            document.getElementById('doc-number').value = '';
+            document.getElementById('doc-date').valueAsDate = new Date();
+            document.getElementById('items-body').innerHTML = '';
+            addEmptyRows();
+            calculateTotal();
+            saveData();
+        }
     }
 
-    load(); startTick();
+    window.onload = loadData;
 </script>
+
 </body>
 </html>
