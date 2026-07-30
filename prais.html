@@ -815,9 +815,11 @@ function addItem(id) {
     sync();
 }
 
+// Исправленная функция manualUpdate: обновляет данные без полного перерендера каталога
 function manualUpdate(id, val) {
     const num = parseFloat(val) || 0;
-    const existingIndex = state.findIndex(s => s.id === id && !s.k25);
+    const existingIndex = state.findIndex(s => s.id === id && !s.k25 && !s.isDemo);
+    
     if (existingIndex !== -1) {
         if (num <= 0) state.splice(existingIndex, 1);
         else state[existingIndex].qty = num;
@@ -826,8 +828,119 @@ function manualUpdate(id, val) {
         db.forEach(s => s.items.forEach(i => { if(i.id === id) baseItem = i; }));
         if(baseItem) state.push({...baseItem, qty: num, k25: false});
     }
-    sync();
+    
+    // Сохраняем и обновляем только смету и итоговые суммы, НЕ перерисовывая каталог
+    localStorage.setItem('smeta_current', JSON.stringify(state));
+    syncEstimateOnly(); 
 }
+
+// Отдельная функция для обновления только таблицы сметы и итогов (без трогания инпутов)
+function syncEstimateOnly() {
+    const container = document.getElementById('estimate');
+    let total = 0;
+
+    if(!state.length) {
+        if(container) container.innerHTML = "<p style='text-align:center; color:#999; padding:20px;'>Смета пуста</p>";
+    } else {
+        let html = `<table class="estimate-table">
+            <thead>
+                <tr>
+                    <th>№</th>
+                    <th>Работа</th>
+                    <th>Кол-во</th>
+                    <th>Цена</th>
+                    <th>Сумма</th>
+                    <th class="no-print"></th>
+                </tr>
+            </thead>
+            <tbody>`;
+            
+        state.forEach((item, i) => {
+            const discountPercent = parseFloat(document.getElementById('inp-discount')?.value) || 0;
+            let basePrice = item.p;
+            if (item.k25) basePrice = Math.round(item.p * 2.5);
+            if (item.isDemo) basePrice = Math.round(item.p * 0.5);
+            const itemTotal = basePrice * item.qty;
+            
+            let priceWithDiscount, totalWithDiscount;
+
+            if (basePrice > 0) {
+                priceWithDiscount = Math.round(basePrice * (1 - discountPercent / 100));
+                totalWithDiscount = Math.round(itemTotal * (1 - discountPercent / 100));
+            } else {
+                priceWithDiscount = basePrice;
+                totalWithDiscount = itemTotal;
+            }
+
+            total += totalWithDiscount;
+
+            let displayName = item.n;
+            if (item.isDemo) displayName += ' <b style="color:orange;">(Демонтаж)</b>';
+            if (item.k25) displayName += '<br><small style="color:red">(Надб. за слож. x2.5)</small>';
+
+            html += `<tr>
+                <td>${i+1}</td>
+                <td style="font-size:12px;">${displayName}</td>
+                <td>
+                    <input type="number" class="qty-inp" value="${item.qty}" onchange="updateQty(${i}, this.value)">
+                    <div style="font-size:10px; color:#999;">${item.u}</div>
+                </td>
+                <td style="white-space:nowrap">
+                    ${(discountPercent > 0 && basePrice > 0) ? `<del style="color: #999; font-size: 0.8em;">${basePrice}</del><br>` : ''}
+                    ${priceWithDiscount.toLocaleString()}
+                </td>
+                <td style="font-weight:bold;">
+                    ${(discountPercent > 0 && basePrice > 0) ? `<del style="color: #999; font-weight: normal; font-size: 0.8em;">${itemTotal}</del><br>` : ''}
+                    ${totalWithDiscount.toLocaleString()}
+                </td>
+                <td class="no-print">
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+                        <label style="font-size:9px; display:flex; flex-direction:column; align-items:center;">
+                            <input type="checkbox" ${item.k25 ? 'checked' : ''} onchange="toggleK(${i})">
+                            x2.5
+                        </label>
+                        
+                        <label style="font-size:9px; color:orange; display:flex; flex-direction:column; align-items:center;">
+                            <input type="checkbox" ${item.isDemo ? 'checked' : ''} onchange="toggleDemo(${i})">
+                            0.5
+                        </label>
+                        
+                        <button style="color:red; border:none; background:none; font-size:18px;" onclick="remove(${i})">✕</button>
+                    </div>
+                </td>
+            </tr>`;
+        });
+        if(container) container.innerHTML = html + `</tbody></table>`;
+    }
+    
+    let totalOriginal = 0;
+    state.forEach(item => {
+        let basePrice = item.p;
+        if (item.k25) basePrice = Math.round(item.p * 2.5);
+        if (item.isDemo) basePrice = Math.round(item.p * 0.5);
+        totalOriginal += basePrice * item.qty;
+    });
+
+    const discountPercent = parseFloat(document.getElementById('inp-discount')?.value) || 0;
+    const formattedFinal = total.toLocaleString();
+    const formattedOriginal = totalOriginal.toLocaleString();
+
+    const totalEl = document.getElementById('total');
+    if (totalEl) totalEl.innerText = formattedFinal;
+
+    const bottomTotalEl = document.getElementById('total-bottom');
+    if (bottomTotalEl) {
+        if (discountPercent > 0) {
+            bottomTotalEl.innerHTML = `
+                <del style="color: #999; font-size: 18px; font-weight: normal; margin-right: 10px;">${formattedOriginal} ₽</del>
+                <span style="color: #e53935;">${formattedFinal}</span>
+            `;
+        } else {
+            bottomTotalEl.innerHTML = `<span>${formattedFinal}</span>`;
+        }
+    }
+}
+
 
 // СИНХРОНИЗАЦИЯ И ПАМЯТЬ
 function sync() {
