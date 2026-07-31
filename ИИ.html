@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VoltMaster AI — Умный расчёт работ</title>
+    <title>VoltMaster AI — Авторасчёт из prais.html</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -14,6 +14,7 @@
             --text-muted: #94a3b8;
             --border-color: #334155;
             --success: #22c55e;
+            --danger: #ef4444;
         }
 
         * {
@@ -49,6 +50,17 @@
             font-size: 1.4rem;
             color: var(--accent-color);
         }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-top: 6px;
+        }
+        .status-loading { background: #eab308; color: #000; }
+        .status-success { background: var(--success); color: #000; }
+        .status-error { background: var(--danger); color: #fff; }
 
         .card {
             background-color: var(--card-bg);
@@ -143,25 +155,6 @@
             font-weight: bold;
             color: var(--success);
         }
-
-        .examples {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-
-        .chip {
-            background: var(--border-color);
-            padding: 4px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .chip:hover {
-            color: var(--text-main);
-        }
     </style>
 </head>
 <body>
@@ -169,24 +162,17 @@
 <div class="container">
     <div class="header">
         <h1>VoltMaster AI Assistant</h1>
-        <p style="font-size: 0.85rem; color: var(--text-muted);">Автоматический расчёт выполненных электромонтажных работ</p>
+        <div id="statusBadge" class="status-badge status-loading">Загрузка prais.html...</div>
     </div>
 
     <div class="card">
         <label for="inputText">Опишите выполненную работу:</label>
-        <textarea id="inputText" placeholder="Например: Поставил 5 подрозетников, протянул 25м кабеля в гофре и установил 2 автомата"></textarea>
-        
-        <div class="examples">
-            <span>Примеры:</span>
-            <span class="chip" onclick="setExample(1)">5 розеток, 20м кабеля</span>
-            <span class="chip" onclick="setExample(2)">Штробление 10 метров и щит на 12 модулей</span>
-        </div>
-
+        <textarea id="inputText" placeholder="Например: Поставил 5 подрозетников, проложил 25м кабеля и установил 2 автомата"></textarea>
         <button class="btn" onclick="processText()">Посчитать работу</button>
     </div>
 
     <div class="card" id="outputCard" style="display: none;">
-        <label>Распознанные позиции из прайса:</label>
+        <label>Распознанные позиции из prais.html:</label>
         <div id="resultsList" class="results"></div>
         <div id="totalBox" class="total-box">
             <span>Итого к оплате:</span>
@@ -196,80 +182,83 @@
 </div>
 
 <script>
-    // 1. База данных Вашего прайса (prais.html)
-    // Ключевые слова (keywords) помогают AI распознавать разные варианты написания в тексте
-    const priceList = [
-        {
-            id: 'socket_install',
-            name: 'Установка и сборка розетки/выключателя',
-            price: 250,
-            unit: 'шт',
-            keywords: ['розетк', 'розетки', 'розеток', 'выключател', 'выключатель', 'подрозетник']
-        },
-        {
-            id: 'cable_laying',
-            name: 'Прокладка кабеля',
-            price: 80,
-            unit: 'м',
-            keywords: ['кабел', 'провод', 'проводки', 'метраж', 'кабеля']
-        },
-        {
-            id: 'corrugation',
-            name: 'Прокладка гофры',
-            price: 50,
-            unit: 'м',
-            keywords: ['гофр', 'гофре', 'гофры']
-        },
-        {
-            id: 'strobe',
-            name: 'Штробление стены',
-            price: 350,
-            unit: 'м',
-            keywords: ['штроб', 'штробление', 'штробы', 'штробить']
-        },
-        {
-            id: 'breaker_install',
-            name: 'Установка автомата',
-            price: 400,
-            unit: 'шт',
-            keywords: ['автомат', 'автомата', 'автоматов', 'узо', 'диф']
-        },
-        {
-            id: 'panel_mount',
-            name: 'Монтаж и сборка щита',
-            price: 3000,
-            unit: 'шт',
-            keywords: ['щит', 'щитка', 'щиток', 'щита', 'бокс']
-        },
-        {
-            id: 'chandelier',
-            name: 'Установка люстры / светильника',
-            price: 800,
-            unit: 'шт',
-            keywords: ['люстр', 'люстры', 'светильник', 'бра', 'спот']
-        }
-    ];
+    let priceList = [];
 
-    // 2. Функция искусственного интеллекта (парсер текста)
+    // Загрузка и разбор файла prais.html
+    async function loadPraisFile() {
+        const badge = document.getElementById('statusBadge');
+        try {
+            const response = await fetch('prais.html');
+            if (!response.ok) throw new Error('Файл не найден');
+
+            const htmlText = await response.text();
+            
+            // Парсим HTML-код прайса
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, 'text/html');
+            
+            // Сканируем все строки таблиц или списков в прайсе
+            const rows = doc.querySelectorAll('tr, .price-item, li');
+            
+            priceList = [];
+
+            rows.forEach((row, index) => {
+                const text = row.innerText.trim();
+                // Ищем цену (число в конце строки или перед символом ₽/руб)
+                const priceMatch = text.match(/(\d[\d\s]*)\s*(?:руб|₽|р)?/i);
+
+                if (priceMatch) {
+                    const price = parseFloat(priceMatch[1].replace(/\s+/g, ''));
+                    // Очищаем название работы от цены
+                    let name = text.replace(priceMatch[0], '').trim();
+
+                    if (name.length > 2 && !isNaN(price) && price > 0) {
+                        priceList.push({
+                            id: 'item_' + index,
+                            name: name,
+                            price: price,
+                            // Создаем массив ключевых слов из слов в названии работы
+                            keywords: name.toLowerCase().split(/[\s,.-]+/).filter(w => w.length > 3)
+                        });
+                    }
+                }
+            });
+
+            if (priceList.length > 0) {
+                badge.className = 'status-badge status-success';
+                badge.innerText = `Прайс загружен (${priceList.length} позиций)`;
+            } else {
+                throw new Error('Не удалось извлечь позиции');
+            }
+
+        } catch (error) {
+            console.error(error);
+            badge.className = 'status-badge status-error';
+            badge.innerText = 'Ошибка загрузки prais.html (нужен локальный сервер или загрузка через GitHub/Netlify)';
+        }
+    }
+
+    // Алгоритм распознавания текста
     function parseWorkText(text) {
         const cleanedText = text.toLowerCase();
         const foundItems = [];
 
         priceList.forEach(item => {
-            // Регулярное выражение для поиска чисел перед или после ключевых слов
             item.keywords.forEach(keyword => {
-                const regexBefore = new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:${item.unit}|метров|метра|шт|штук)?\\s*${keyword}`, 'gi');
-                const regexAfter = new RegExp(`${keyword}\\s*(?:-[^\\s]+)?\\s*(\\d+(?:[.,]\\d+)?)`, 'gi');
+                // Корень слова (первые 4-5 букв) для гибкого поиска склонений
+                const root = keyword.slice(0, Math.max(4, keyword.length - 2)); 
+                if (!root) return;
+
+                const regexBefore = new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:шт|метра| метров|м)?\\s*${root}`, 'gi');
+                const regexAfter = new RegExp(`${root}\\w*\\s*(\\d+(?:[.,]\\d+)?)`, 'gi');
 
                 let match;
-                
-                // Ищем конструкцию "5 розеток" или "5м кабеля"
+
                 while ((match = regexBefore.exec(cleanedText)) !== null) {
                     const count = parseFloat(match[1].replace(',', '.'));
                     addOrUpdateItem(foundItems, item, count);
                 }
 
-                // Ищем конструкцию "розетки 5 шт"
                 while ((match = regexAfter.exec(cleanedText)) !== null) {
                     const count = parseFloat(match[1].replace(',', '.'));
                     addOrUpdateItem(foundItems, item, count);
@@ -283,7 +272,7 @@
     function addOrUpdateItem(list, item, count) {
         const existing = list.find(i => i.id === item.id);
         if (existing) {
-            existing.count = Math.max(existing.count, count); // Избегаем дублирования при нескольких совпадениях ключевых слов
+            existing.count = Math.max(existing.count, count);
         } else {
             list.push({
                 ...item,
@@ -293,7 +282,6 @@
         }
     }
 
-    // 3. Вывод результатов
     function processText() {
         const input = document.getElementById('inputText').value;
         const resultsList = document.getElementById('resultsList');
@@ -306,7 +294,7 @@
         resultsList.innerHTML = '';
 
         if (items.length === 0) {
-            resultsList.innerHTML = '<div style="color: var(--text-muted); text-align: center;">Не удалось автоматически распознать позиции из прайса. Попробуйте указать количества цифрами (например: "5 розеток").</div>';
+            resultsList.innerHTML = '<div style="color: var(--text-muted); text-align: center;">Не удалось точно сопоставить с позициями из prais.html. Попробуйте написать подробнее (например: "5 розеток").</div>';
             grandTotalEl.innerText = '0 ₽';
             outputCard.style.display = 'flex';
             return;
@@ -321,7 +309,7 @@
             row.innerHTML = `
                 <div class="details">
                     <span>${item.name}</span>
-                    <span class="sub">${item.count} ${item.unit} × ${item.price} ₽</span>
+                    <span class="sub">${item.count} × ${item.price} ₽</span>
                 </div>
                 <span class="price">${item.total.toLocaleString('ru-RU')} ₽</span>
             `;
@@ -332,16 +320,8 @@
         outputCard.style.display = 'flex';
     }
 
-    // Вспомогательные примеры
-    function setExample(num) {
-        const input = document.getElementById('inputText');
-        if (num === 1) {
-            input.value = "Установил 5 розеток, проложил 20 метров кабеля и 20м гофры";
-        } else if (num === 2) {
-            input.value = "Сделал штробление 10м, смонтировал 1 щит и поставил 4 автомата";
-        }
-        processText();
-    }
+    // Запускаем считывание прайса при загрузке страницы
+    window.onload = loadPraisFile;
 </script>
 
 </body>
