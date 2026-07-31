@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoltMaster AI — Умный расчёт работ</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-color: #38bdf8;
+            --accent-hover: #0284c7;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 1.4rem;
+            color: var(--accent-color);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--text-main);
+            font-size: 1rem;
+            resize: vertical;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: var(--accent-color);
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: #000;
+            font-weight: 700;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .results {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--bg-color);
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        .result-item .details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .result-item .sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .result-item .price {
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        .total-box {
+            margin-top: 10px;
+            padding: 12px;
+            background-color: rgba(34, 197, 94, 0.1);
+            border: 1px solid var(--success);
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--success);
+        }
+
+        .examples {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .chip {
+            background: var(--border-color);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .chip:hover {
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>VoltMaster AI Assistant</h1>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">Автоматический расчёт выполненных электромонтажных работ</p>
+    </div>
+
+    <div class="card">
+        <label for="inputText">Опишите выполненную работу:</label>
+        <textarea id="inputText" placeholder="Например: Поставил 5 подрозетников, протянул 25м кабеля в гофре и установил 2 автомата"></textarea>
+        
+        <div class="examples">
+            <span>Примеры:</span>
+            <span class="chip" onclick="setExample(1)">5 розеток, 20м кабеля</span>
+            <span class="chip" onclick="setExample(2)">Штробление 10 метров и щит на 12 модулей</span>
+        </div>
+
+        <button class="btn" onclick="processText()">Посчитать работу</button>
+    </div>
+
+    <div class="card" id="outputCard" style="display: none;">
+        <label>Распознанные позиции из прайса:</label>
+        <div id="resultsList" class="results"></div>
+        <div id="totalBox" class="total-box">
+            <span>Итого к оплате:</span>
+            <span id="grandTotal">0 ₽</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. База данных Вашего прайса (prais.html)
+    // Ключевые слова (keywords) помогают AI распознавать разные варианты написания в тексте
+    const priceList = [
+        {
+            id: 'socket_install',
+            name: 'Установка и сборка розетки/выключателя',
+            price: 250,
+            unit: 'шт',
+            keywords: ['розетк', 'розетки', 'розеток', 'выключател', 'выключатель', 'подрозетник']
+        },
+        {
+            id: 'cable_laying',
+            name: 'Прокладка кабеля',
+            price: 80,
+            unit: 'м',
+            keywords: ['кабел', 'провод', 'проводки', 'метраж', 'кабеля']
+        },
+        {
+            id: 'corrugation',
+            name: 'Прокладка гофры',
+            price: 50,
+            unit: 'м',
+            keywords: ['гофр', 'гофре', 'гофры']
+        },
+        {
+            id: 'strobe',
+            name: 'Штробление стены',
+            price: 350,
+            unit: 'м',
+            keywords: ['штроб', 'штробление', 'штробы', 'штробить']
+        },
+        {
+            id: 'breaker_install',
+            name: 'Установка автомата',
+            price: 400,
+            unit: 'шт',
+            keywords: ['автомат', 'автомата', 'автоматов', 'узо', 'диф']
+        },
+        {
+            id: 'panel_mount',
+            name: 'Монтаж и сборка щита',
+            price: 3000,
+            unit: 'шт',
+            keywords: ['щит', 'щитка', 'щиток', 'щита', 'бокс']
+        },
+        {
+            id: 'chandelier',
+            name: 'Установка люстры / светильника',
+            price: 800,
+            unit: 'шт',
+            keywords: ['люстр', 'люстры', 'светильник', 'бра', 'спот']
+        }
+    ];
+
+    // 2. Функция искусственного интеллекта (парсер текста)
+    function parseWorkText(text) {
+        const cleanedText = text.toLowerCase();
+        const foundItems = [];
+
+        priceList.forEach(item => {
+            // Регулярное выражение для поиска чисел перед или после ключевых слов
+            item.keywords.forEach(keyword => {
+                const regexBefore = new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:${item.unit}|метров|метра|шт|штук)?\\s*${keyword}`, 'gi');
+                const regexAfter = new RegExp(`${keyword}\\s*(?:-[^\\s]+)?\\s*(\\d+(?:[.,]\\d+)?)`, 'gi');
+
+                let match;
+                
+                // Ищем конструкцию "5 розеток" или "5м кабеля"
+                while ((match = regexBefore.exec(cleanedText)) !== null) {
+                    const count = parseFloat(match[1].replace(',', '.'));
+                    addOrUpdateItem(foundItems, item, count);
+                }
+
+                // Ищем конструкцию "розетки 5 шт"
+                while ((match = regexAfter.exec(cleanedText)) !== null) {
+                    const count = parseFloat(match[1].replace(',', '.'));
+                    addOrUpdateItem(foundItems, item, count);
+                }
+            });
+        });
+
+        return foundItems;
+    }
+
+    function addOrUpdateItem(list, item, count) {
+        const existing = list.find(i => i.id === item.id);
+        if (existing) {
+            existing.count = Math.max(existing.count, count); // Избегаем дублирования при нескольких совпадениях ключевых слов
+        } else {
+            list.push({
+                ...item,
+                count: count,
+                total: count * item.price
+            });
+        }
+    }
+
+    // 3. Вывод результатов
+    function processText() {
+        const input = document.getElementById('inputText').value;
+        const resultsList = document.getElementById('resultsList');
+        const grandTotalEl = document.getElementById('grandTotal');
+        const outputCard = document.getElementById('outputCard');
+
+        if (!input.trim()) return;
+
+        const items = parseWorkText(input);
+        resultsList.innerHTML = '';
+
+        if (items.length === 0) {
+            resultsList.innerHTML = '<div style="color: var(--text-muted); text-align: center;">Не удалось автоматически распознать позиции из прайса. Попробуйте указать количества цифрами (например: "5 розеток").</div>';
+            grandTotalEl.innerText = '0 ₽';
+            outputCard.style.display = 'flex';
+            return;
+        }
+
+        let totalSum = 0;
+
+        items.forEach(item => {
+            totalSum += item.total;
+            const row = document.createElement('div');
+            row.className = 'result-item';
+            row.innerHTML = `
+                <div class="details">
+                    <span>${item.name}</span>
+                    <span class="sub">${item.count} ${item.unit} × ${item.price} ₽</span>
+                </div>
+                <span class="price">${item.total.toLocaleString('ru-RU')} ₽</span>
+            `;
+            resultsList.appendChild(row);
+        });
+
+        grandTotalEl.innerText = `${totalSum.toLocaleString('ru-RU')} ₽`;
+        outputCard.style.display = 'flex';
+    }
+
+    // Вспомогательные примеры
+    function setExample(num) {
+        const input = document.getElementById('inputText');
+        if (num === 1) {
+            input.value = "Установил 5 розеток, проложил 20 метров кабеля и 20м гофры";
+        } else if (num === 2) {
+            input.value = "Сделал штробление 10м, смонтировал 1 щит и поставил 4 автомата";
+        }
+        processText();
+    }
+</script>
+
+</body>
+</html>
