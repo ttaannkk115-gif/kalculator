@@ -185,6 +185,12 @@
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
         }
 
+        .tool-select {
+            padding: 8px 6px;
+            max-width: 115px;
+            text-overflow: ellipsis;
+        }
+
         .tool-btn:active, .tool-select:active {
             transform: scale(0.96);
             background: #3a3a3c;
@@ -306,6 +312,50 @@
         #bgCanvas { z-index: 1; }
         #drawCanvas { z-index: 2; }
 
+        /* Элемент Лупы */
+        #magnifier {
+            position: absolute;
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            border: 3px solid #0a84ff;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+            pointer-events: none;
+            display: none;
+            z-index: 99;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+        #magnifierCanvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        #magnifierCrosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 12px;
+            height: 12px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        #magnifierCrosshair::before, #magnifierCrosshair::after {
+            content: '';
+            position: absolute;
+            background-color: rgba(255, 69, 58, 0.85);
+        }
+
+        #magnifierCrosshair::before {
+            top: 5px; left: 0; width: 12px; height: 2px;
+        }
+
+        #magnifierCrosshair::after {
+            top: 0; left: 5px; width: 2px; height: 12px;
+        }
+
         /* Модальные окна */
         .modal-overlay {
             position: absolute;
@@ -403,14 +453,12 @@
 
     <!-- Основное приложение -->
     <div id="app-container">
-        <!-- Панель инструментов в стиле Paint -->
+        <!-- Панель инструментов -->
         <div id="toolbar">
-            <!-- 1. Меню (Первый элемент) -->
             <div class="tool-group">
                 <button id="menuBtn" class="tool-btn" style="background:#3a3a3c; font-weight:600;">☰ Меню</button>
             </div>
 
-            <!-- 2. Цвет и Толщина -->
             <div class="tool-group">
                 <div class="color-picker-wrapper">
                     <input type="color" id="colorPicker" value="#000000" title="Цвет">
@@ -420,11 +468,10 @@
                 </div>
             </div>
 
-            <!-- 3. Выбор инструмента / Рука -->
             <div class="tool-group">
                 <select id="toolSelect" class="tool-select">
-                    <option value="hand">✋ Рука</option>
                     <option value="pen">✏️ Кисть</option>
+                    <option value="hand">✋ Рука</option>
                     <option value="line">📏 Прямая</option>
                     <option value="rect">🔲 Прямоугольник</option>
                     <option value="circle">⭕ Круг</option>
@@ -433,13 +480,11 @@
                 <button id="eraserBtn" class="tool-btn">🧹 Ластик</button>
             </div>
 
-            <!-- 4. Фото -->
             <div class="tool-group">
                 <button id="photoBtn" class="tool-btn">+ Фото</button>
                 <button id="photoEditBtn" class="tool-btn" style="display: none;">🖼️ Двиг. Фото</button>
             </div>
 
-            <!-- 5. Сброс -->
             <div class="tool-group">
                 <button id="clearBtn" class="tool-btn">🗑️ Сброс</button>
             </div>
@@ -455,6 +500,12 @@
         <div id="canvas-container">
             <canvas id="bgCanvas"></canvas>
             <canvas id="drawCanvas"></canvas>
+            
+            <!-- Динамическая лупа -->
+            <div id="magnifier">
+                <canvas id="magnifierCanvas" width="130" height="130"></canvas>
+                <div id="magnifierCrosshair"></div>
+            </div>
         </div>
     </div>
 
@@ -463,6 +514,10 @@
         const bgCtx = bgCanvas.getContext('2d');
         const drawCanvas = document.getElementById('drawCanvas');
         const ctx = drawCanvas.getContext('2d');
+
+        const magnifier = document.getElementById('magnifier');
+        const magnifierCanvas = document.getElementById('magnifierCanvas');
+        const magnifierCtx = magnifierCanvas.getContext('2d');
 
         const colorPicker = document.getElementById('colorPicker');
         const brushSize = document.getElementById('brushSize');
@@ -493,6 +548,7 @@
 
         let isDrawing = false;
         let isEraserActive = false;
+        let previousTool = 'pen';
         let isPhotoTransformMode = false;
 
         let photoImage = null;
@@ -544,7 +600,7 @@
             } else {
                 photoEditBtn.style.display = 'none';
                 if (isPhotoTransformMode) {
-                    enableHandMode();
+                    enablePenMode();
                 }
             }
         }
@@ -647,6 +703,73 @@
             ctx.restore();
         }
 
+        /* Функция обновления лупы строго СВЕРХУ пальца */
+        function updateMagnifier(screenX, screenY, canvasPos) {
+            magnifier.style.display = 'block';
+
+            const magWidth = 130;
+            const magHeight = 130;
+            const offsetAboveFinger = 60; // Отступ выше пальца
+
+            // Выравниваем лупу строго по центру пальца по горизонтали
+            let posX = screenX - (magWidth / 2);
+            let posY = screenY - magHeight - offsetAboveFinger;
+
+            // Ограничения краев экрана по горизонтали
+            const container = document.getElementById('canvas-container');
+            if (posX < 10) posX = 10;
+            if (posX + magWidth > container.clientWidth - 10) posX = container.clientWidth - magWidth - 10;
+
+            // Если палец у самого верхнего края экрана, смещаем лупу чуть ниже пальца
+            if (posY < 10) {
+                posY = screenY + 40;
+            }
+
+            magnifier.style.left = posX + 'px';
+            magnifier.style.top = posY + 'px';
+
+            magnifierCtx.clearRect(0, 0, magWidth, magHeight);
+            magnifierCtx.save();
+
+            const zoomFactor = 2.5; // Увеличение
+            magnifierCtx.translate(magWidth / 2, magHeight / 2);
+            magnifierCtx.scale(zoomFactor * scale, zoomFactor * scale);
+            magnifierCtx.translate(-canvasPos.x, -canvasPos.y);
+
+            // Отрисовка фона в лупе
+            magnifierCtx.fillStyle = '#ffffff';
+            magnifierCtx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            if (currentBgType === 'grid') {
+                const gridSize = 30;
+                magnifierCtx.beginPath();
+                magnifierCtx.strokeStyle = '#e5e5ea';
+                magnifierCtx.lineWidth = 1;
+
+                for (let x = 0; x <= CANVAS_WIDTH; x += gridSize) {
+                    magnifierCtx.moveTo(x, 0);
+                    magnifierCtx.lineTo(x, CANVAS_HEIGHT);
+                }
+                for (let y = 0; y <= CANVAS_HEIGHT; y += gridSize) {
+                    magnifierCtx.moveTo(0, y);
+                    magnifierCtx.lineTo(CANVAS_WIDTH, y);
+                }
+                magnifierCtx.stroke();
+            }
+
+            if (photoImage) {
+                magnifierCtx.drawImage(photoImage, photoX, photoY, photoW, photoH);
+            }
+
+            // Отрисовка слоя рисунка в лупе
+            magnifierCtx.drawImage(memCanvas, 0, 0);
+            magnifierCtx.restore();
+        }
+
+        function hideMagnifier() {
+            magnifier.style.display = 'none';
+        }
+
         function saveCurrentState() {
             if (!currentProjectId) return;
             const dataUrl = memCanvas.toDataURL('image/png');
@@ -703,7 +826,7 @@
                 panX = 0;
                 panY = 0;
                 resizeScreen();
-                enableHandMode();
+                enablePenMode();
             };
             img.src = project.dataUrl;
         }
@@ -780,6 +903,7 @@
 
         function handleStart(e) {
             if (e.touches && e.touches.length === 2) {
+                hideMagnifier();
                 isDrawing = false;
                 isDraggingPhoto = false;
                 isResizingPhoto = false;
@@ -854,11 +978,17 @@
                 memCtx.restore();
 
                 redrawMainCanvas();
+
+                if (e.touches) {
+                    const rect = drawCanvas.getBoundingClientRect();
+                    updateMagnifier(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top, pos);
+                }
             }
         }
 
         function handleMove(e) {
             if (e.touches && e.touches.length === 2) {
+                hideMagnifier();
                 const rect = drawCanvas.getBoundingClientRect();
                 const currentDist = Math.hypot(
                     e.touches[0].clientX - e.touches[1].clientX,
@@ -937,6 +1067,11 @@
                 lastX = pos.x;
                 lastY = pos.y;
                 redrawMainCanvas();
+
+                if (e.touches) {
+                    const rect = drawCanvas.getBoundingClientRect();
+                    updateMagnifier(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top, pos);
+                }
             } else if (['line', 'rect', 'circle', 'triangle'].includes(tool)) {
                 redrawMainCanvas();
                 ctx.save();
@@ -944,11 +1079,17 @@
                 ctx.scale(scale, scale);
                 renderShape(ctx, tool, startX, startY, pos.x, pos.y, colorPicker.value, brushSize.value);
                 ctx.restore();
+
+                if (e.touches) {
+                    const rect = drawCanvas.getBoundingClientRect();
+                    updateMagnifier(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top, pos);
+                }
             }
         }
 
         function handleEnd(e) {
             initialPinchDist = 0;
+            hideMagnifier();
 
             if (isDraggingPhoto || isResizingPhoto) {
                 isDraggingPhoto = false;
@@ -976,29 +1117,30 @@
             isPhotoTransformMode = false;
             eraserBtn.classList.remove('active');
             photoEditBtn.classList.remove('active');
+            hideMagnifier();
         }
 
-        function enableHandMode() {
+        function enablePenMode() {
             resetTools();
-            toolSelect.value = 'hand';
+            toolSelect.value = 'pen';
+            previousTool = 'pen';
             drawBackground();
         }
 
         function enableEraserMode() {
-            resetTools();
-            isEraserActive = true;
-            eraserBtn.classList.add('active');
+            if (!isEraserActive) {
+                previousTool = toolSelect.value;
+                resetTools();
+                isEraserActive = true;
+                eraserBtn.classList.add('active');
+            } else {
+                resetTools();
+                toolSelect.value = previousTool;
+            }
             drawBackground();
         }
 
-        eraserBtn.addEventListener('click', () => {
-            if (isEraserActive) {
-                resetTools();
-                toolSelect.value = 'pen';
-            } else {
-                enableEraserMode();
-            }
-        });
+        eraserBtn.addEventListener('click', enableEraserMode);
 
         photoEditBtn.addEventListener('click', () => {
             const state = !isPhotoTransformMode;
@@ -1010,6 +1152,7 @@
 
         toolSelect.addEventListener('change', () => {
             resetTools();
+            previousTool = toolSelect.value;
             drawBackground();
         });
 
@@ -1073,7 +1216,7 @@
                     photoY = currentCenterY - photoH / 2;
 
                     updatePhotoEditBtnVisibility();
-                    enableHandMode();
+                    enablePenMode();
                     saveCurrentState();
                 };
                 img.src = evt.target.result;
@@ -1089,7 +1232,6 @@
             updateTransform();
         });
 
-        // КНОПКА СБРОС (с проверкой наличия фото)
         clearBtn.addEventListener('click', () => {
             if (photoImage) {
                 modalClear.style.display = 'flex';
@@ -1157,7 +1299,7 @@
             panY = 0;
 
             resizeScreen();
-            enableHandMode();
+            enablePenMode();
             saveCurrentState();
         });
 
@@ -1174,7 +1316,7 @@
 
         window.onload = () => {
             renderGallery();
-            enableHandMode();
+            enablePenMode();
         };
     </script>
 </body>
