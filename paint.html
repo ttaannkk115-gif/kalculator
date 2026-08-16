@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>VoltMaster Paint Mobile</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #121212;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* Главное меню */
+        #main-menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #18181c;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 12px;
+            z-index: 100;
+            color: #ffffff;
+            overflow-y: auto;
+        }
+
+        #main-menu h1 {
+            font-size: 26px;
+            margin-top: 10px;
+            margin-bottom: 24px;
+            color: #0a84ff;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .menu-btn {
+            width: 90%;
+            max-width: 320px;
+            padding: 14px;
+            background: linear-gradient(180deg, #0a84ff 0%, #0066cc 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            outline: none;
+            box-shadow: 0 4px 14px rgba(10, 132, 255, 0.35);
+            cursor: pointer;
+            margin-bottom: 24px;
+            transition: transform 0.1s ease, opacity 0.2s ease;
+        }
+
+        .menu-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+        .gallery-title {
+            width: 90%;
+            max-width: 320px;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-align: left;
+            color: #8e8e93;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #gallery {
+            width: 90%;
+            max-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-bottom: 30px;
+        }
+
+        .gallery-card {
+            background-color: #242429;
+            border-radius: 14px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #333338;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .gallery-preview {
+            width: 64px;
+            height: 64px;
+            border-radius: 10px;
+            background-color: #ffffff;
+            object-fit: contain;
+            border: 1px solid #444;
+        }
+
+        .gallery-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .gallery-date {
+            font-size: 12px;
+            color: #8e8e93;
+        }
+
+        .card-actions { display: flex; gap: 8px; }
+
+        .card-btn {
+            padding: 7px 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-open { background-color: #30d158; }
+        .btn-delete { background-color: #ff453a; }
+
+        /* ВЕРХНЯЯ ПАНЕЛЬ ИНСТРУМЕНТОВ */
+        #toolbar {
+            height: 64px;
+            background: linear-gradient(180deg, #252529 0%, #1c1c1e 100%);
+            border-bottom: 1px solid #2c2c2e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            z-index: 10;
+            overflow-x: auto;
+            white-space: nowrap;
+            touch-action: pan-x;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tool-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding-right: 8px;
+            border-right: 1px solid #3a3a3c;
+            height: 38px;
+        }
+
+        .tool-group:last-child {
+            border-right: none;
+            padding-right: 0;
+        }
+
+        .tool-btn, .tool-select {
+            background: #2c2c2e;
+            color: #f2f2f7;
+            border: 1px solid #3a3a3c;
+            padding: 8px 12px;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 500;
+            outline: none;
+            flex-shrink: 0;
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        .tool-btn:active, .tool-select:active {
+            transform: scale(0.96);
+            background: #3a3a3c;
+        }
+
+        .tool-btn.active {
+            background: linear-gradient(180deg, #0a84ff 0%, #0066cc 100%);
+            border-color: #0a84ff;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(10, 132, 255, 0.4);
+        }
+
+        #eraserBtn.active {
+            background: linear-gradient(180deg, #ff453a 0%, #d70015 100%);
+            border-color: #ff453a;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(255, 69, 58, 0.4);
+        }
+
+        /* Выбор цвета */
+        .color-picker-wrapper {
+            position: relative;
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch {
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        /* Слайдер толщины */
+        .brush-size-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #2c2c2e;
+            padding: 0 8px;
+            border-radius: 9px;
+            border: 1px solid #3a3a3c;
+            height: 36px;
+        }
+
+        #brushSize {
+            -webkit-appearance: none;
+            width: 65px;
+            height: 4px;
+            background: #48484a;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        #brushSize::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #0a84ff;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+        }
+
+        /* Инфо-панель */
+        #sub-toolbar {
+            height: 32px;
+            background-color: #121214;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 14px;
+            z-index: 9;
+            color: #8e8e93;
+            font-size: 11px;
+            font-weight: 500;
+            border-bottom: 1px solid #1c1c1e;
+        }
+
+        #zoomLabel { color: #f2f2f7; }
+
+        #app-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            background-color: #1c1c1e;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #bgCanvas { z-index: 1; }
+        #drawCanvas { z-index: 2; }
+
+        /* Модальные окна */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            color: #fff;
+        }
+
+        .modal-card {
+            background: #2c2c2e;
+            padding: 24px;
+            border-radius: 18px;
+            width: 85%;
+            max-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-align: center;
+            border: 1px solid #3a3a3c;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-card select {
+            padding: 10px;
+            border-radius: 10px;
+            background: #1c1c1e;
+            color: #fff;
+            border: 1px solid #3a3a3c;
+            font-size: 15px;
+            outline: none;
+        }
+
+        .modal-btn-option {
+            padding: 12px;
+            background-color: #3a3a3c;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .modal-btn-option:active { background-color: #0a84ff; }
+
+        #fileInput { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Главное меню -->
+    <div id="main-menu">
+        <h1>VoltMaster Paint</h1>
+        <button class="menu-btn" id="openNewModalBtn">+ Новый рисунок</button>
+        
+        <div class="gallery-title">Сохраненные работы</div>
+        <div id="gallery"></div>
+    </div>
+
+    <!-- Модальное окно "Новый рисунок" -->
+    <div id="modal-new" class="modal-overlay">
+        <div class="modal-card">
+            <h3>Новый холст</h3>
+            <label for="bgType" style="font-size: 13px; color: #8e8e93; margin-top: 4px;">Тип фона:</label>
+            <select id="bgType">
+                <option value="grid">В клетку</option>
+                <option value="white">Чистый белый</option>
+            </select>
+            <button class="menu-btn" id="createCanvasBtn" style="width:100%; margin:8px 0 0 0; padding:12px;">Создать</button>
+            <button class="tool-btn" id="cancelModalBtn" style="width:100%;">Отмена</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно "Очистить" -->
+    <div id="modal-clear" class="modal-overlay">
+        <div class="modal-card">
+            <h3>Что очистить?</h3>
+            <button class="modal-btn-option" id="clearDrawOnlyBtn">Только рисунок</button>
+            <button class="modal-btn-option" id="clearPhotoOnlyBtn">Только фото-подложку</button>
+            <button class="modal-btn-option" id="clearAllBtn" style="color: #ff453a; background: #3a2222;">Всё сразу</button>
+            <button class="tool-btn" id="cancelClearModalBtn" style="margin-top:4px; width:100%;">Отмена</button>
+        </div>
+    </div>
+
+    <!-- Основное приложение -->
+    <div id="app-container">
+        <!-- Панель инструментов в стиле Paint -->
+        <div id="toolbar">
+            <!-- 1. Меню (Первый элемент) -->
+            <div class="tool-group">
+                <button id="menuBtn" class="tool-btn" style="background:#3a3a3c; font-weight:600;">☰ Меню</button>
+            </div>
+
+            <!-- 2. Цвет и Толщина -->
+            <div class="tool-group">
+                <div class="color-picker-wrapper">
+                    <input type="color" id="colorPicker" value="#000000" title="Цвет">
+                </div>
+                <div class="brush-size-wrapper">
+                    <input type="range" id="brushSize" min="1" max="50" value="5" title="Толщина">
+                </div>
+            </div>
+
+            <!-- 3. Выбор инструмента / Рука -->
+            <div class="tool-group">
+                <select id="toolSelect" class="tool-select">
+                    <option value="hand">✋ Рука</option>
+                    <option value="pen">✏️ Кисть</option>
+                    <option value="line">📏 Прямая</option>
+                    <option value="rect">🔲 Прямоугольник</option>
+                    <option value="circle">⭕ Круг</option>
+                    <option value="triangle">🔺 Треугольник</option>
+                </select>
+                <button id="eraserBtn" class="tool-btn">🧹 Ластик</button>
+            </div>
+
+            <!-- 4. Фото -->
+            <div class="tool-group">
+                <button id="photoBtn" class="tool-btn">+ Фото</button>
+                <button id="photoEditBtn" class="tool-btn" style="display: none;">🖼️ Двиг. Фото</button>
+            </div>
+
+            <!-- 5. Сброс -->
+            <div class="tool-group">
+                <button id="clearBtn" class="tool-btn">🗑️ Сброс</button>
+            </div>
+
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div id="sub-toolbar">
+            <span>Масштаб: <strong id="zoomLabel">100%</strong></span>
+            <button id="resetViewBtn" class="tool-btn" style="height:22px; padding:0 8px; font-size:10px;">Центрировать</button>
+        </div>
+
+        <div id="canvas-container">
+            <canvas id="bgCanvas"></canvas>
+            <canvas id="drawCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const bgCanvas = document.getElementById('bgCanvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        const drawCanvas = document.getElementById('drawCanvas');
+        const ctx = drawCanvas.getContext('2d');
+
+        const colorPicker = document.getElementById('colorPicker');
+        const brushSize = document.getElementById('brushSize');
+        const toolSelect = document.getElementById('toolSelect');
+        const eraserBtn = document.getElementById('eraserBtn');
+        const photoEditBtn = document.getElementById('photoEditBtn');
+        const photoBtn = document.getElementById('photoBtn');
+        const fileInput = document.getElementById('fileInput');
+        const clearBtn = document.getElementById('clearBtn');
+        const mainMenu = document.getElementById('main-menu');
+        const openNewModalBtn = document.getElementById('openNewModalBtn');
+        const modalNew = document.getElementById('modal-new');
+        const modalClear = document.getElementById('modal-clear');
+        const createCanvasBtn = document.getElementById('createCanvasBtn');
+        const cancelModalBtn = document.getElementById('cancelModalBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const bgType = document.getElementById('bgType');
+        const gallery = document.getElementById('gallery');
+        const zoomLabel = document.getElementById('zoomLabel');
+        const resetViewBtn = document.getElementById('resetViewBtn');
+
+        const CANVAS_WIDTH = 3000;
+        const CANVAS_HEIGHT = 3000;
+
+        let scale = 1.0;
+        let panX = 0;
+        let panY = 0;
+
+        let isDrawing = false;
+        let isEraserActive = false;
+        let isPhotoTransformMode = false;
+
+        let photoImage = null;
+        let photoX = 0;
+        let photoY = 0;
+        let photoW = 0;
+        let photoH = 0;
+        let isDraggingPhoto = false;
+        let isResizingPhoto = false;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        let startX = 0;
+        let startY = 0;
+        let lastX = 0;
+        let lastY = 0;
+        let currentBgType = 'grid';
+        let currentProjectId = null;
+
+        let initialPinchDist = 0;
+        let initialScale = 1;
+        let pinchCenter = { x: 0, y: 0 };
+
+        const STORAGE_KEY = 'voltmaster_paint_projects';
+
+        const memCanvas = document.createElement('canvas');
+        memCanvas.width = CANVAS_WIDTH;
+        memCanvas.height = CANVAS_HEIGHT;
+        const memCtx = memCanvas.getContext('2d');
+
+        function getProjects() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch (e) { return []; }
+        }
+
+        function saveProjectsToStorage(projects) {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(projects)); } catch (e) {}
+        }
+
+        function getMinScale() {
+            const container = document.getElementById('canvas-container');
+            const w = container.clientWidth || window.innerWidth;
+            const h = container.clientHeight || window.innerHeight;
+            return Math.max(w / CANVAS_WIDTH, h / CANVAS_HEIGHT);
+        }
+
+        function updatePhotoEditBtnVisibility() {
+            if (photoImage) {
+                photoEditBtn.style.display = 'inline-flex';
+            } else {
+                photoEditBtn.style.display = 'none';
+                if (isPhotoTransformMode) {
+                    enableHandMode();
+                }
+            }
+        }
+
+        function drawBackground() {
+            bgCtx.save();
+            bgCtx.setTransform(1, 0, 0, 1, 0, 0);
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            bgCtx.restore();
+
+            bgCtx.save();
+            bgCtx.translate(panX, panY);
+            bgCtx.scale(scale, scale);
+
+            bgCtx.fillStyle = '#ffffff';
+            bgCtx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            if (currentBgType === 'grid') {
+                const gridSize = 30;
+                bgCtx.beginPath();
+                bgCtx.strokeStyle = '#e5e5ea';
+                bgCtx.lineWidth = 1;
+
+                for (let x = 0; x <= CANVAS_WIDTH; x += gridSize) {
+                    bgCtx.moveTo(x, 0);
+                    bgCtx.lineTo(x, CANVAS_HEIGHT);
+                }
+                for (let y = 0; y <= CANVAS_HEIGHT; y += gridSize) {
+                    bgCtx.moveTo(0, y);
+                    bgCtx.lineTo(CANVAS_WIDTH, y);
+                }
+                bgCtx.stroke();
+            }
+
+            if (photoImage) {
+                bgCtx.drawImage(photoImage, photoX, photoY, photoW, photoH);
+
+                if (isPhotoTransformMode) {
+                    bgCtx.strokeStyle = '#0a84ff';
+                    bgCtx.lineWidth = 3 / scale;
+                    bgCtx.strokeRect(photoX, photoY, photoW, photoH);
+
+                    bgCtx.fillStyle = '#0a84ff';
+                    const handleSize = 16 / scale;
+                    bgCtx.fillRect(photoX + photoW - handleSize / 2, photoY + photoH - handleSize / 2, handleSize, handleSize);
+                }
+            }
+
+            bgCtx.restore();
+        }
+
+        function updateTransform() {
+            const minScale = getMinScale();
+            scale = Math.min(Math.max(minScale, scale), 4);
+
+            const container = document.getElementById('canvas-container');
+            const cw = container.clientWidth;
+            const ch = container.clientHeight;
+
+            const maxPanX = 0;
+            const minPanX = cw - CANVAS_WIDTH * scale;
+            const maxPanY = 0;
+            const minPanY = ch - CANVAS_HEIGHT * scale;
+
+            if (minPanX < maxPanX) {
+                panX = Math.min(maxPanX, Math.max(minPanX, panX));
+            } else {
+                panX = (cw - CANVAS_WIDTH * scale) / 2;
+            }
+
+            if (minPanY < maxPanY) {
+                panY = Math.min(maxPanY, Math.max(minPanY, panY));
+            } else {
+                panY = (ch - CANVAS_HEIGHT * scale) / 2;
+            }
+
+            zoomLabel.textContent = Math.round(scale * 100) + '%';
+
+            drawBackground();
+            redrawMainCanvas();
+        }
+
+        function resizeScreen() {
+            const container = document.getElementById('canvas-container');
+            bgCanvas.width = container.clientWidth;
+            bgCanvas.height = container.clientHeight;
+            drawCanvas.width = container.clientWidth;
+            drawCanvas.height = container.clientHeight;
+
+            updateTransform();
+        }
+
+        function redrawMainCanvas() {
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+            ctx.translate(panX, panY);
+            ctx.scale(scale, scale);
+            ctx.drawImage(memCanvas, 0, 0);
+            ctx.restore();
+        }
+
+        function saveCurrentState() {
+            if (!currentProjectId) return;
+            const dataUrl = memCanvas.toDataURL('image/png');
+            let photoUrl = photoImage ? photoImage.src : null;
+
+            const projects = getProjects();
+            const index = projects.findIndex(p => p.id === currentProjectId);
+            if (index !== -1) {
+                projects[index].dataUrl = dataUrl;
+                projects[index].photoUrl = photoUrl;
+                projects[index].photoX = photoX;
+                projects[index].photoY = photoY;
+                projects[index].photoW = photoW;
+                projects[index].photoH = photoH;
+                projects[index].bgType = currentBgType;
+                projects[index].updatedAt = new Date().toLocaleString('ru-RU');
+                saveProjectsToStorage(projects);
+            }
+        }
+
+        function loadProject(id) {
+            const projects = getProjects();
+            const project = projects.find(p => p.id === id);
+            if (!project) return;
+
+            currentProjectId = project.id;
+            currentBgType = project.bgType || 'grid';
+            photoImage = null;
+
+            mainMenu.style.display = 'none';
+
+            memCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            if (project.photoUrl) {
+                const pImg = new Image();
+                pImg.onload = () => {
+                    photoImage = pImg;
+                    photoX = project.photoX || 0;
+                    photoY = project.photoY || 0;
+                    photoW = project.photoW || 800;
+                    photoH = project.photoH || 600;
+                    updatePhotoEditBtnVisibility();
+                    drawBackground();
+                };
+                pImg.src = project.photoUrl;
+            } else {
+                updatePhotoEditBtnVisibility();
+            }
+
+            const img = new Image();
+            img.onload = () => {
+                memCtx.drawImage(img, 0, 0);
+                scale = 1.0;
+                panX = 0;
+                panY = 0;
+                resizeScreen();
+                enableHandMode();
+            };
+            img.src = project.dataUrl;
+        }
+
+        function renderGallery() {
+            gallery.innerHTML = '';
+            const projects = getProjects();
+
+            if (projects.length === 0) {
+                gallery.innerHTML = '<div style="color:#8e8e93; text-align:center; font-size:14px; margin-top:20px;">Нет сохраненных рисунков</div>';
+                return;
+            }
+
+            projects.sort((a, b) => b.id - a.id).forEach(project => {
+                const card = document.createElement('div');
+                card.className = 'gallery-card';
+                card.innerHTML = `
+                    <img class="gallery-preview" src="${project.dataUrl}">
+                    <div class="gallery-info">
+                        <div class="gallery-date">${project.updatedAt}</div>
+                        <div class="card-actions">
+                            <button class="card-btn btn-open">Открыть</button>
+                            <button class="card-btn btn-delete">Удалить</button>
+                        </div>
+                    </div>
+                `;
+                card.querySelector('.btn-open').addEventListener('click', () => loadProject(project.id));
+                card.querySelector('.btn-delete').addEventListener('click', () => {
+                    saveProjectsToStorage(getProjects().filter(p => p.id !== project.id));
+                    renderGallery();
+                });
+                gallery.appendChild(card);
+            });
+        }
+
+        function getCanvasPos(e) {
+            const rect = drawCanvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left - panX) / scale,
+                y: (clientY - rect.top - panY) / scale
+            };
+        }
+
+        function renderShape(c, tool, x1, y1, x2, y2, color, size) {
+            c.save();
+            c.lineWidth = size;
+            c.strokeStyle = color;
+            c.lineCap = 'round';
+            c.lineJoin = 'round';
+
+            c.beginPath();
+            if (tool === 'line') {
+                c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+            } else if (tool === 'rect') {
+                c.strokeRect(x1, y1, x2 - x1, y2 - y1);
+            } else if (tool === 'circle') {
+                const rx = Math.abs(x2 - x1) / 2;
+                const ry = Math.abs(y2 - y1) / 2;
+                const cx = Math.min(x1, x2) + rx;
+                const cy = Math.min(y1, y2) + ry;
+                c.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
+                c.stroke();
+            } else if (tool === 'triangle') {
+                c.moveTo((x1 + x2) / 2, y1);
+                c.lineTo(x1, y2);
+                c.lineTo(x2, y2);
+                c.closePath();
+                c.stroke();
+            }
+            c.restore();
+        }
+
+        function handleStart(e) {
+            if (e.touches && e.touches.length === 2) {
+                isDrawing = false;
+                isDraggingPhoto = false;
+                isResizingPhoto = false;
+                const rect = drawCanvas.getBoundingClientRect();
+                
+                initialPinchDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                initialScale = scale;
+
+                const centerScreenX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                const centerScreenY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+
+                pinchCenter = {
+                    x: (centerScreenX - panX) / scale,
+                    y: (centerScreenY - panY) / scale
+                };
+                return;
+            }
+
+            const pos = getCanvasPos(e);
+
+            if (isPhotoTransformMode && photoImage) {
+                const handleSize = 30 / scale;
+                if (pos.x >= photoX + photoW - handleSize && pos.x <= photoX + photoW + handleSize &&
+                    pos.y >= photoY + photoH - handleSize && pos.y <= photoY + photoH + handleSize) {
+                    isResizingPhoto = true;
+                    return;
+                }
+                if (pos.x >= photoX && pos.x <= photoX + photoW && pos.y >= photoY && pos.y <= photoY + photoH) {
+                    isDraggingPhoto = true;
+                    dragOffsetX = pos.x - photoX;
+                    dragOffsetY = pos.y - photoY;
+                    return;
+                }
+            }
+
+            const tool = toolSelect.value;
+
+            if (tool === 'hand' || e.button === 1) {
+                isDrawing = false;
+                lastX = e.touches ? e.touches[0].clientX : e.clientX;
+                lastY = e.touches ? e.touches[0].clientY : e.clientY;
+                return;
+            }
+
+            isDrawing = true;
+            startX = pos.x;
+            startY = pos.y;
+            lastX = pos.x;
+            lastY = pos.y;
+
+            if (isEraserActive || tool === 'pen') {
+                memCtx.save();
+                memCtx.lineWidth = brushSize.value;
+                memCtx.lineCap = 'round';
+                memCtx.lineJoin = 'round';
+
+                if (isEraserActive) {
+                    memCtx.globalCompositeOperation = 'destination-out';
+                    memCtx.strokeStyle = 'rgba(0,0,0,1)';
+                } else {
+                    memCtx.globalCompositeOperation = 'source-over';
+                    memCtx.strokeStyle = colorPicker.value;
+                }
+
+                memCtx.beginPath();
+                memCtx.moveTo(startX, startY);
+                memCtx.lineTo(startX, startY);
+                memCtx.stroke();
+                memCtx.restore();
+
+                redrawMainCanvas();
+            }
+        }
+
+        function handleMove(e) {
+            if (e.touches && e.touches.length === 2) {
+                const rect = drawCanvas.getBoundingClientRect();
+                const currentDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+
+                if (initialPinchDist > 0) {
+                    let targetScale = initialScale * (currentDist / initialPinchDist);
+                    const minScale = getMinScale();
+                    targetScale = Math.min(Math.max(minScale, targetScale), 4);
+
+                    const currentCenterScreenX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                    const currentCenterScreenY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+
+                    scale = targetScale;
+                    panX = currentCenterScreenX - pinchCenter.x * scale;
+                    panY = currentCenterScreenY - pinchCenter.y * scale;
+
+                    updateTransform();
+                }
+                return;
+            }
+
+            const pos = getCanvasPos(e);
+
+            if (isDraggingPhoto) {
+                photoX = pos.x - dragOffsetX;
+                photoY = pos.y - dragOffsetY;
+                drawBackground();
+                return;
+            }
+
+            if (isResizingPhoto) {
+                photoW = Math.max(50, pos.x - photoX);
+                photoH = Math.max(50, pos.y - photoY);
+                drawBackground();
+                return;
+            }
+
+            const tool = toolSelect.value;
+
+            if (tool === 'hand' || (!isDrawing && e.buttons === 4)) {
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                panX += clientX - lastX;
+                panY += clientY - lastY;
+                lastX = clientX;
+                lastY = clientY;
+                updateTransform();
+                return;
+            }
+
+            if (!isDrawing) return;
+            e.preventDefault();
+
+            if (isEraserActive || tool === 'pen') {
+                memCtx.save();
+                memCtx.lineWidth = brushSize.value;
+                memCtx.lineCap = 'round';
+                memCtx.lineJoin = 'round';
+
+                if (isEraserActive) {
+                    memCtx.globalCompositeOperation = 'destination-out';
+                    memCtx.strokeStyle = 'rgba(0,0,0,1)';
+                } else {
+                    memCtx.globalCompositeOperation = 'source-over';
+                    memCtx.strokeStyle = colorPicker.value;
+                }
+
+                memCtx.beginPath();
+                memCtx.moveTo(lastX, lastY);
+                memCtx.lineTo(pos.x, pos.y);
+                memCtx.stroke();
+                memCtx.restore();
+
+                lastX = pos.x;
+                lastY = pos.y;
+                redrawMainCanvas();
+            } else if (['line', 'rect', 'circle', 'triangle'].includes(tool)) {
+                redrawMainCanvas();
+                ctx.save();
+                ctx.translate(panX, panY);
+                ctx.scale(scale, scale);
+                renderShape(ctx, tool, startX, startY, pos.x, pos.y, colorPicker.value, brushSize.value);
+                ctx.restore();
+            }
+        }
+
+        function handleEnd(e) {
+            initialPinchDist = 0;
+
+            if (isDraggingPhoto || isResizingPhoto) {
+                isDraggingPhoto = false;
+                isResizingPhoto = false;
+                saveCurrentState();
+                return;
+            }
+
+            if (!isDrawing) return;
+            isDrawing = false;
+
+            const tool = toolSelect.value;
+            const pos = getCanvasPos(e.changedTouches ? { touches: e.changedTouches } : e);
+
+            if (!isEraserActive && ['line', 'rect', 'circle', 'triangle'].includes(tool)) {
+                renderShape(memCtx, tool, startX, startY, pos.x, pos.y, colorPicker.value, brushSize.value);
+                redrawMainCanvas();
+            }
+
+            saveCurrentState();
+        }
+
+        function resetTools() {
+            isEraserActive = false;
+            isPhotoTransformMode = false;
+            eraserBtn.classList.remove('active');
+            photoEditBtn.classList.remove('active');
+        }
+
+        function enableHandMode() {
+            resetTools();
+            toolSelect.value = 'hand';
+            drawBackground();
+        }
+
+        function enableEraserMode() {
+            resetTools();
+            isEraserActive = true;
+            eraserBtn.classList.add('active');
+            drawBackground();
+        }
+
+        eraserBtn.addEventListener('click', () => {
+            if (isEraserActive) {
+                resetTools();
+                toolSelect.value = 'pen';
+            } else {
+                enableEraserMode();
+            }
+        });
+
+        photoEditBtn.addEventListener('click', () => {
+            const state = !isPhotoTransformMode;
+            resetTools();
+            isPhotoTransformMode = state;
+            if (isPhotoTransformMode) photoEditBtn.classList.add('active');
+            drawBackground();
+        });
+
+        toolSelect.addEventListener('change', () => {
+            resetTools();
+            drawBackground();
+        });
+
+        drawCanvas.addEventListener('touchstart', handleStart, { passive: false });
+        drawCanvas.addEventListener('touchmove', handleMove, { passive: false });
+        drawCanvas.addEventListener('touchend', handleEnd);
+
+        drawCanvas.addEventListener('mousedown', handleStart);
+        drawCanvas.addEventListener('mousemove', handleMove);
+        drawCanvas.addEventListener('mouseup', handleEnd);
+
+        drawCanvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+            const rect = drawCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const canvasX = (mouseX - panX) / scale;
+            const canvasY = (mouseY - panY) / scale;
+
+            scale *= zoomFactor;
+            panX = mouseX - canvasX * scale;
+            panY = mouseY - canvasY * scale;
+
+            updateTransform();
+        }, { passive: false });
+
+        photoBtn.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const img = new Image();
+                img.onload = () => {
+                    photoImage = img;
+
+                    const container = document.getElementById('canvas-container');
+                    const viewW = container.clientWidth / scale;
+                    const viewH = container.clientHeight / scale;
+
+                    const currentCenterX = (-panX + container.clientWidth / 2) / scale;
+                    const currentCenterY = (-panY + container.clientHeight / 2) / scale;
+
+                    const maxW = viewW * 0.8;
+                    const maxH = viewH * 0.8;
+
+                    let w = img.width;
+                    let h = img.height;
+
+                    const ratio = Math.min(maxW / w, maxH / h, 1);
+                    w *= ratio;
+                    h *= ratio;
+
+                    photoW = w;
+                    photoH = h;
+                    photoX = currentCenterX - photoW / 2;
+                    photoY = currentCenterY - photoH / 2;
+
+                    updatePhotoEditBtnVisibility();
+                    enableHandMode();
+                    saveCurrentState();
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+            fileInput.value = '';
+        });
+
+        resetViewBtn.addEventListener('click', () => {
+            scale = 1.0;
+            panX = 0;
+            panY = 0;
+            updateTransform();
+        });
+
+        // КНОПКА СБРОС (с проверкой наличия фото)
+        clearBtn.addEventListener('click', () => {
+            if (photoImage) {
+                modalClear.style.display = 'flex';
+            } else {
+                memCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                redrawMainCanvas();
+                saveCurrentState();
+            }
+        });
+
+        document.getElementById('cancelClearModalBtn').addEventListener('click', () => {
+            modalClear.style.display = 'none';
+        });
+
+        document.getElementById('clearDrawOnlyBtn').addEventListener('click', () => {
+            memCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            redrawMainCanvas();
+            saveCurrentState();
+            modalClear.style.display = 'none';
+        });
+
+        document.getElementById('clearPhotoOnlyBtn').addEventListener('click', () => {
+            photoImage = null;
+            updatePhotoEditBtnVisibility();
+            drawBackground();
+            saveCurrentState();
+            modalClear.style.display = 'none';
+        });
+
+        document.getElementById('clearAllBtn').addEventListener('click', () => {
+            memCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            photoImage = null;
+            updatePhotoEditBtnVisibility();
+            drawBackground();
+            redrawMainCanvas();
+            saveCurrentState();
+            modalClear.style.display = 'none';
+        });
+
+        openNewModalBtn.addEventListener('click', () => { modalNew.style.display = 'flex'; });
+        cancelModalBtn.addEventListener('click', () => { modalNew.style.display = 'none'; });
+
+        createCanvasBtn.addEventListener('click', () => {
+            currentBgType = bgType.value;
+            currentProjectId = Date.now();
+            photoImage = null;
+            updatePhotoEditBtnVisibility();
+
+            const projects = getProjects();
+            projects.push({
+                id: currentProjectId,
+                dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVOR5CYII=',
+                bgType: currentBgType,
+                updatedAt: new Date().toLocaleString('ru-RU')
+            });
+            saveProjectsToStorage(projects);
+
+            modalNew.style.display = 'none';
+            mainMenu.style.display = 'none';
+
+            memCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            scale = 1.0;
+            panX = 0;
+            panY = 0;
+
+            resizeScreen();
+            enableHandMode();
+            saveCurrentState();
+        });
+
+        menuBtn.addEventListener('click', () => {
+            renderGallery();
+            mainMenu.style.display = 'flex';
+        });
+
+        window.addEventListener('resize', () => {
+            if (mainMenu.style.display === 'none') {
+                resizeScreen();
+            }
+        });
+
+        window.onload = () => {
+            renderGallery();
+            enableHandMode();
+        };
+    </script>
+</body>
+</html>
