@@ -356,6 +356,14 @@
             top: 0; left: 5px; width: 2px; height: 12px;
         }
 
+        /* Кнопка сохранить в панели инструментов */
+        #saveAndExitBtn {
+            background: linear-gradient(180deg, #30d158 0%, #248a3d 100%);
+            border-color: #30d158;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
         /* Модальные окна */
         .modal-overlay {
             position: absolute;
@@ -456,7 +464,7 @@
         <!-- Панель инструментов -->
         <div id="toolbar">
             <div class="tool-group">
-                <button id="menuBtn" class="tool-btn" style="background:#3a3a3c; font-weight:600;">☰ Меню</button>
+                <button id="undoBtn" class="tool-btn">↩️ Отмена</button>
             </div>
 
             <div class="tool-group">
@@ -478,6 +486,7 @@
                     <option value="triangle">🔺 Треугольник</option>
                 </select>
                 <button id="eraserBtn" class="tool-btn">🧹 Ластик</button>
+                <button id="magnifierToggleBtn" class="tool-btn">🔍 Лупа</button>
             </div>
 
             <div class="tool-group">
@@ -487,6 +496,11 @@
 
             <div class="tool-group">
                 <button id="clearBtn" class="tool-btn">🗑️ Сброс</button>
+            </div>
+
+            <!-- Кнопка "Сохранить" расположена в самом конце панели -->
+            <div class="tool-group">
+                <button id="saveAndExitBtn" class="tool-btn">💾 Сохранить</button>
             </div>
 
             <input type="file" id="fileInput" accept="image/*">
@@ -518,6 +532,7 @@
         const magnifier = document.getElementById('magnifier');
         const magnifierCanvas = document.getElementById('magnifierCanvas');
         const magnifierCtx = magnifierCanvas.getContext('2d');
+        const magnifierToggleBtn = document.getElementById('magnifierToggleBtn');
 
         const colorPicker = document.getElementById('colorPicker');
         const brushSize = document.getElementById('brushSize');
@@ -527,13 +542,14 @@
         const photoBtn = document.getElementById('photoBtn');
         const fileInput = document.getElementById('fileInput');
         const clearBtn = document.getElementById('clearBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const saveAndExitBtn = document.getElementById('saveAndExitBtn');
         const mainMenu = document.getElementById('main-menu');
         const openNewModalBtn = document.getElementById('openNewModalBtn');
         const modalNew = document.getElementById('modal-new');
         const modalClear = document.getElementById('modal-clear');
         const createCanvasBtn = document.getElementById('createCanvasBtn');
         const cancelModalBtn = document.getElementById('cancelModalBtn');
-        const menuBtn = document.getElementById('menuBtn');
         const bgType = document.getElementById('bgType');
         const gallery = document.getElementById('gallery');
         const zoomLabel = document.getElementById('zoomLabel');
@@ -548,6 +564,7 @@
 
         let isDrawing = false;
         let isEraserActive = false;
+        let isMagnifierEnabled = false;
         let previousTool = 'pen';
         let isPhotoTransformMode = false;
 
@@ -565,6 +582,7 @@
         let startY = 0;
         let lastX = 0;
         let lastY = 0;
+        let currentCanvasPos = { x: 0, y: 0 };
         let currentBgType = 'grid';
         let currentProjectId = null;
 
@@ -572,12 +590,32 @@
         let initialScale = 1;
         let pinchCenter = { x: 0, y: 0 };
 
+        // Стек истории для отмены действий
+        let undoStack = [];
+        const MAX_UNDO_STEPS = 20;
+
         const STORAGE_KEY = 'voltmaster_paint_projects';
 
         const memCanvas = document.createElement('canvas');
         memCanvas.width = CANVAS_WIDTH;
         memCanvas.height = CANVAS_HEIGHT;
         const memCtx = memCanvas.getContext('2d');
+
+        function saveUndoState() {
+            if (undoStack.length >= MAX_UNDO_STEPS) {
+                undoStack.shift();
+            }
+            undoStack.push(memCtx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT));
+        }
+
+        function undo() {
+            if (undoStack.length > 0) {
+                const previousState = undoStack.pop();
+                memCtx.putImageData(previousState, 0, 0);
+                redrawMainCanvas();
+                saveCurrentState();
+            }
+        }
 
         function getProjects() {
             try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch (e) { return []; }
@@ -703,24 +741,22 @@
             ctx.restore();
         }
 
-        /* Функция обновления лупы строго СВЕРХУ пальца */
         function updateMagnifier(screenX, screenY, canvasPos) {
+            if (!isMagnifierEnabled) return;
+
             magnifier.style.display = 'block';
 
             const magWidth = 130;
             const magHeight = 130;
-            const offsetAboveFinger = 60; // Отступ выше пальца
+            const offsetAboveFinger = 60;
 
-            // Выравниваем лупу строго по центру пальца по горизонтали
             let posX = screenX - (magWidth / 2);
             let posY = screenY - magHeight - offsetAboveFinger;
 
-            // Ограничения краев экрана по горизонтали
             const container = document.getElementById('canvas-container');
             if (posX < 10) posX = 10;
             if (posX + magWidth > container.clientWidth - 10) posX = container.clientWidth - magWidth - 10;
 
-            // Если палец у самого верхнего края экрана, смещаем лупу чуть ниже пальца
             if (posY < 10) {
                 posY = screenY + 40;
             }
@@ -731,12 +767,11 @@
             magnifierCtx.clearRect(0, 0, magWidth, magHeight);
             magnifierCtx.save();
 
-            const zoomFactor = 2.5; // Увеличение
+            const zoomFactor = 2.5;
             magnifierCtx.translate(magWidth / 2, magHeight / 2);
             magnifierCtx.scale(zoomFactor * scale, zoomFactor * scale);
             magnifierCtx.translate(-canvasPos.x, -canvasPos.y);
 
-            // Отрисовка фона в лупе
             magnifierCtx.fillStyle = '#ffffff';
             magnifierCtx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
@@ -761,7 +796,6 @@
                 magnifierCtx.drawImage(photoImage, photoX, photoY, photoW, photoH);
             }
 
-            // Отрисовка слоя рисунка в лупе
             magnifierCtx.drawImage(memCanvas, 0, 0);
             magnifierCtx.restore();
         }
@@ -798,6 +832,7 @@
             currentProjectId = project.id;
             currentBgType = project.bgType || 'grid';
             photoImage = null;
+            undoStack = [];
 
             mainMenu.style.display = 'none';
 
@@ -864,8 +899,9 @@
 
         function getCanvasPos(e) {
             const rect = drawCanvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+            const clientX = touch ? touch.clientX : e.clientX;
+            const clientY = touch ? touch.clientY : e.clientY;
             return {
                 x: (clientX - rect.left - panX) / scale,
                 y: (clientY - rect.top - panY) / scale
@@ -926,6 +962,7 @@
             }
 
             const pos = getCanvasPos(e);
+            currentCanvasPos = pos;
 
             if (isPhotoTransformMode && photoImage) {
                 const handleSize = 30 / scale;
@@ -951,11 +988,12 @@
                 return;
             }
 
+            // Сохраняем состояние для отмены перед началом рисования
+            saveUndoState();
+
             isDrawing = true;
             startX = pos.x;
             startY = pos.y;
-            lastX = pos.x;
-            lastY = pos.y;
 
             if (isEraserActive || tool === 'pen') {
                 memCtx.save();
@@ -972,14 +1010,14 @@
                 }
 
                 memCtx.beginPath();
-                memCtx.moveTo(startX, startY);
-                memCtx.lineTo(startX, startY);
+                memCtx.moveTo(pos.x, pos.y);
+                memCtx.lineTo(pos.x, pos.y);
                 memCtx.stroke();
                 memCtx.restore();
 
                 redrawMainCanvas();
 
-                if (e.touches) {
+                if (e.touches && e.touches[0]) {
                     const rect = drawCanvas.getBoundingClientRect();
                     updateMagnifier(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top, pos);
                 }
@@ -1059,20 +1097,20 @@
                 }
 
                 memCtx.beginPath();
-                memCtx.moveTo(lastX, lastY);
+                memCtx.moveTo(currentCanvasPos.x, currentCanvasPos.y);
                 memCtx.lineTo(pos.x, pos.y);
                 memCtx.stroke();
                 memCtx.restore();
 
-                lastX = pos.x;
-                lastY = pos.y;
+                currentCanvasPos = pos;
                 redrawMainCanvas();
 
-                if (e.touches) {
+                if (e.touches && e.touches[0]) {
                     const rect = drawCanvas.getBoundingClientRect();
                     updateMagnifier(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top, pos);
                 }
             } else if (['line', 'rect', 'circle', 'triangle'].includes(tool)) {
+                currentCanvasPos = pos;
                 redrawMainCanvas();
                 ctx.save();
                 ctx.translate(panX, panY);
@@ -1080,7 +1118,7 @@
                 renderShape(ctx, tool, startX, startY, pos.x, pos.y, colorPicker.value, brushSize.value);
                 ctx.restore();
 
-                if (e.touches) {
+                if (e.touches && e.touches[0]) {
                     const rect = drawCanvas.getBoundingClientRect();
                     updateMagnifier(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top, pos);
                 }
@@ -1102,10 +1140,9 @@
             isDrawing = false;
 
             const tool = toolSelect.value;
-            const pos = getCanvasPos(e.changedTouches ? { touches: e.changedTouches } : e);
 
             if (!isEraserActive && ['line', 'rect', 'circle', 'triangle'].includes(tool)) {
-                renderShape(memCtx, tool, startX, startY, pos.x, pos.y, colorPicker.value, brushSize.value);
+                renderShape(memCtx, tool, startX, startY, currentCanvasPos.x, currentCanvasPos.y, colorPicker.value, brushSize.value);
                 redrawMainCanvas();
             }
 
@@ -1140,6 +1177,25 @@
             drawBackground();
         }
 
+        undoBtn.addEventListener('click', undo);
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') {
+                e.preventDefault();
+                undo();
+            }
+        });
+
+        magnifierToggleBtn.addEventListener('click', () => {
+            isMagnifierEnabled = !isMagnifierEnabled;
+            if (isMagnifierEnabled) {
+                magnifierToggleBtn.classList.add('active');
+            } else {
+                magnifierToggleBtn.classList.remove('active');
+                hideMagnifier();
+            }
+        });
+
         eraserBtn.addEventListener('click', enableEraserMode);
 
         photoEditBtn.addEventListener('click', () => {
@@ -1159,6 +1215,7 @@
         drawCanvas.addEventListener('touchstart', handleStart, { passive: false });
         drawCanvas.addEventListener('touchmove', handleMove, { passive: false });
         drawCanvas.addEventListener('touchend', handleEnd);
+        drawCanvas.addEventListener('touchcancel', handleEnd);
 
         drawCanvas.addEventListener('mousedown', handleStart);
         drawCanvas.addEventListener('mousemove', handleMove);
@@ -1236,10 +1293,17 @@
             if (photoImage) {
                 modalClear.style.display = 'flex';
             } else {
+                saveUndoState();
                 memCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
                 redrawMainCanvas();
                 saveCurrentState();
             }
+        });
+
+        saveAndExitBtn.addEventListener('click', () => {
+            saveCurrentState();
+            renderGallery();
+            mainMenu.style.display = 'flex';
         });
 
         document.getElementById('cancelClearModalBtn').addEventListener('click', () => {
@@ -1247,6 +1311,7 @@
         });
 
         document.getElementById('clearDrawOnlyBtn').addEventListener('click', () => {
+            saveUndoState();
             memCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
             redrawMainCanvas();
             saveCurrentState();
@@ -1262,10 +1327,10 @@
         });
 
         document.getElementById('clearAllBtn').addEventListener('click', () => {
+            saveUndoState();
             memCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
             photoImage = null;
             updatePhotoEditBtnVisibility();
-            drawBackground();
             redrawMainCanvas();
             saveCurrentState();
             modalClear.style.display = 'none';
@@ -1278,6 +1343,7 @@
             currentBgType = bgType.value;
             currentProjectId = Date.now();
             photoImage = null;
+            undoStack = [];
             updatePhotoEditBtnVisibility();
 
             const projects = getProjects();
@@ -1301,11 +1367,6 @@
             resizeScreen();
             enablePenMode();
             saveCurrentState();
-        });
-
-        menuBtn.addEventListener('click', () => {
-            renderGallery();
-            mainMenu.style.display = 'flex';
         });
 
         window.addEventListener('resize', () => {
