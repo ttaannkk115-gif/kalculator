@@ -136,6 +136,86 @@
             border-radius: 2px;
         }
 
+        /* Скрываемый раздел каталога товаров */
+        .catalog-container {
+            border: 1px solid #0056b3;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .catalog-toggle-btn {
+            width: 100%;
+            background-color: #eef5ff;
+            color: #0056b3;
+            border: none;
+            padding: 10px 15px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .catalog-toggle-btn:hover {
+            background-color: #d8e9ff;
+        }
+
+        .catalog-content {
+            display: none;
+            padding: 12px;
+            background-color: #fafafa;
+            border-top: 1px solid #b8daff;
+        }
+
+        .catalog-content.active {
+            display: block;
+        }
+
+        .catalog-group {
+            margin-bottom: 12px;
+        }
+
+        .catalog-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .catalog-group-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 6px;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 3px;
+        }
+
+        .catalog-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .btn-catalog-item {
+            background-color: #ffffff;
+            color: #0056b3;
+            border: 1px solid #b8daff;
+            border-radius: 3px;
+            padding: 5px 9px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-catalog-item:hover {
+            background-color: #0056b3;
+            color: #ffffff;
+            border-color: #0056b3;
+        }
+
         /* Таблица товаров */
         .table-wrapper {
             width: 100%;
@@ -309,7 +389,7 @@
                 overflow: visible;
             }
 
-            .btn-panel, .col-remove, .btn-remove-cell {
+            .btn-panel, .col-remove, .btn-remove-cell, .catalog-container {
                 display: none !important;
             }
 
@@ -373,9 +453,75 @@
         </tr>
     </table>
 
-    <!-- Верхняя панель управления -->
+    <!-- Скрытый раздел: Каталог быстрого выбора товаров -->
+    <div class="catalog-container">
+        <button class="catalog-toggle-btn" onclick="toggleCatalog()">
+            <span>📦 Выбрать товар из каталога</span>
+            <span id="catalog-icon">▼</span>
+        </button>
+        <div class="catalog-content" id="catalog-content">
+            
+            <!-- Щитовое оборудование -->
+            <div class="catalog-group">
+                <div class="catalog-group-title">⚡ Щитовое оборудование</div>
+                <div class="catalog-buttons">
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Щиток')">+ Щиток</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Гребенка')">+ Гребенка</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('НШВИ')">+ НШВИ</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Провод ПуГВнг 1х6')">+ Провод ПуГВнг 1х6</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('DIN-рейка')">+ DIN-рейка</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Клеммная колодка')">+ Клеммная колодка</button>
+                </div>
+            </div>
+
+            <!-- Раздел: Автоматы и Отсекатели -->
+            <div class="catalog-group">
+                <div class="catalog-group-title">🛡️ Автоматы и Отсекатели</div>
+                <div class="catalog-buttons">
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Отсекатель напряжения / Реле напряжения 63А')">+ Отсекатель напряжения 63А</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Отсекатель напряжения / Реле напряжения 40А')">+ Отсекатель напряжения 40А</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Автомат 1п 16А')">+ Автомат 1п 16А</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Автомат 1п 20А')">+ Автомат 1п 20А</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Автомат 1п 25А')">+ Автомат 1п 25А</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Автомат 2п 32А')">+ Автомат 2п 32А</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Автомат 2п 40А')">+ Автомат 2п 40А</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Автомат 2п 63А')">+ Автомат 2п 63А</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Дифавтомат 16А 30мА')">+ Дифавтомат 16А</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('УЗО 2п 40А 30мА')">+ УЗО 2п 40А</button>
+                </div>
+            </div>
+
+            <!-- Раздел: Кабель и расходники (ПВС и ВВГ от 1.5 до 6) -->
+            <div class="catalog-group">
+                <div class="catalog-group-title">🎗️ Кабель и расходники</div>
+                <div class="catalog-buttons">
+                    <!-- Провод ПВС (от 1.5 до 6) -->
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Провод ПВС 2х1.5', 'м')">+ ПВС 2х1.5 (м)</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Провод ПВС 3х1.5', 'м')">+ ПВС 3х1.5 (м)</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Провод ПВС 2х2.5', 'м')">+ ПВС 2х2.5 (м)</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Провод ПВС 3х2.5', 'м')">+ ПВС 3х2.5 (м)</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Провод ПВС 3х4', 'м')">+ ПВС 3х4 (м)</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Провод ПВС 3х6', 'м')">+ ПВС 3х6 (м)</button>
+                    <!-- Кабель ВВГ (от 1.5 до 6) -->
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Кабель ВВГнг-LS 2х1.5', 'м')">+ ВВГ 2х1.5 (м)</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Кабель ВВГнг-LS 3х1.5', 'м')">+ ВВГ 3х1.5 (м)</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Кабель ВВГнг-LS 2х2.5', 'м')">+ ВВГ 2х2.5 (м)</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Кабель ВВГнг-LS 3х2.5', 'м')">+ ВВГ 3х2.5 (м)</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Кабель ВВГнг-LS 3х4', 'м')">+ ВВГ 3х4 (м)</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Кабель ВВГнг-LS 3х6', 'м')">+ ВВГ 3х6 (м)</button>
+                    <!-- Доп расходники -->
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Гофра 20мм', 'м')">+ Гофра 20мм (м)</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Изолента')">+ Изолента</button>
+                    <button class="btn-catalog-item" onclick="addCatalogItem('Дюбель-хомут')">+ Дюбель-хомут</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Панель управления -->
     <div class="btn-panel" style="margin-bottom: 12px; margin-top: 0;">
-        <button class="btn btn-add" onclick="addRow(); saveData();">+ Добавить товар</button>
+        <button class="btn btn-add" onclick="addRow(); saveData();">+ Добавить пустую строку</button>
         <button class="btn btn-reset" onclick="resetForm()">Сброс</button>
     </div>
 
@@ -422,10 +568,10 @@
     <!-- Подписи -->
     <div class="signatures-flex">
         <div class="sig-item">
-            Отпустил <input type="text" class="sig-line-input">
+            Отпустил <input type="text" class="sig-line-input" id="issuer" oninput="saveData()">
         </div>
         <div class="sig-item">
-            Получил <input type="text" class="sig-line-input">
+            Получил <input type="text" class="sig-line-input" id="receiver" oninput="saveData()">
         </div>
     </div>
 
@@ -437,6 +583,13 @@
 
 <script>
     const STORAGE_KEY = 'voltmaster_receipt_data_v4';
+
+    function toggleCatalog() {
+        const content = document.getElementById('catalog-content');
+        const icon = document.getElementById('catalog-icon');
+        content.classList.toggle('active');
+        icon.innerText = content.classList.contains('active') ? '▲' : '▼';
+    }
 
     function numberToWordsRubles(num) {
         const rubles = Math.floor(num);
@@ -531,6 +684,26 @@
         calculateRow(row.querySelector('.item-qty'));
     }
 
+    function addCatalogItem(itemName, unit = 'шт') {
+        const rows = document.querySelectorAll('#items-body tr');
+        
+        if (rows.length === 1) {
+            const firstRow = rows[0];
+            const nameField = firstRow.querySelector('.item-name');
+            if (nameField.value.trim() === '') {
+                nameField.value = itemName;
+                firstRow.querySelector('.item-qty').value = '1';
+                firstRow.querySelector('.item-unit').value = unit;
+                calculateRow(nameField);
+                saveData();
+                return;
+            }
+        }
+
+        addRow(itemName, '1', unit, '');
+        saveData();
+    }
+
     function removeRow(button) {
         const row = button.closest('tr');
         row.remove();
@@ -570,7 +743,6 @@
         document.getElementById('words-summary-text').innerText = numberToWordsRubles(grandTotal);
     }
 
-    // Сохранение всех данных в localStorage
     function saveData() {
         const rows = document.querySelectorAll('#items-body tr');
         const items = [];
@@ -589,13 +761,14 @@
             docDate: document.getElementById('doc-date').value,
             seller: document.getElementById('seller').value,
             buyer: document.getElementById('buyer').value,
+            issuer: document.getElementById('issuer').value,
+            receiver: document.getElementById('receiver').value,
             items: items
         };
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
 
-    // Загрузка данных при старте / обновлении страницы
     function loadData() {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
@@ -604,6 +777,8 @@
                 document.getElementById('doc-number').value = data.docNumber || '';
                 document.getElementById('seller').value = data.seller || '';
                 document.getElementById('buyer').value = data.buyer || '';
+                document.getElementById('issuer').value = data.issuer || '';
+                document.getElementById('receiver').value = data.receiver || '';
 
                 if (data.docDate) {
                     document.getElementById('doc-date').value = data.docDate;
@@ -631,6 +806,8 @@
         document.getElementById('doc-date').valueAsDate = new Date();
         document.getElementById('seller').value = '';
         document.getElementById('buyer').value = '';
+        document.getElementById('issuer').value = '';
+        document.getElementById('receiver').value = '';
         document.getElementById('doc-number').value = '';
         document.getElementById('items-body').innerHTML = '';
         addEmptyRows();
@@ -640,7 +817,6 @@
         addRow('', '', 'шт', '');
     }
 
-    // Функция Сброса: очищает товары и номер, но ОСТАВЛЯЕТ Покупателя и Продавца
     function resetForm() {
         if (confirm('Очистить чек? Имя покупателя и продавца останется.')) {
             document.getElementById('doc-number').value = '';
