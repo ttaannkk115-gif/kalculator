@@ -15,7 +15,7 @@
         body {
             background-color: #f4f5f7;
             color: #333;
-            padding-bottom: 120px;
+            padding-bottom: 140px; /* Увеличенный отступ, чтобы нижняя панель ничего не перекрывала */
             overflow-x: hidden;
         }
 
@@ -716,20 +716,19 @@
 
         .only-print { display: none; }
 
-        /* ----- НИЖНЯЯ ПАНЕЛЬ ----- */
+        /* ----- НИЖНЯЯ ПАНЕЛЬ (Закреплена поверх всех элементов) ----- */
         .bottom-bar {
             position: fixed;
-            bottom: 12px;
-            left: 12px;
-            right: 12px;
+            bottom: 0;
+            left: 0;
+            right: 0;
             background-color: #1a1c23;
-            border-radius: 14px;
-            padding: 10px 12px;
+            padding: 12px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+            z-index: 9999;
         }
 
         .total-container {
@@ -762,7 +761,7 @@
             color: white;
             border: none;
             border-radius: 8px;
-            padding: 10px 12px;
+            padding: 10px 14px;
             font-size: 0.75rem;
             font-weight: 800;
             cursor: pointer;
@@ -773,7 +772,7 @@
             color: #000000;
             border: none;
             border-radius: 8px;
-            padding: 10px 12px;
+            padding: 10px 14px;
             font-size: 0.75rem;
             font-weight: 800;
             cursor: pointer;
@@ -790,7 +789,7 @@
             border-radius: 20px;
             font-size: 0.85rem;
             display: none;
-            z-index: 1001;
+            z-index: 10001;
         }
 
         @media print {
@@ -860,7 +859,7 @@
             <input type="text" id="itemName" placeholder="Название материала" autocomplete="off">
             <div class="inline-row-grid">
                 <input type="number" id="itemPrice" placeholder="Цена" inputmode="decimal">
-                <input type="number" id="itemInitialQty" placeholder="Кол-во" value="1" inputmode="decimal" min="0">
+                <input type="number" id="itemInitialQty" placeholder="Кол-во" value="" inputmode="decimal" min="0">
                 <select id="itemUnit">
                     <option value="шт">за шт</option>
                     <option value="м">за метр</option>
@@ -898,7 +897,7 @@
                 </div>
                 <div class="doc-meta-item print-address-row">
                     <label>Адрес / Объект:</label>
-                    <input type="text" id="docAddress" placeholder="Например: Гимры" oninput="saveDocMeta(); syncPrintText();">
+                    <input type="text" id="docAddress" placeholder="этот окно не висвечивается на чеке" oninput="saveDocMeta(); syncPrintText();">
                     <span class="print-text-val" id="docAddressVal"></span>
                 </div>
             </div>
@@ -1178,7 +1177,7 @@
                 return;
             }
 
-            const qtyToAdd = isNaN(initialQty) || initialQty < 0 ? 1 : initialQty;
+            const qtyToAdd = isNaN(initialQty) || initialQty < 0 ? 0 : initialQty;
 
             let existing = items.find(item => item.name.toLowerCase() === name.toLowerCase());
             if (existing) {
@@ -1197,10 +1196,10 @@
             saveToStorage();
             renderAll();
             
-            clearSearch(); // Очищает строку поиска, но больше НЕ вызывает .focus()
+            clearSearch();
             nameInput.value = '';
             priceInput.value = '';
-            qtyInput.value = '1';
+            qtyInput.value = '';
             showToast('Материал добавлен в таблицу!');
         }
 
@@ -1260,7 +1259,7 @@
                 return;
             }
 
-            const currentQty = item.quantity || 1;
+            const currentQty = item.quantity || 0;
             item.quantity = 0; 
 
             let existingTarget = items.find(i => i.name.toLowerCase() === nameTrimmed.toLowerCase());
