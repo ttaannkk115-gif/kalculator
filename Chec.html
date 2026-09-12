@@ -2,834 +2,1598 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Товарный чек - VoltMaster</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VoltMaster - Смета 2026</title>
     <style>
         * {
             box-sizing: border-box;
-            font-family: 'Arial', 'Helvetica', sans-serif;
-        }
-
-        html, body {
-            overflow-x: hidden;
-            width: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         body {
-            background-color: #f0f2f5;
-            margin: 0;
-            padding: 10px 5px;
-            color: #000;
-        }
-
-        .receipt-card {
-            width: 100%;
-            max-width: 850px;
-            margin: 0 auto;
-            background: #ffffff;
-            padding: 15px;
-            border-radius: 4px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-
-        @media (min-width: 600px) {
-            body {
-                padding: 15px;
-            }
-            .receipt-card {
-                padding: 25px 30px;
-            }
-        }
-
-        /* Верхний блок: заголовок и логотип */
-        .header-section {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-
-        .title-block {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 5px;
-            font-size: 16px;
-            font-weight: bold;
-            max-width: 100%;
-        }
-
-        .title-text {
-            white-space: nowrap;
-        }
-
-        .title-block input[type="text"] {
-            font-size: 16px;
-            font-weight: bold;
-            width: 70px;
-            border: none;
-            border-bottom: 1px dashed #999;
-            padding: 0 2px;
-            text-align: center;
-        }
-
-        .title-block input[type="date"] {
-            font-size: 14px;
-            font-weight: bold;
-            border: none;
-            border-bottom: 1px dashed #999;
-            padding: 0 2px;
-            max-width: 145px;
-        }
-
-        .logo-block {
-            font-size: 22px;
-            font-weight: 900;
-            letter-spacing: -0.5px;
-            color: #111;
-            display: flex;
-            align-items: center;
-            gap: 2px;
-        }
-
-        .logo-block span {
-            color: #0056b3;
-        }
-
-        .logo-icon {
-            font-size: 18px;
-        }
-
-        .divider {
-            border-top: 2px solid #000;
-            margin-bottom: 12px;
-        }
-
-        /* Поля Продавец / Покупатель */
-        .info-table {
-            width: 100%;
-            margin-bottom: 15px;
-            font-size: 13px;
-            border-collapse: collapse;
-        }
-
-        .info-table td {
-            padding: 4px 0;
-            vertical-align: middle;
-        }
-
-        .info-label {
-            font-weight: bold;
-            width: 90px;
-            white-space: nowrap;
-            padding-right: 5px;
-        }
-
-        .info-input {
-            width: 100%;
-            border: 1px solid #ccc;
-            padding: 5px 6px;
-            font-size: 13px;
-            border-radius: 2px;
-        }
-
-        /* Скрываемый раздел каталога товаров */
-        .catalog-container {
-            border: 1px solid #0056b3;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            overflow: hidden;
-            background: #fff;
-        }
-
-        .catalog-toggle-btn {
-            width: 100%;
-            background-color: #eef5ff;
-            color: #0056b3;
-            border: none;
-            padding: 10px 15px;
-            font-size: 14px;
-            font-weight: bold;
-            text-align: left;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: background 0.2s;
-        }
-
-        .catalog-toggle-btn:hover {
-            background-color: #d8e9ff;
-        }
-
-        .catalog-content {
-            display: none;
-            padding: 12px;
-            background-color: #fafafa;
-            border-top: 1px solid #b8daff;
-        }
-
-        .catalog-content.active {
-            display: block;
-        }
-
-        .catalog-group {
-            margin-bottom: 12px;
-        }
-
-        .catalog-group:last-child {
-            margin-bottom: 0;
-        }
-
-        .catalog-group-title {
-            font-size: 12px;
-            font-weight: bold;
+            background-color: #f4f5f7;
             color: #333;
-            margin-bottom: 6px;
-            border-bottom: 1px dashed #ccc;
-            padding-bottom: 3px;
+            padding-bottom: 120px;
+            overflow-x: hidden;
         }
 
-        .catalog-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-
-        .btn-catalog-item {
-            background-color: #ffffff;
-            color: #0056b3;
-            border: 1px solid #b8daff;
-            border-radius: 3px;
-            padding: 5px 9px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-
-        .btn-catalog-item:hover {
-            background-color: #0056b3;
-            color: #ffffff;
-            border-color: #0056b3;
-        }
-
-        /* Таблица товаров */
-        .table-wrapper {
-            width: 100%;
-            overflow-x: auto;
-            margin-bottom: 10px;
-            -webkit-overflow-scrolling: touch;
-            border: 1px solid #000;
-        }
-
-        table.items-table {
-            width: 100%;
-            min-width: 550px;
-            border-collapse: collapse;
-            font-size: 12px;
-        }
-
-        table.items-table th, 
-        table.items-table td {
-            border: 1px solid #000;
-            padding: 4px 5px;
-        }
-
-        table.items-table th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-            text-align: center;
-        }
-
-        .col-num { width: 30px; text-align: center; }
-        .col-qty { width: 100px; }
-        .col-price { width: 85px; }
-        .col-sum { width: 95px; }
-        .col-remove { width: 28px; text-align: center; border: none !important; }
-
-        .items-table input {
-            border: none;
-            width: 100%;
-            font-size: 12px;
-            background: transparent;
-        }
-
-        .items-table input:focus {
-            outline: 1px solid #0056b3;
-            background: #fff;
-        }
-
-        /* Итоговая секция */
-        .summary-section {
-            margin-top: 10px;
-            font-size: 12px;
-        }
-
-        .total-row {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-
-        .total-row .total-val {
-            font-size: 16px;
-            margin-left: 10px;
-        }
-
-        .count-summary {
-            font-size: 12px;
-            margin-bottom: 3px;
-        }
-
-        .words-summary {
-            font-size: 13px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            word-wrap: break-word;
-        }
-
-        /* Предупреждение */
-        .notice-block {
-            font-size: 11px;
-            font-style: italic;
-            font-weight: bold;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #000;
-            padding-bottom: 8px;
-            line-height: 1.3;
-        }
-
-        /* Подписи */
-        .signatures-flex {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            font-size: 13px;
-            font-weight: bold;
-            margin-top: 15px;
-        }
-
-        .sig-item {
-            display: flex;
-            align-items: flex-end;
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .sig-line-input {
-            border: none;
-            border-bottom: 1px solid #000;
-            flex: 1;
-            margin-left: 6px;
-            min-width: 50px;
-        }
-
-        /* Кнопки управления */
-        .btn-panel {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            cursor: pointer;
-            border: none;
-            border-radius: 4px;
-            padding: 10px 15px;
-            font-size: 14px;
-            font-weight: bold;
-            transition: background 0.2s;
-        }
-
-        .btn-add {
-            background-color: #27ae60;
+        /* ----- ВЕРХНИЙ БАР ----- */
+        .top-header {
+            background-color: #2b6be8;
+            padding: 16px 14px 14px 14px;
             color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .top-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .app-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: 0.5px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-hdr {
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+        }
+
+        .btn-hdr:active {
+            opacity: 0.8;
+        }
+
+        .btn-archive {
+            background-color: #5835a6;
+            color: white;
+            padding: 10px 14px;
         }
 
         .btn-reset {
-            background-color: #e74c3c;
+            background-color: #d94943;
             color: white;
+            padding: 10px 14px;
         }
 
-        .btn-print {
-            background-color: #2c3e50;
-            color: white;
-            flex: 1;
+        /* ----- БЛОК ПОИСКА С ВЫПАДАЮЩИМ СПИСКОМ ПОД НИМ ----- */
+        .search-wrapper {
+            position: relative;
         }
 
-        .btn-remove {
-            background-color: #e74c3c;
-            color: white;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-size: 11px;
+        .search-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 12px 38px 12px 16px;
+            border-radius: 12px;
+            border: none;
+            font-size: 1.05rem;
+            outline: none;
+            background-color: #ffffff;
+            color: #333;
+        }
+
+        .search-container input::placeholder {
+            color: #a0a0a0;
+        }
+
+        .btn-clear-search {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            color: #999;
+            cursor: pointer;
+            display: none;
+            padding: 4px;
+            font-weight: bold;
+        }
+
+        .btn-clear-search:hover {
+            color: #333;
+        }
+
+        .search-dropdown {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            z-index: 1500;
+            max-height: 220px;
+            overflow-y: auto;
+            display: none;
+            border: 1px solid #e2e8f0;
+        }
+
+        .search-dropdown-item {
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #1a1a1a;
+        }
+
+        .search-dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-dropdown-item:hover {
+            background-color: #f8fafc;
+            color: #2b6be8;
+        }
+
+        .search-dropdown-item .dropdown-price {
+            font-weight: 700;
+            color: #2b6be8;
+            font-size: 0.85rem;
+        }
+
+        .main-content {
+            padding: 10px;
+        }
+
+        /* ----- ГЛАВНЫЙ АККОРДЕОН «МАТЕРИАЛЫ» ----- */
+        .main-material-section {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.04);
+            margin-top: 15px;
+            margin-bottom: 20px;
+        }
+
+        .main-material-header {
+            background: #ffffff;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            font-weight: 800;
+            font-size: 1.05rem;
+            color: #1a1a1a;
+            border-bottom: 1px solid transparent;
+        }
+
+        .main-material-title-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-grow: 1;
             cursor: pointer;
         }
 
-        /* Печатный вид */
+        .main-material-header .arrow-icon {
+            font-size: 0.85rem;
+            color: #666;
+            transition: transform 0.2s;
+            transform: rotate(-90deg);
+        }
+
+        body:not(.material-collapsed) .main-material-header .arrow-icon {
+            transform: rotate(0deg);
+        }
+
+        body:not(.material-collapsed) .main-material-header {
+            border-bottom-color: #e2e8f0;
+        }
+
+        body.material-collapsed .main-material-body {
+            display: none;
+        }
+
+        .btn-copy-catalog {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            color: #2b6be8;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-copy-catalog:active {
+            background: #e2e8f0;
+        }
+
+        .main-material-body {
+            padding: 10px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 4px;
+        }
+
+        .item-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow: hidden;
+            padding-right: 10px;
+        }
+
+        .item-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #1a1a1a;
+            word-break: break-word;
+        }
+
+        .highlight {
+            background-color: #ffe066;
+            color: #1a1a1a;
+            padding: 0 2px;
+            border-radius: 3px;
+        }
+
+        .item-unit-sub {
+            font-size: 0.75rem;
+            color: #718096;
+            font-weight: 500;
+        }
+
+        .item-price {
+            color: #2b6be8;
+            font-weight: 700;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .item-right-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .arrow-icon {
+            font-size: 0.7rem;
+            color: #888;
+            transition: transform 0.2s;
+        }
+
+        .item-card.collapsed .arrow-icon {
+            transform: rotate(-90deg);
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafc;
+            padding: 8px 12px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .item-card.collapsed .quantity-control {
+            display: none;
+        }
+
+        .qty-btn-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-qty {
+            background: #e5e5ea;
+            color: #000;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .qty-input {
+            width: 45px !important;
+            padding: 5px !important;
+            text-align: center;
+            font-weight: bold;
+            background: white;
+            border: 1px solid #dcdfe6;
+            border-radius: 6px;
+        }
+
+        .item-total {
+            font-weight: 700;
+            color: #1a1a1a;
+            font-size: 0.9rem;
+        }
+
+        .btn-delete {
+            background: #eb5757;
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        .empty-text {
+            text-align: center;
+            color: #8e8e93;
+            padding: 10px;
+            font-size: 0.85rem;
+        }
+
+        /* ----- МОДАЛЬНЫЕ ОКНА ----- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 15px;
+        }
+
+        .modal-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 20px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        /* ----- БЛОК ДОБАВЛЕНИЯ МАТЕРИАЛА НА СТРАНИЦЕ ----- */
+        .inline-add-section {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .inline-add-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #1e3a8a;
+        }
+
+        .inline-add-section input, .inline-add-section select {
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            outline: none;
+            background-color: #fff;
+            width: 100%;
+        }
+
+        .inline-row-grid {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .inline-row-grid input#itemPrice {
+            flex: 1;
+            min-width: 0;
+            padding: 12px 8px;
+            font-size: 0.9rem;
+        }
+
+        .inline-row-grid input#itemInitialQty {
+            flex: 1;
+            min-width: 0;
+            padding: 12px 8px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .inline-row-grid select#itemUnit {
+            flex: 1.1;
+            min-width: 0;
+            font-weight: 600;
+            padding: 12px 6px;
+            font-size: 0.85rem;
+        }
+
+        .btn-add-catalog {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            background-color: #4a71f1;
+            color: white;
+            margin-top: 2px;
+        }
+
+        /* ----- СТИЛЬ КАРТОЧЕК АРХИВА ----- */
+        .archive-item {
+            background: #ffffff;
+            border-bottom: 1px solid #f0f0f0;
+            padding: 12px 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .archive-item:hover {
+            background: #fafafa;
+        }
+
+        .archive-item-content {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            flex-grow: 1;
+            padding-right: 10px;
+        }
+
+        .archive-client-name {
+            font-weight: 700;
+            font-size: 0.98rem;
+            color: #2b6be8;
+        }
+
+        .archive-location {
+            font-size: 0.82rem;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .archive-meta-row {
+            font-size: 0.82rem;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .archive-trash-btn {
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 8px;
+            color: #777;
+            transition: color 0.2s;
+        }
+
+        .archive-trash-btn:hover {
+            color: #d94943;
+        }
+
+        /* ----- БЛОК ДОКУМЕНТА (ЧЕК) ----- */
+        .doc-container {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .doc-header-print {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .doc-title-print {
+            font-size: 0.95rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .input-inline {
+            border: none;
+            border-bottom: 1px solid #999;
+            border-radius: 0;
+            padding: 2px 4px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #333;
+            background: transparent;
+        }
+
+        .input-num { width: 65px; }
+        .input-date { width: 120px; }
+
+        .btn-today-date {
+            background: none;
+            border: none;
+            font-size: 0.8rem;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+        }
+
+        .doc-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+        }
+
+        .doc-meta-item {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .doc-meta-item label {
+            width: 95px;
+            font-weight: 700;
+            color: #000;
+            flex-shrink: 0;
+        }
+
+        .doc-meta-item input {
+            border: none;
+            border-bottom: 1px dashed #ccc;
+            border-radius: 0;
+            padding: 2px 4px;
+            font-size: 0.85rem;
+            color: #333;
+            width: 100%;
+            background: transparent;
+        }
+
+        .print-text-val { display: none; }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .estimate-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            table-layout: fixed;
+        }
+
+        .estimate-table th, .estimate-table td {
+            border: 1px solid #000;
+            padding: 5px 4px;
+            text-align: left;
+            vertical-align: middle;
+            word-wrap: break-word;
+        }
+
+        .estimate-table th {
+            background-color: #ffffff;
+            font-weight: 700;
+            color: #000;
+            text-align: center;
+        }
+
+        .estimate-table .col-num { width: 24px; text-align: center; }
+        .estimate-table .col-name { width: auto; }
+        .estimate-table .col-qty { width: 75px; text-align: right; }
+        .estimate-table .col-price { width: 65px; text-align: right; }
+        .estimate-table .col-total { width: 65px; text-align: right; }
+        .estimate-table .col-del { width: 22px; text-align: center; }
+
+        .editable-cell {
+            cursor: pointer;
+            background-color: #ffffff;
+            transition: background-color 0.2s;
+        }
+
+        .editable-cell:hover { background-color: #f8f9fa; }
+
+        .table-input {
+            width: 100%;
+            padding: 2px 4px !important;
+            font-size: 0.8rem !important;
+            text-align: right;
+            border: 1px solid #3b82f6 !important;
+            border-radius: 4px !important;
+            background: white !important;
+        }
+
+        .table-input-text {
+            width: 100%;
+            padding: 2px 4px !important;
+            font-size: 0.8rem !important;
+            text-align: left;
+            border: 1px solid #3b82f6 !important;
+            border-radius: 4px !important;
+            background: white !important;
+        }
+
+        .tbl-del-btn {
+            color: #ef4444;
+            background: none;
+            border: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .table-footer-summary {
+            display: flex;
+            justify-content: flex-end;
+            font-weight: 800;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+
+        .only-print { display: none; }
+
+        /* ----- НИЖНЯЯ ПАНЕЛЬ ----- */
+        .bottom-bar {
+            position: fixed;
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            background-color: #1a1c23;
+            border-radius: 14px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        .total-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .total-amount {
+            color: #ffe066;
+            font-size: 1.25rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .btn-clipboard {
+            background: transparent;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .actions-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-action-green {
+            background-color: #5cd166;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn-action-white {
+            background-color: #ffffff;
+            color: #000000;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 85px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: none;
+            z-index: 1001;
+        }
+
         @media print {
-            body, html {
-                background: white;
-                padding: 0;
-                overflow: visible;
-            }
+            body { background: white; color: black; padding: 0; margin: 0; }
+            body * { visibility: hidden; }
+            .doc-container, .doc-container * { visibility: visible; }
+            .doc-container { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; padding: 0; margin: 0; }
+            
+            .print-address-row { display: none !important; }
 
-            .receipt-card {
-                box-shadow: none;
-                padding: 0;
-                width: 100%;
-                max-width: none;
-                overflow: visible;
-            }
-
-            .btn-panel, .col-remove, .btn-remove-cell, .catalog-container {
-                display: none !important;
-            }
-
-            .table-wrapper {
-                overflow: visible;
-                border: none;
-            }
-
-            table.items-table {
-                min-width: 100%;
-            }
-
-            input {
-                border: none !important;
-                background: transparent !important;
-                padding: 0 !important;
-            }
-
-            table.items-table th, 
-            table.items-table td {
-                border: 1px solid #000 !important;
-            }
-
-            .notice-block {
-                border-bottom: 1px solid #000 !important;
-            }
-
-            .signatures-flex {
-                flex-wrap: nowrap;
-            }
+            .col-del, .tbl-del-btn, .bottom-bar, .top-header, .btn-today-date, .main-material-section, .inline-add-section { display: none !important; }
+            .doc-meta-item input, .doc-title-print input { display: none !important; }
+            .editable-cell { background-color: transparent !important; }
+            .print-text-val { display: inline-block !important; font-weight: 500; font-size: 0.85rem; }
+            .only-print { display: block !important; }
+            .print-footer-info { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; margin-top: 12px; }
+            .print-notice { font-size: 0.75rem; font-style: italic; font-weight: 600; margin-top: 12px; padding: 6px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; }
+            .signatures-block { display: flex; justify-content: space-between; margin-top: 25px; font-weight: 700; font-size: 0.9rem; }
+            .estimate-table th, .estimate-table td { border: 1px solid #000 !important; background-color: #ffffff !important; }
         }
     </style>
 </head>
-<body>
+<body class="material-collapsed">
 
-<div class="receipt-card">
-    <!-- Шапка -->
-    <div class="header-section">
-        <div class="title-block">
-            <span class="title-text">Товарный чек №</span> 
-            <input type="text" id="doc-number" value="" placeholder="16618" oninput="saveData()"> 
-            <span class="title-text">от</span> 
-            <input type="date" id="doc-date" onchange="saveData()">
-        </div>
-        <div class="logo-block">
-            volt<span>Master</span> <div class="logo-icon">⚡</div>
-        </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Инфо продавца и покупателя -->
-    <table class="info-table">
-        <tr>
-            <td class="info-label">Продавец:</td>
-            <td><input type="text" class="info-input" id="seller" value="" placeholder="ФИО / ИП / Компания" oninput="saveData()"></td>
-        </tr>
-        <tr>
-            <td class="info-label">Покупатель:</td>
-            <td><input type="text" class="info-input" id="buyer" value="" placeholder="ФИО / Номер телефона / Данные" oninput="saveData()"></td>
-        </tr>
-    </table>
-
-    <!-- Скрытый раздел: Каталог быстрого выбора товаров -->
-    <div class="catalog-container">
-        <button class="catalog-toggle-btn" onclick="toggleCatalog()">
-            <span>📦 Выбрать товар из каталога</span>
-            <span id="catalog-icon">▼</span>
-        </button>
-        <div class="catalog-content" id="catalog-content">
-            
-            <!-- Щитовое оборудование -->
-            <div class="catalog-group">
-                <div class="catalog-group-title">⚡ Щитовое оборудование</div>
-                <div class="catalog-buttons">
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Щиток')">+ Щиток</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Гребенка')">+ Гребенка</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('НШВИ')">+ НШВИ</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Провод ПуГВнг 1х6')">+ Провод ПуГВнг 1х6</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('DIN-рейка')">+ DIN-рейка</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Клеммная колодка')">+ Клеммная колодка</button>
-                </div>
+    <!-- ВЕРХНИЙ БАР -->
+    <header class="top-header">
+        <div class="top-header-row">
+            <div class="app-title">
+                СМЕТА<br>2026
             </div>
-
-            <!-- Раздел: Автоматы и Отсекатели -->
-            <div class="catalog-group">
-                <div class="catalog-group-title">🛡️ Автоматы и Отсекатели</div>
-                <div class="catalog-buttons">
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Отсекатель напряжения / Реле напряжения 63А')">+ Отсекатель напряжения 63А</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Отсекатель напряжения / Реле напряжения 40А')">+ Отсекатель напряжения 40А</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Автомат 1п 16А')">+ Автомат 1п 16А</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Автомат 1п 20А')">+ Автомат 1п 20А</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Автомат 1п 25А')">+ Автомат 1п 25А</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Автомат 2п 32А')">+ Автомат 2п 32А</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Автомат 2п 40А')">+ Автомат 2п 40А</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Автомат 2п 63А')">+ Автомат 2п 63А</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Дифавтомат 16А 30мА')">+ Дифавтомат 16А</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('УЗО 2п 40А 30мА')">+ УЗО 2п 40А</button>
-                </div>
+            <div class="header-actions">
+                <button class="btn-hdr btn-archive" onclick="openArchiveModal()">Архив</button>
+                <button class="btn-hdr btn-reset" onclick="resetEstimateTable()">СБРОС</button>
             </div>
-
-            <!-- Раздел: Кабель и расходники (ПВС и ВВГ от 1.5 до 6) -->
-            <div class="catalog-group">
-                <div class="catalog-group-title">🎗️ Кабель и расходники</div>
-                <div class="catalog-buttons">
-                    <!-- Провод ПВС (от 1.5 до 6) -->
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Провод ПВС 2х1.5', 'м')">+ ПВС 2х1.5 (м)</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Провод ПВС 3х1.5', 'м')">+ ПВС 3х1.5 (м)</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Провод ПВС 2х2.5', 'м')">+ ПВС 2х2.5 (м)</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Провод ПВС 3х2.5', 'м')">+ ПВС 3х2.5 (м)</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Провод ПВС 3х4', 'м')">+ ПВС 3х4 (м)</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Провод ПВС 3х6', 'м')">+ ПВС 3х6 (м)</button>
-                    <!-- Кабель ВВГ (от 1.5 до 6) -->
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Кабель ВВГнг-LS 2х1.5', 'м')">+ ВВГ 2х1.5 (м)</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Кабель ВВГнг-LS 3х1.5', 'м')">+ ВВГ 3х1.5 (м)</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Кабель ВВГнг-LS 2х2.5', 'м')">+ ВВГ 2х2.5 (м)</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Кабель ВВГнг-LS 3х2.5', 'м')">+ ВВГ 3х2.5 (м)</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Кабель ВВГнг-LS 3х4', 'м')">+ ВВГ 3х4 (м)</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Кабель ВВГнг-LS 3х6', 'м')">+ ВВГ 3х6 (м)</button>
-                    <!-- Доп расходники -->
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Гофра 20мм', 'м')">+ Гофра 20мм (м)</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Изолента')">+ Изолента</button>
-                    <button class="btn-catalog-item" onclick="addCatalogItem('Дюбель-хомут')">+ Дюбель-хомут</button>
-                </div>
-            </div>
-
         </div>
-    </div>
-
-    <!-- Панель управления -->
-    <div class="btn-panel" style="margin-bottom: 12px; margin-top: 0;">
-        <button class="btn btn-add" onclick="addRow(); saveData();">+ Добавить пустую строку</button>
-        <button class="btn btn-reset" onclick="resetForm()">Сброс</button>
-    </div>
-
-    <!-- Таблица товаров -->
-    <div class="table-wrapper">
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th class="col-num">№</th>
-                    <th>Товар</th>
-                    <th class="col-qty">Количество</th>
-                    <th class="col-price">Цена</th>
-                    <th class="col-sum">Сумма</th>
-                    <th class="col-remove"></th>
-                </tr>
-            </thead>
-            <tbody id="items-body">
-                <!-- Товарные позиции -->
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Итоги -->
-    <div class="summary-section">
-        <div class="total-row">
-            ИТОГО: <span class="total-val" id="grand-total">0,00</span>
-        </div>
-
-        <div class="count-summary" id="count-summary-text">
-            Всего наименований 0, на сумму 0,00 руб.
-        </div>
-
-        <div class="words-summary" id="words-summary-text">
-            Ноль рублей 00 копеек
-        </div>
-    </div>
-
-    <!-- Предупреждение -->
-    <div class="notice-block">
-        Внимание: Возврат товара возможен в течение 14 календарных дней, при условии сохранения товарного вида.<br>
-        Для оформления возврата потребуются паспортные данные!
-    </div>
-
-    <!-- Подписи -->
-    <div class="signatures-flex">
-        <div class="sig-item">
-            Отпустил <input type="text" class="sig-line-input" id="issuer" oninput="saveData()">
-        </div>
-        <div class="sig-item">
-            Получил <input type="text" class="sig-line-input" id="receiver" oninput="saveData()">
-        </div>
-    </div>
-
-    <!-- Печать -->
-    <div class="btn-panel" style="margin-top: 25px;">
-        <button class="btn btn-print" onclick="window.print()">Распечатать / Сохранить в PDF</button>
-    </div>
-</div>
-
-<script>
-    const STORAGE_KEY = 'voltmaster_receipt_data_v4';
-
-    function toggleCatalog() {
-        const content = document.getElementById('catalog-content');
-        const icon = document.getElementById('catalog-icon');
-        content.classList.toggle('active');
-        icon.innerText = content.classList.contains('active') ? '▲' : '▼';
-    }
-
-    function numberToWordsRubles(num) {
-        const rubles = Math.floor(num);
-        const kopecks = Math.round((num - rubles) * 100);
-
-        if (rubles === 0) return 'Ноль рублей ' + String(kopecks).padStart(2, '0') + ' копеек';
-
-        const units = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
-        const unitsFem = ['', 'одна', 'две', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
-        const teens = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать', 'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
-        const tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
-        const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
-
-        function declension(n, forms) {
-            n = Math.abs(n) % 100;
-            const n1 = n % 10;
-            if (n > 10 && n < 20) return forms[2];
-            if (n1 > 1 && n1 < 5) return forms[1];
-            if (n1 === 1) return forms[0];
-            return forms[2];
-        }
-
-        function convertGroup(n, isFemale) {
-            let result = '';
-            const h = Math.floor(n / 100);
-            const t = Math.floor((n % 100) / 10);
-            const u = n % 10;
-
-            if (h > 0) result += hundreds[h] + ' ';
-            if (t === 1) {
-                result += teens[u] + ' ';
-            } else {
-                if (t > 0) result += tens[t] + ' ';
-                if (u > 0) result += (isFemale ? unitsFem[u] : units[u]) + ' ';
-            }
-            return result;
-        }
-
-        let str = '';
-        const millions = Math.floor(rubles / 1000000);
-        const thousands = Math.floor((rubles % 1000000) / 1000);
-        const remainder = rubles % 1000;
-
-        if (millions > 0) {
-            str += convertGroup(millions, false) + declension(millions, ['миллион', 'миллиона', 'миллионов']) + ' ';
-        }
-        if (thousands > 0) {
-            str += convertGroup(thousands, true) + declension(thousands, ['тысяча', 'тысячи', 'тысяч']) + ' ';
-        }
-        if (remainder > 0) {
-            str += convertGroup(remainder, false);
-        }
-
-        str = str.trim();
-        str = str.charAt(0).toUpperCase() + str.slice(1);
-
-        const rubWord = declension(rubles, ['рубль', 'рубля', 'рублей']);
-        const kopWord = declension(kopecks, ['копейка', 'копейки', 'копеек']);
-
-        return `${str} ${rubWord} ${String(kopecks).padStart(2, '0')} ${kopWord}`;
-    }
-
-    function updateIndexes() {
-        const rows = document.querySelectorAll('#items-body tr');
-        rows.forEach((row, index) => {
-            row.querySelector('.row-index').innerText = index + 1;
-        });
-    }
-
-    function addRow(name = '', qty = '', unit = 'шт', price = '') {
-        const tbody = document.getElementById('items-body');
-        const row = document.createElement('tr');
-
-        row.innerHTML = `
-            <td class="col-num row-index">1</td>
-            <td><input type="text" class="item-name" placeholder="Наименование товара" value="${name}" oninput="calculateRow(this); saveData()"></td>
-            <td class="col-qty">
-                <div style="display:flex; gap:2px;">
-                    <input type="number" class="item-qty" value="${qty}" placeholder="1" min="0.1" step="any" style="text-align:right; width:60%;" oninput="calculateRow(this); saveData()">
-                    <input type="text" class="item-unit" value="${unit}" style="width:40%; text-align:center;" oninput="saveData()">
-                </div>
-            </td>
-            <td class="col-price"><input type="number" class="item-price" value="${price}" placeholder="0" min="0" step="0.01" style="text-align:right;" oninput="calculateRow(this); saveData()"></td>
-            <td class="col-sum"><input type="text" class="item-sum" value="0,00" style="text-align:right;" readonly></td>
-            <td class="col-remove btn-remove-cell">
-                <button class="btn btn-remove" onclick="removeRow(this)">✕</button>
-            </td>
-        `;
-
-        tbody.appendChild(row);
-        updateIndexes();
-        calculateRow(row.querySelector('.item-qty'));
-    }
-
-    function addCatalogItem(itemName, unit = 'шт') {
-        const rows = document.querySelectorAll('#items-body tr');
         
-        if (rows.length === 1) {
-            const firstRow = rows[0];
-            const nameField = firstRow.querySelector('.item-name');
-            if (nameField.value.trim() === '') {
-                nameField.value = itemName;
-                firstRow.querySelector('.item-qty').value = '1';
-                firstRow.querySelector('.item-unit').value = unit;
-                calculateRow(nameField);
-                saveData();
+        <!-- Обертка поиска с выпадающим блоком подсказок -->
+        <div class="search-wrapper">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Поиск..." autocomplete="off" oninput="filterItems()">
+                <button type="button" id="clearSearchBtn" class="btn-clear-search" onclick="clearSearch()">✕</button>
+            </div>
+            <!-- Выпадающий список прямо под строкой поиска -->
+            <div id="searchDropdown" class="search-dropdown"></div>
+        </div>
+    </header>
+
+    <!-- МОДАЛЬНОЕ ОКНО АРХИВА -->
+    <div class="modal-overlay" id="archiveModal" onclick="closeModalOuter(event, 'archiveModal')">
+        <div class="modal-card" style="max-width: 430px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: #222;">Архив смет 📁</h3>
+                <button onclick="closeArchiveModal()" style="background:none; border:none; font-size: 1.2rem; cursor:pointer; font-weight:bold; color: #555;">✕</button>
+            </div>
+            <div id="archiveListContainer" style="display: flex; flex-direction: column; gap: 4px; max-height: 65vh; overflow-y: auto;">
+                <!-- Элементы архива -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ГЛАВНЫЙ КОНТЕЙНЕР -->
+    <div class="main-content">
+        
+        <!-- ОКОШКО ДОБАВЛЕНИЯ МАТЕРИАЛА НА СТРАНИЦЕ -->
+        <div class="inline-add-section">
+            <div class="inline-add-title">Добавить в материалы</div>
+            <input type="text" id="itemName" placeholder="Название материала" autocomplete="off">
+            <div class="inline-row-grid">
+                <input type="number" id="itemPrice" placeholder="Цена" inputmode="decimal">
+                <input type="number" id="itemInitialQty" placeholder="Кол-во" value="1" inputmode="decimal" min="0">
+                <select id="itemUnit">
+                    <option value="шт">за шт</option>
+                    <option value="м">за метр</option>
+                    <option value="уп">за уп</option>
+                    <option value="компл">за компл</option>
+                </select>
+            </div>
+            <button class="btn-add-catalog" onclick="addItem()">Добавить материал</button>
+        </div>
+
+        <!-- 1. БЛОК ДОКУМЕНТА (ЧЕК И ТАБЛИЦА) -->
+        <div class="doc-container" style="margin-bottom: 20px;">
+            <div class="doc-header-print">
+                <div class="doc-title-print">
+                    <span>Товарный чек №</span>
+                    <input type="text" id="docNum" class="input-inline input-num" value="16618" oninput="saveDocMeta(); syncPrintText();">
+                    <span class="print-text-val" id="docNumVal">16618</span>
+                    <span>от</span>
+                    <input type="text" id="docDate" class="input-inline input-date" oninput="saveDocMeta(); syncPrintText();">
+                    <button class="btn-today-date" onclick="setTodayDate()" title="Установить сегодняшнюю дату">📅</button>
+                    <span class="print-text-val" id="docDateVal"></span>
+                </div>
+            </div>
+
+            <div class="doc-meta">
+                <div class="doc-meta-item">
+                    <label>Продавец:</label>
+                    <input type="text" id="docSeller" placeholder="ФИО / ИП / Компания" oninput="saveDocMeta(); syncPrintText();">
+                    <span class="print-text-val" id="docSellerVal"></span>
+                </div>
+                <div class="doc-meta-item">
+                    <label>Покупатель:</label>
+                    <input type="text" id="docBuyer" placeholder="ФИО Покупателя" oninput="saveDocMeta(); syncPrintText();">
+                    <span class="print-text-val" id="docBuyerVal"></span>
+                </div>
+                <div class="doc-meta-item print-address-row">
+                    <label>Адрес / Объект:</label>
+                    <input type="text" id="docAddress" placeholder="Например: Гимры" oninput="saveDocMeta(); syncPrintText();">
+                    <span class="print-text-val" id="docAddressVal"></span>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="estimate-table">
+                    <thead>
+                        <tr>
+                            <th class="col-num">№</th>
+                            <th class="col-name">Товар</th>
+                            <th class="col-qty">Кол-во</th>
+                            <th class="col-price">Цена</th>
+                            <th class="col-total">Сумма</th>
+                            <th class="col-del"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="estimateTableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="table-footer-summary">
+                ИТОГО: <span id="grandTotalPrint" style="margin-left: 6px;">0,00</span>
+            </div>
+
+            <div class="only-print">
+                <div class="print-footer-info">
+                    <div>Всего наименований <span id="totalItemsCount">0</span>, на сумму <span id="totalAmountText">0,00 руб.</span></div>
+                    <div style="font-weight: 700;" id="totalInWords">Ноль рублей 00 копеек</div>
+                </div>
+
+                <div class="print-notice">
+                    Внимание: Возврат товара возможен в течение 14 календарных дней, при условии сохранения товарного вида. Для оформления возврата потребуются паспортные данные!
+                </div>
+
+                <div class="signatures-block">
+                    <div>Отпустил _______________</div>
+                    <div>Получил _______________</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. ГЛАВНЫЙ БЛОК «МАТЕРИАЛЫ» -->
+        <div class="main-material-section" id="mainMaterialSection">
+            <div class="main-material-header">
+                <div class="main-material-title-area" onclick="toggleMainMaterial()">
+                    <span>Материалы</span>
+                    <span class="arrow-icon">▼</span>
+                </div>
+                <button class="btn-copy-catalog" onclick="copyCatalogList()" title="Скопировать все материалы">📋 Копировать</button>
+            </div>
+            <div class="main-material-body">
+                <div class="list-container" id="itemsContainer">
+                    <!-- Все элементы списка -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- НИЖНЯЯ ПАНЕЛЬ -->
+    <div class="bottom-bar">
+        <div class="total-container">
+            <span class="total-amount" id="grandTotal">0 ₽</span>
+            <button class="btn-clipboard" onclick="copyList()" title="Скопировать выбранное в чеке">📋</button>
+        </div>
+        <div class="actions-group">
+            <button class="btn-action-green" onclick="saveToArchive()">СОХРАНИТЬ</button>
+            <button class="btn-action-white" onclick="window.print()">ПЕЧАТЬ</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Сохранено в архив!</div>
+
+    <script>
+        let items = JSON.parse(localStorage.getItem('voltmaster_materials')) || [];
+        let archive = JSON.parse(localStorage.getItem('voltmaster_archive')) || [];
+
+        function toggleMainMaterial() {
+            document.body.classList.toggle('material-collapsed');
+        }
+
+        function openArchiveModal() {
+            renderArchiveList();
+            document.getElementById('archiveModal').style.display = 'flex';
+        }
+
+        function closeArchiveModal() {
+            document.getElementById('archiveModal').style.display = 'none';
+        }
+
+        function closeModalOuter(event, modalId) {
+            if (event.target.classList.contains('modal-overlay')) {
+                document.getElementById(modalId).style.display = 'none';
+            }
+        }
+
+        function resetEstimateTable() {
+            if (confirm('Сбросить весь выбранный список в чеке? Имена продавца и покупателя сохранятся.')) {
+                items.forEach(item => item.quantity = 0);
+                saveToStorage();
+                renderAll();
+                showToast('Таблица сброшена!');
+            }
+        }
+
+        function getFormattedTodayDate() {
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+            return `${day}.${month}.${year}`;
+        }
+
+        function setTodayDate() {
+            document.getElementById('docDate').value = getFormattedTodayDate();
+            saveDocMeta();
+            syncPrintText();
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('voltmaster_materials', JSON.stringify(items));
+        }
+
+        function saveDocMeta() {
+            const meta = {
+                num: document.getElementById('docNum').value,
+                date: document.getElementById('docDate').value,
+                seller: document.getElementById('docSeller').value,
+                buyer: document.getElementById('docBuyer').value,
+                address: document.getElementById('docAddress').value
+            };
+            localStorage.setItem('voltmaster_doc_meta', JSON.stringify(meta));
+        }
+
+        function loadDocMeta() {
+            const savedMeta = localStorage.getItem('voltmaster_doc_meta');
+            let dateVal = getFormattedTodayDate();
+
+            if (savedMeta) {
+                const meta = JSON.parse(savedMeta);
+                if (meta.num !== undefined) document.getElementById('docNum').value = meta.num;
+                if (meta.date) dateVal = meta.date;
+                if (meta.seller !== undefined) document.getElementById('docSeller').value = meta.seller;
+                if (meta.buyer !== undefined) document.getElementById('docBuyer').value = meta.buyer;
+                if (meta.address !== undefined) document.getElementById('docAddress').value = meta.address;
+            }
+
+            document.getElementById('docDate').value = dateVal;
+            syncPrintText();
+        }
+
+        function syncPrintText() {
+            document.getElementById('docNumVal').textContent = document.getElementById('docNum').value || '—';
+            document.getElementById('docDateVal').textContent = document.getElementById('docDate').value || '—';
+            document.getElementById('docSellerVal').textContent = document.getElementById('docSeller').value || '—';
+            document.getElementById('docBuyerVal').textContent = document.getElementById('docBuyer').value || '—';
+            document.getElementById('docAddressVal').textContent = document.getElementById('docAddress').value || '—';
+        }
+
+        /* --- ФУНКЦИИ АРХИВА --- */
+        function saveToArchive() {
+            saveToStorage();
+            saveDocMeta();
+
+            const activeItems = items.filter(i => (i.quantity || 0) > 0);
+            if (activeItems.length === 0) {
+                alert('Нельзя сохранить пустую смету! Выберите хотя бы один товар.');
                 return;
             }
+
+            const grandTotal = activeItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const docMeta = {
+                num: document.getElementById('docNum').value,
+                date: document.getElementById('docDate').value,
+                seller: document.getElementById('docSeller').value,
+                buyer: document.getElementById('docBuyer').value,
+                address: document.getElementById('docAddress').value
+            };
+
+            const buyerName = docMeta.buyer.trim() ? docMeta.buyer.trim() : 'Без имени';
+            const addressStr = docMeta.address.trim() ? docMeta.address.trim() : 'Адрес не указан';
+            const dateStr = docMeta.date || getFormattedTodayDate();
+
+            const archiveEntry = {
+                id: Date.now(),
+                buyerName: buyerName,
+                address: addressStr,
+                date: dateStr,
+                total: grandTotal,
+                itemsCount: activeItems.length,
+                docMeta: docMeta,
+                itemsSnapshot: JSON.parse(JSON.stringify(items))
+            };
+
+            archive.unshift(archiveEntry);
+            localStorage.setItem('voltmaster_archive', JSON.stringify(archive));
+            showToast('Смета успешно сохранена в архив!');
         }
 
-        addRow(itemName, '1', unit, '');
-        saveData();
-    }
+        function renderArchiveList() {
+            const container = document.getElementById('archiveListContainer');
+            container.innerHTML = '';
 
-    function removeRow(button) {
-        const row = button.closest('tr');
-        row.remove();
-        updateIndexes();
-        calculateTotal();
-        saveData();
-    }
-
-    function calculateRow(input) {
-        const row = input.closest('tr');
-        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-        const price = parseFloat(row.querySelector('.item-price').value) || 0;
-        const sumField = row.querySelector('.item-sum');
-
-        const total = qty * price;
-        sumField.value = total.toFixed(2).replace('.', ',');
-
-        calculateTotal();
-    }
-
-    function calculateTotal() {
-        const rows = document.querySelectorAll('#items-body tr');
-        let grandTotal = 0;
-        let count = 0;
-
-        rows.forEach(row => {
-            const sumVal = parseFloat(row.querySelector('.item-sum').value.replace(',', '.')) || 0;
-            if (row.querySelector('.item-name').value.trim() !== '' || sumVal > 0) {
-                grandTotal += sumVal;
-                count++;
+            if (archive.length === 0) {
+                container.innerHTML = '<div class="empty-text">Архив пуст. Нажмите «СОХРАНИТЬ», чтобы добавить смету.</div>';
+                return;
             }
-        });
 
-        const formattedTotal = grandTotal.toFixed(2).replace('.', ',');
-        document.getElementById('grand-total').innerText = formattedTotal;
-        document.getElementById('count-summary-text').innerText = `Всего наименований ${count}, на сумму ${formattedTotal} руб.`;
-        document.getElementById('words-summary-text').innerText = numberToWordsRubles(grandTotal);
-    }
-
-    function saveData() {
-        const rows = document.querySelectorAll('#items-body tr');
-        const items = [];
-
-        rows.forEach(row => {
-            items.push({
-                name: row.querySelector('.item-name').value,
-                qty: row.querySelector('.item-qty').value,
-                unit: row.querySelector('.item-unit').value,
-                price: row.querySelector('.item-price').value
+            archive.forEach((entry) => {
+                const div = document.createElement('div');
+                div.className = 'archive-item';
+                div.innerHTML = `
+                    <div class="archive-item-content" onclick="loadFromArchive(${entry.id})">
+                        <div class="archive-client-name">${escapeHtml(entry.buyerName)}</div>
+                        <div class="archive-location">📍 ${escapeHtml(entry.address)}</div>
+                        <div class="archive-meta-row">${entry.date} — <b>${entry.total.toLocaleString('ru-RU', {minimumFractionDigits: 0})} ₽</b></div>
+                    </div>
+                    <button class="archive-trash-btn" onclick="deleteFromArchive(${entry.id}, event)" title="Удалить из архива">🗑️</button>
+                `;
+                container.appendChild(div);
             });
+        }
+
+        function loadFromArchive(id) {
+            const entry = archive.find(a => a.id === id);
+            if (!entry) return;
+
+            items = JSON.parse(JSON.stringify(entry.itemsSnapshot));
+            saveToStorage();
+
+            if (entry.docMeta) {
+                document.getElementById('docNum').value = entry.docMeta.num || '';
+                document.getElementById('docDate').value = entry.docMeta.date || '';
+                document.getElementById('docSeller').value = entry.docMeta.seller || '';
+                document.getElementById('docBuyer').value = entry.docMeta.buyer || '';
+                document.getElementById('docAddress').value = entry.docMeta.address || '';
+                saveDocMeta();
+                syncPrintText();
+            }
+
+            closeArchiveModal();
+            renderAll();
+            showToast('Смета загружена из архива!');
+        }
+
+        function deleteFromArchive(id, event) {
+            event.stopPropagation();
+            if (confirm('Удалить эту смету из архива?')) {
+                archive = archive.filter(a => a.id !== id);
+                localStorage.setItem('voltmaster_archive', JSON.stringify(archive));
+                renderArchiveList();
+                showToast('Смета удалена из архива');
+            }
+        }
+
+        function toggleItemCollapse(id, event) {
+            if (event.target.classList.contains('btn-delete') || event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON') return;
+            const card = document.getElementById(`item-card-${id}`);
+            if (card) {
+                card.classList.toggle('collapsed');
+            }
+        }
+
+        function addItem() {
+            const nameInput = document.getElementById('itemName');
+            const priceInput = document.getElementById('itemPrice');
+            const qtyInput = document.getElementById('itemInitialQty');
+            const unitInput = document.getElementById('itemUnit');
+
+            const name = nameInput.value.trim();
+            const price = parseFloat(priceInput.value);
+            const initialQty = parseFloat(qtyInput.value);
+            const unit = unitInput.value;
+
+            if (!name || isNaN(price)) {
+                alert('Заполните название и цену');
+                return;
+            }
+
+            const qtyToAdd = isNaN(initialQty) || initialQty < 0 ? 1 : initialQty;
+
+            let existing = items.find(item => item.name.toLowerCase() === name.toLowerCase());
+            if (existing) {
+                if (existing.price !== price) {
+                    const updatePrice = confirm(`Материал «${existing.name}» уже есть в базе, но с другой ценой (${existing.price} ₽ вместо ${price} ₽).\n\nИзменить цену в разделе материалы?`);
+                    if (updatePrice) {
+                        existing.price = price;
+                    }
+                }
+                existing.quantity = (existing.quantity || 0) + qtyToAdd;
+                existing.unit = unit;
+            } else {
+                items.unshift({ id: Date.now(), name, price, unit, quantity: qtyToAdd });
+            }
+
+            saveToStorage();
+            renderAll();
+            
+            clearSearch(); // Очищает строку поиска, но больше НЕ вызывает .focus()
+            nameInput.value = '';
+            priceInput.value = '';
+            qtyInput.value = '1';
+            showToast('Материал добавлен в таблицу!');
+        }
+
+        function deleteItem(id, name) {
+            if (confirm(`Удалить "${name}" из списка?`)) {
+                items = items.filter(item => item.id !== id);
+                saveToStorage();
+                renderAll();
+            }
+        }
+
+        function updateQuantity(id, delta) {
+            const item = items.find(i => i.id === id);
+            if (item) {
+                item.quantity = Math.max(0, (item.quantity || 0) + delta);
+                saveToStorage();
+                
+                const qtyInput = document.getElementById(`qty-input-${id}`);
+                if (qtyInput) qtyInput.value = item.quantity;
+                
+                const cardTotal = document.getElementById(`card-total-${id}`);
+                if (cardTotal) cardTotal.textContent = `${(item.quantity * item.price).toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽`;
+
+                renderEstimateTable();
+            }
+        }
+
+        function setQuantity(id, value) {
+            const item = items.find(i => i.id === id);
+            if (item) {
+                const qty = parseFloat(value);
+                item.quantity = isNaN(qty) || qty < 0 ? 0 : qty;
+                saveToStorage();
+
+                const cardTotal = document.getElementById(`card-total-${id}`);
+                if (cardTotal) cardTotal.textContent = `${(item.quantity * item.price).toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽`;
+
+                renderEstimateTable();
+            }
+        }
+
+        function setPrice(id, value) {
+            const item = items.find(i => i.id === id);
+            if (item) {
+                const prc = parseFloat(value);
+                item.price = isNaN(prc) || prc < 0 ? 0 : prc;
+                saveToStorage();
+                renderAll();
+            }
+        }
+
+        function setName(id, newName) {
+            const nameTrimmed = newName.trim();
+            const item = items.find(i => i.id === id);
+            if (!item || !nameTrimmed || item.name === nameTrimmed) {
+                renderAll();
+                return;
+            }
+
+            const currentQty = item.quantity || 1;
+            item.quantity = 0; 
+
+            let existingTarget = items.find(i => i.name.toLowerCase() === nameTrimmed.toLowerCase());
+            if (existingTarget) {
+                existingTarget.quantity = (existingTarget.quantity || 0) + currentQty;
+            } else {
+                items.unshift({
+                    id: Date.now(),
+                    name: nameTrimmed,
+                    price: item.price,
+                    unit: item.unit,
+                    quantity: currentQty
+                });
+            }
+
+            saveToStorage();
+            renderAll();
+            showToast('Товар изменен, старая позиция очищена!');
+        }
+
+        function renderAll() {
+            filterItems();
+            renderEstimateTable();
+        }
+
+        function filterItems() {
+            const searchInput = document.getElementById('searchInput');
+            const clearBtn = document.getElementById('clearSearchBtn');
+            const dropdown = document.getElementById('searchDropdown');
+            const query = searchInput.value.trim().toLowerCase();
+
+            if (query.length > 0) {
+                clearBtn.style.display = 'block';
+            } else {
+                clearBtn.style.display = 'none';
+                dropdown.style.display = 'none';
+            }
+            
+            const filtered = items.filter(item => 
+                item.name.toLowerCase().includes(query) || 
+                item.price.toString().includes(query)
+            );
+            
+            renderItemsList(filtered, query);
+            renderSearchDropdown(filtered, query);
+        }
+
+        function renderSearchDropdown(filteredList, query) {
+            const dropdown = document.getElementById('searchDropdown');
+            if (!query || filteredList.length === 0) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            const limitList = filteredList.slice(0, 5);
+            limitList.forEach(item => {
+                const highlighted = highlightMatch(item.name, query);
+                html += `
+                    <div class="search-dropdown-item" onclick="selectDropdownItem(${item.id})">
+                        <span>${highlighted}</span>
+                        <span class="dropdown-price">${item.price.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽</span>
+                    </div>
+                `;
+            });
+
+            dropdown.innerHTML = html;
+            dropdown.style.display = 'block';
+        }
+
+        function selectDropdownItem(id) {
+            const dropdown = document.getElementById('searchDropdown');
+            dropdown.style.display = 'none';
+            
+            document.body.classList.remove('material-collapsed');
+            const card = document.getElementById(`item-card-${id}`);
+            if (card) {
+                card.classList.remove('collapsed');
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-wrapper')) {
+                document.getElementById('searchDropdown').style.display = 'none';
+            }
         });
 
-        const data = {
-            docNumber: document.getElementById('doc-number').value,
-            docDate: document.getElementById('doc-date').value,
-            seller: document.getElementById('seller').value,
-            buyer: document.getElementById('buyer').value,
-            issuer: document.getElementById('issuer').value,
-            receiver: document.getElementById('receiver').value,
-            items: items
-        };
+        function clearSearch() {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = '';
+            document.getElementById('clearSearchBtn').style.display = 'none';
+            document.getElementById('searchDropdown').style.display = 'none';
+            filterItems();
+        }
 
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
+        function highlightMatch(text, query) {
+            const safeText = escapeHtml(text);
+            if (!query) return safeText;
+            
+            const escapedQuery = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const regex = new RegExp(`(${escapedQuery})`, 'gi');
+            
+            return safeText.replace(regex, '<span class="highlight">$1</span>');
+        }
 
-    function loadData() {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            try {
-                const data = JSON.parse(saved);
-                document.getElementById('doc-number').value = data.docNumber || '';
-                document.getElementById('seller').value = data.seller || '';
-                document.getElementById('buyer').value = data.buyer || '';
-                document.getElementById('issuer').value = data.issuer || '';
-                document.getElementById('receiver').value = data.receiver || '';
-
-                if (data.docDate) {
-                    document.getElementById('doc-date').value = data.docDate;
-                } else {
-                    document.getElementById('doc-date').valueAsDate = new Date();
-                }
-
-                document.getElementById('items-body').innerHTML = '';
-                if (data.items && data.items.length > 0) {
-                    data.items.forEach(item => {
-                        addRow(item.name, item.qty, item.unit || 'шт', item.price);
-                    });
-                } else {
-                    addEmptyRows();
-                }
-            } catch (e) {
-                setDefaultData();
+        function renderItemsList(listToRender, query = '') {
+            const container = document.getElementById('itemsContainer');
+            
+            if (listToRender.length === 0) {
+                container.innerHTML = '<div class="empty-text">Нет материалов</div>';
+                return;
             }
-        } else {
-            setDefaultData();
+
+            let html = '';
+            listToRender.forEach(item => {
+                const qty = item.quantity || 0;
+                const highlightedName = highlightMatch(item.name, query);
+
+                html += `
+                    <div class="item-card collapsed" id="item-card-${item.id}">
+                        <div class="item-header" onclick="toggleItemCollapse(${item.id}, event)">
+                            <div class="item-info">
+                                <span class="item-name">${highlightedName}</span>
+                                <span class="item-unit-sub">${escapeHtml(item.unit || 'шт')}</span>
+                            </div>
+                            <div class="item-right-controls">
+                                <span class="item-price">${item.price.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽</span>
+                                <button class="btn-delete" onclick="deleteItem(${item.id}, '${escapeHtml(item.name)}')">✕</button>
+                                <span class="arrow-icon">▼</span>
+                            </div>
+                        </div>
+                        <div class="quantity-control">
+                            <div class="qty-btn-group">
+                                <button class="btn-qty" onclick="updateQuantity(${item.id}, -1)">-</button>
+                                <input type="number" id="qty-input-${item.id}" class="qty-input" value="${qty}" min="0" oninput="setQuantity(${item.id}, this.value)">
+                                <button class="btn-qty" onclick="updateQuantity(${item.id}, 1)">+</button>
+                            </div>
+                            <div class="item-total" id="card-total-${item.id}">${(qty * item.price).toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽</div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
         }
-    }
 
-    function setDefaultData() {
-        document.getElementById('doc-date').valueAsDate = new Date();
-        document.getElementById('seller').value = '';
-        document.getElementById('buyer').value = '';
-        document.getElementById('issuer').value = '';
-        document.getElementById('receiver').value = '';
-        document.getElementById('doc-number').value = '';
-        document.getElementById('items-body').innerHTML = '';
-        addEmptyRows();
-    }
+        function renderEstimateTable() {
+            const tbody = document.getElementById('estimateTableBody');
+            tbody.innerHTML = '';
+            
+            const activeItems = items.filter(i => (i.quantity || 0) > 0);
+            let grandTotal = 0;
 
-    function addEmptyRows() {
-        addRow('', '', 'шт', '');
-    }
+            if (activeItems.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#999; padding:12px;">Выберите количество в материалах ниже</td></tr>';
+            } else {
+                activeItems.forEach((item, index) => {
+                    const qty = item.quantity || 0;
+                    const total = qty * item.price;
+                    grandTotal += total;
 
-    function resetForm() {
-        if (confirm('Очистить чек? Имя покупателя и продавца останется.')) {
-            document.getElementById('doc-number').value = '';
-            document.getElementById('doc-date').valueAsDate = new Date();
-            document.getElementById('items-body').innerHTML = '';
-            addEmptyRows();
-            calculateTotal();
-            saveData();
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="col-num">${index + 1}</td>
+                        <td class="col-name editable-cell" title="Нажмите для изменения названия" onclick="makeCellEditable(this, ${item.id}, 'name', '${escapeHtml(item.name)}')">
+                            ${escapeHtml(item.name)}
+                        </td>
+                        <td class="col-qty editable-cell" title="Нажмите для изменения количества" onclick="makeCellEditable(this, ${item.id}, 'qty', ${qty})">
+                            <span>${qty}</span> 
+                            <span style="font-size:0.7rem; color:#555;">${escapeHtml(item.unit || 'шт')}</span>
+                        </td>
+                        <td class="col-price editable-cell" title="Нажмите для изменения цены" onclick="makeCellEditable(this, ${item.id}, 'price', ${item.price})">
+                            ${item.price.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </td>
+                        <td class="col-total">${total.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td class="col-del">
+                            <button class="tbl-del-btn" onclick="setQuantity(${item.id}, 0); renderAll();">✕</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            const totalFormatted = grandTotal.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('grandTotal').textContent = `${totalFormatted} ₽`;
+            document.getElementById('grandTotalPrint').textContent = totalFormatted;
+            document.getElementById('totalItemsCount').textContent = activeItems.length;
+            document.getElementById('totalAmountText').textContent = `${totalFormatted} руб.`;
+            document.getElementById('totalInWords').textContent = numberToWordsRu(grandTotal);
         }
-    }
 
-    window.onload = loadData;
-</script>
+        function makeCellEditable(cell, id, type, currentValue) {
+            if (cell.querySelector('input')) return;
 
+            const input = document.createElement('input');
+            input.type = type === 'name' ? 'text' : 'number';
+            input.className = type === 'name' ? 'table-input-text' : 'table-input';
+            input.value = currentValue;
+            if (type !== 'name') {
+                input.step = type === 'qty' ? '1' : '0.01';
+            }
+
+            cell.innerHTML = '';
+            cell.appendChild(input);
+            input.focus();
+            input.select();
+
+            function finishEdit() {
+                const val = input.value;
+                if (type === 'qty') {
+                    setQuantity(id, val);
+                    renderAll();
+                } else if (type === 'price') {
+                    setPrice(id, val);
+                } else if (type === 'name') {
+                    setName(id, val);
+                }
+            }
+
+            input.addEventListener('blur', finishEdit);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    input.blur();
+                }
+            });
+        }
+
+        function copyList() {
+            const activeItems = items.filter(i => (i.quantity || 0) > 0);
+            if (activeItems.length === 0) {
+                alert('Таблица пуста');
+                return;
+            }
+
+            let text = activeItems.map(item => `${item.name} - ${item.quantity} ${item.unit || 'шт'} x ${item.price} ₽ = ${item.quantity * item.price} ₽`).join('\n');
+            let grandTotal = activeItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            text += `\n\nИтого: ${grandTotal.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽`;
+
+            navigator.clipboard.writeText(text).then(() => showToast('Смета скопирована!'));
+        }
+
+        function copyCatalogList() {
+            if (items.length === 0) {
+                alert('Список материалов пуст');
+                return;
+            }
+
+            let text = items.map(item => `${item.name} — ${item.price} ₽ (за ${item.unit || 'шт'})`).join('\n');
+            navigator.clipboard.writeText(text).then(() => showToast('Список материалов скопирован!'));
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function numberToWordsRu(num) {
+            if (num === 0) return 'Ноль рублей 00 копеек';
+            
+            const rubles = Math.floor(num);
+            const kopecks = Math.round((num - rubles) * 100);
+            const kopStr = kopecks < 10 ? '0' + kopecks : kopecks;
+
+            const units = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+            const teens = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать', 'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
+            const tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+            const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
+
+            function convertGroup(n, isFemale) {
+                let res = '';
+                const h = Math.floor(n / 100);
+                const t = Math.floor((n % 100) / 10);
+                const u = n % 10;
+
+                if (h > 0) res += hundreds[h] + ' ';
+                if (t === 1) {
+                    res += teens[u] + ' ';
+                } else {
+                    if (t > 1) res += tens[t] + ' ';
+                    if (u > 0) {
+                        if (isFemale) {
+                            res += (u === 1 ? 'одна' : u === 2 ? 'две' : units[u]) + ' ';
+                        } else {
+                            res += units[u] + ' ';
+                        }
+                    }
+                }
+                return res;
+            }
+
+            let result = '';
+            const thousands = Math.floor((rubles % 1000000) / 1000);
+            const remRub = rubles % 1000;
+
+            if (thousands > 0) {
+                result += convertGroup(thousands, true);
+                const lastTwo = thousands % 100;
+                const last = thousands % 10;
+                if (lastTwo >= 11 && lastTwo <= 19) result += 'тысяч ';
+                else if (last === 1) result += 'тысяча ';
+                else if (last >= 2 && last <= 4) result += 'тысячи ';
+                else result += 'тысяч ';
+            }
+
+            if (remRub > 0 || rubles === 0) {
+                result += convertGroup(remRub, false);
+            }
+
+            result = result.trim();
+            if (!result) result = 'ноль';
+
+            const lastTwoRub = rubles % 100;
+            const lastRub = rubles % 10;
+            let rubWord = 'рублей';
+            if (lastTwoRub < 11 || lastTwoRub > 19) {
+                if (lastRub === 1) rubWord = 'рубль';
+                else if (lastRub >= 2 && lastRub <= 4) rubWord = 'рубли';
+            }
+
+            result = result.charAt(0).toUpperCase() + result.slice(1);
+            return `${result} ${rubWord} ${kopStr} копеек`;
+        }
+
+        loadDocMeta();
+        renderAll();
+    </script>
 </body>
 </html>
