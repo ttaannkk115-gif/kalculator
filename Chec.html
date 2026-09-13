@@ -952,6 +952,10 @@
                     delete item.addedAt;
                 });
                 saveToStorage();
+                
+                // Сворачиваем блок «Материалы» при сбросе
+                document.body.classList.add('material-collapsed');
+                
                 renderAll();
                 showToast('Таблица сброшена!');
             }
