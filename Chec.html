@@ -15,7 +15,7 @@
         body {
             background-color: #f4f5f7;
             color: #333;
-            padding-bottom: 140px; /* Увеличенный отступ, чтобы нижняя панель ничего не перекрывала */
+            padding-bottom: 140px;
             overflow-x: hidden;
         }
 
@@ -75,11 +75,7 @@
             padding: 10px 14px;
         }
 
-        /* ----- БЛОК ПОИСКА С ВЫПАДАЮЩИМ СПИСКОМ ПОД НИМ ----- */
-        .search-wrapper {
-            position: relative;
-        }
-
+        /* ----- ПОИСК ----- */
         .search-container {
             position: relative;
             display: flex;
@@ -116,47 +112,6 @@
 
         .btn-clear-search:hover {
             color: #333;
-        }
-
-        .search-dropdown {
-            position: absolute;
-            top: calc(100% + 6px);
-            left: 0;
-            right: 0;
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-            z-index: 1500;
-            max-height: 220px;
-            overflow-y: auto;
-            display: none;
-            border: 1px solid #e2e8f0;
-        }
-
-        .search-dropdown-item {
-            padding: 10px 14px;
-            font-size: 0.95rem;
-            border-bottom: 1px solid #f1f5f9;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #1a1a1a;
-        }
-
-        .search-dropdown-item:last-child {
-            border-bottom: none;
-        }
-
-        .search-dropdown-item:hover {
-            background-color: #f8fafc;
-            color: #2b6be8;
-        }
-
-        .search-dropdown-item .dropdown-price {
-            font-weight: 700;
-            color: #2b6be8;
-            font-size: 0.85rem;
         }
 
         .main-content {
@@ -416,7 +371,7 @@
             overflow-y: auto;
         }
 
-        /* ----- БЛОК ДОБАВЛЕНИЯ МАТЕРИАЛА НА СТРАНИЦЕ ----- */
+        /* ----- БЛОК ДОБАВЛЕНИЯ МАТЕРИАЛА ----- */
         .inline-add-section {
             background: #ffffff;
             border: 1px solid #e2e8f0;
@@ -716,7 +671,7 @@
 
         .only-print { display: none; }
 
-        /* ----- НИЖНЯЯ ПАНЕЛЬ (Закреплена поверх всех элементов) ----- */
+        /* ----- НИЖНЯЯ ПАНЕЛЬ ----- */
         .bottom-bar {
             position: fixed;
             bottom: 0;
@@ -826,14 +781,10 @@
             </div>
         </div>
         
-        <!-- Обертка поиска с выпадающим блоком подсказок -->
-        <div class="search-wrapper">
-            <div class="search-container">
-                <input type="text" id="searchInput" placeholder="Поиск..." autocomplete="off" oninput="filterItems()">
-                <button type="button" id="clearSearchBtn" class="btn-clear-search" onclick="clearSearch()">✕</button>
-            </div>
-            <!-- Выпадающий список прямо под строкой поиска -->
-            <div id="searchDropdown" class="search-dropdown"></div>
+        <!-- Строка поиска -->
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Поиск..." autocomplete="off" oninput="filterItems()">
+            <button type="button" id="clearSearchBtn" class="btn-clear-search" onclick="clearSearch()">✕</button>
         </div>
     </header>
 
@@ -853,6 +804,22 @@
     <!-- ГЛАВНЫЙ КОНТЕЙНЕР -->
     <div class="main-content">
         
+        <!-- 1. ГЛАВНЫЙ БЛОК «МАТЕРИАЛЫ» -->
+        <div class="main-material-section" id="mainMaterialSection">
+            <div class="main-material-header">
+                <div class="main-material-title-area" onclick="toggleMainMaterial()">
+                    <span>Материалы</span>
+                    <span class="arrow-icon">▼</span>
+                </div>
+                <button class="btn-copy-catalog" onclick="copyCatalogList()" title="Скопировать все материалы">📋 Копировать</button>
+            </div>
+            <div class="main-material-body">
+                <div class="list-container" id="itemsContainer">
+                    <!-- Все элементы списка -->
+                </div>
+            </div>
+        </div>
+
         <!-- ОКОШКО ДОБАВЛЕНИЯ МАТЕРИАЛА НА СТРАНИЦЕ -->
         <div class="inline-add-section">
             <div class="inline-add-title">Добавить в материалы</div>
@@ -870,7 +837,7 @@
             <button class="btn-add-catalog" onclick="addItem()">Добавить материал</button>
         </div>
 
-        <!-- 1. БЛОК ДОКУМЕНТА (ЧЕК И ТАБЛИЦА) -->
+        <!-- 2. БЛОК ДОКУМЕНТА (ЧЕК И ТАБЛИЦА) -->
         <div class="doc-container" style="margin-bottom: 20px;">
             <div class="doc-header-print">
                 <div class="doc-title-print">
@@ -897,7 +864,7 @@
                 </div>
                 <div class="doc-meta-item print-address-row">
                     <label>Адрес / Объект:</label>
-                    <input type="text" id="docAddress" placeholder="этот окно не висвечивается на чеке" oninput="saveDocMeta(); syncPrintText();">
+                    <input type="text" id="docAddress" placeholder="Адрес объекта" oninput="saveDocMeta(); syncPrintText();">
                     <span class="print-text-val" id="docAddressVal"></span>
                 </div>
             </div>
@@ -935,22 +902,6 @@
                 <div class="signatures-block">
                     <div>Отпустил _______________</div>
                     <div>Получил _______________</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 2. ГЛАВНЫЙ БЛОК «МАТЕРИАЛЫ» -->
-        <div class="main-material-section" id="mainMaterialSection">
-            <div class="main-material-header">
-                <div class="main-material-title-area" onclick="toggleMainMaterial()">
-                    <span>Материалы</span>
-                    <span class="arrow-icon">▼</span>
-                </div>
-                <button class="btn-copy-catalog" onclick="copyCatalogList()" title="Скопировать все материалы">📋 Копировать</button>
-            </div>
-            <div class="main-material-body">
-                <div class="list-container" id="itemsContainer">
-                    <!-- Все элементы списка -->
                 </div>
             </div>
         </div>
@@ -1050,11 +1001,17 @@
         }
 
         function syncPrintText() {
-            document.getElementById('docNumVal').textContent = document.getElementById('docNum').value || '—';
-            document.getElementById('docDateVal').textContent = document.getElementById('docDate').value || '—';
-            document.getElementById('docSellerVal').textContent = document.getElementById('docSeller').value || '—';
-            document.getElementById('docBuyerVal').textContent = document.getElementById('docBuyer').value || '—';
-            document.getElementById('docAddressVal').textContent = document.getElementById('docAddress').value || '—';
+            const num = document.getElementById('docNum').value.trim();
+            const date = document.getElementById('docDate').value.trim();
+            const seller = document.getElementById('docSeller').value.trim();
+            const buyer = document.getElementById('docBuyer').value.trim();
+            const address = document.getElementById('docAddress').value.trim();
+
+            document.getElementById('docNumVal').textContent = num || '';
+            document.getElementById('docDateVal').textContent = date || '';
+            document.getElementById('docSellerVal').textContent = seller || '';
+            document.getElementById('docBuyerVal').textContent = buyer || '';
+            document.getElementById('docAddressVal').textContent = address || '';
         }
 
         /* --- ФУНКЦИИ АРХИВА --- */
@@ -1190,7 +1147,7 @@
                 existing.quantity = (existing.quantity || 0) + qtyToAdd;
                 existing.unit = unit;
             } else {
-                items.unshift({ id: Date.now(), name, price, unit, quantity: qtyToAdd });
+                items.push({ id: Date.now(), name, price, unit, quantity: qtyToAdd });
             }
 
             saveToStorage();
@@ -1266,7 +1223,7 @@
             if (existingTarget) {
                 existingTarget.quantity = (existingTarget.quantity || 0) + currentQty;
             } else {
-                items.unshift({
+                items.push({
                     id: Date.now(),
                     name: nameTrimmed,
                     price: item.price,
@@ -1285,17 +1242,20 @@
             renderEstimateTable();
         }
 
+        /* --- ПОИСК С АВТОМАТИЧЕСКИМ ОТКРЫТИЕМ И ЗАКРЫТИЕМ --- */
         function filterItems() {
             const searchInput = document.getElementById('searchInput');
             const clearBtn = document.getElementById('clearSearchBtn');
-            const dropdown = document.getElementById('searchDropdown');
             const query = searchInput.value.trim().toLowerCase();
 
             if (query.length > 0) {
                 clearBtn.style.display = 'block';
+                // Если есть текст в поиске — открываем раздел «Материалы»
+                document.body.classList.remove('material-collapsed');
             } else {
                 clearBtn.style.display = 'none';
-                dropdown.style.display = 'none';
+                // Если поиск пустой — автоматически сворачиваем (закрываем) раздел «Материалы»
+                document.body.classList.add('material-collapsed');
             }
             
             const filtered = items.filter(item => 
@@ -1304,55 +1264,14 @@
             );
             
             renderItemsList(filtered, query);
-            renderSearchDropdown(filtered, query);
         }
-
-        function renderSearchDropdown(filteredList, query) {
-            const dropdown = document.getElementById('searchDropdown');
-            if (!query || filteredList.length === 0) {
-                dropdown.style.display = 'none';
-                return;
-            }
-
-            let html = '';
-            const limitList = filteredList.slice(0, 5);
-            limitList.forEach(item => {
-                const highlighted = highlightMatch(item.name, query);
-                html += `
-                    <div class="search-dropdown-item" onclick="selectDropdownItem(${item.id})">
-                        <span>${highlighted}</span>
-                        <span class="dropdown-price">${item.price.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽</span>
-                    </div>
-                `;
-            });
-
-            dropdown.innerHTML = html;
-            dropdown.style.display = 'block';
-        }
-
-        function selectDropdownItem(id) {
-            const dropdown = document.getElementById('searchDropdown');
-            dropdown.style.display = 'none';
-            
-            document.body.classList.remove('material-collapsed');
-            const card = document.getElementById(`item-card-${id}`);
-            if (card) {
-                card.classList.remove('collapsed');
-                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.search-wrapper')) {
-                document.getElementById('searchDropdown').style.display = 'none';
-            }
-        });
 
         function clearSearch() {
             const searchInput = document.getElementById('searchInput');
             searchInput.value = '';
             document.getElementById('clearSearchBtn').style.display = 'none';
-            document.getElementById('searchDropdown').style.display = 'none';
+            // Принудительно сворачиваем раздел материалов при очиске
+            document.body.classList.add('material-collapsed');
             filterItems();
         }
 
@@ -1370,7 +1289,7 @@
             const container = document.getElementById('itemsContainer');
             
             if (listToRender.length === 0) {
-                container.innerHTML = '<div class="empty-text">Нет материалов</div>';
+                container.innerHTML = '<div class="empty-text">Ничего не найдено</div>';
                 return;
             }
 
@@ -1378,9 +1297,11 @@
             listToRender.forEach(item => {
                 const qty = item.quantity || 0;
                 const highlightedName = highlightMatch(item.name, query);
+                const isSearching = query.length > 0;
+                const cardClass = isSearching ? 'item-card' : 'item-card collapsed';
 
                 html += `
-                    <div class="item-card collapsed" id="item-card-${item.id}">
+                    <div class="${cardClass}" id="item-card-${item.id}">
                         <div class="item-header" onclick="toggleItemCollapse(${item.id}, event)">
                             <div class="item-info">
                                 <span class="item-name">${highlightedName}</span>
@@ -1414,7 +1335,7 @@
             let grandTotal = 0;
 
             if (activeItems.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#999; padding:12px;">Выберите количество в материалах ниже</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#999; padding:12px;">Выберите количество в материалах выше</td></tr>';
             } else {
                 activeItems.forEach((item, index) => {
                     const qty = item.quantity || 0;
