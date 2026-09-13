@@ -620,8 +620,8 @@
         .estimate-table .col-num { width: 24px; text-align: center; }
         .estimate-table .col-name { width: auto; }
         .estimate-table .col-qty { width: 75px; text-align: right; }
-        .estimate-table .col-price { width: 65px; text-align: right; }
-        .estimate-table .col-total { width: 65px; text-align: right; }
+        .estimate-table .col-price { width: 70px; text-align: right; }
+        .estimate-table .col-total { width: 70px; text-align: right; }
         .estimate-table .col-del { width: 22px; text-align: center; }
 
         .editable-cell {
@@ -661,12 +661,82 @@
             font-weight: bold;
         }
 
-        .table-footer-summary {
+        /* Стили перечеркнутых цен в таблице */
+        .old-cell-price {
+            text-decoration: line-through;
+            color: #94a3b8;
+            font-size: 0.75rem;
+            display: block;
+            line-height: 1.1;
+        }
+        .new-cell-price {
+            font-weight: 700;
+            color: #000;
+            display: block;
+            line-height: 1.2;
+        }
+
+        /* ----- БЛОК ПРОЦЕНТОВ И ИТОГОВ ПОД ТАБЛИЦЕЙ ----- */
+        .table-footer-controls {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .percent-row {
             display: flex;
             justify-content: flex-end;
-            font-weight: 800;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .percent-input-wrapper {
+            display: flex;
+            align-items: center;
+            border: 1.5px solid #2b6be8;
+            border-radius: 10px;
+            padding: 4px 10px;
+            background: #fff;
+            width: 105px;
+        }
+
+        .percent-input {
+            width: 100%;
+            border: none;
+            outline: none;
             font-size: 1rem;
-            margin-top: 10px;
+            font-weight: 800;
+            text-align: right;
+            background: transparent;
+            color: #2b6be8;
+        }
+
+        .final-calc-row {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 1.15rem;
+        }
+
+        .old-total-price {
+            text-decoration: line-through;
+            color: #94a3b8;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .new-total-price {
+            color: #1a1a1a;
+            font-size: 1.25rem;
+            font-weight: 900;
         }
 
         .only-print { display: none; }
@@ -753,7 +823,16 @@
             .doc-container, .doc-container * { visibility: visible; }
             .doc-container { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; padding: 0; margin: 0; }
             
+            /* Скрываем строку с адресом объекта при печати */
             .print-address-row { display: none !important; }
+
+            /* Скрываем поле ввода процентов и зачеркнутую старую итоговую сумму при печати */
+            .percent-row { display: none !important; }
+            #oldTotalContainer { display: none !important; }
+            
+            .table-footer-controls { border-top: 2px solid #000 !important; margin-top: 10px !important; padding-top: 8px !important; }
+            
+            .old-cell-price { display: none !important; }
 
             .col-del, .tbl-del-btn, .bottom-bar, .top-header, .btn-today-date, .main-material-section, .inline-add-section { display: none !important; }
             .doc-meta-item input, .doc-title-print input { display: none !important; }
@@ -837,7 +916,7 @@
             <button class="btn-add-catalog" onclick="addItem()">Добавить материал</button>
         </div>
 
-        <!-- 2. БЛОК ДОКУМЕНТА (ЧЕК И ТАБЛИЦА) -->
+        <!-- 2. БЛОК ДОКУМЕНТА (ЧЕК) -->
         <div class="doc-container" style="margin-bottom: 20px;">
             <div class="doc-header-print">
                 <div class="doc-title-print">
@@ -864,7 +943,7 @@
                 </div>
                 <div class="doc-meta-item print-address-row">
                     <label>Адрес / Объект:</label>
-                    <input type="text" id="docAddress" placeholder="Адрес объекта" oninput="saveDocMeta(); syncPrintText();">
+                    <input type="text" id="docAddress" placeholder="этот окно не отображается в чеке" oninput="saveDocMeta(); syncPrintText();">
                     <span class="print-text-val" id="docAddressVal"></span>
                 </div>
             </div>
@@ -885,8 +964,23 @@
                 </table>
             </div>
 
-            <div class="table-footer-summary">
-                ИТОГО: <span id="grandTotalPrint" style="margin-left: 6px;">0,00</span>
+            <!-- ИТОГИ И ПРОЦЕНТЫ ПОД ТАБЛИЦЕЙ -->
+            <div class="table-footer-controls">
+                <div class="percent-row">
+                    <span>ПРОЦЕНТ (+ / -):</span>
+                    <div class="percent-input-wrapper">
+                        <input type="number" id="percentInput" class="percent-input" value="0" step="any" onclick="this.value=''" oninput="renderEstimateTable()" inputmode="decimal">
+                        <span style="font-weight: 800; color: #2b6be8;">%</span>
+                    </div>
+                </div>
+
+                <div class="final-calc-row">
+                    <span>К ОПЛАТЕ:</span>
+                    <span id="oldTotalContainer" style="display: none;">
+                        <span id="grandTotalPrintOld" class="old-total-price">0,00 ₽</span>
+                    </span>
+                    <span id="grandTotalPrint" class="new-total-price">0,00 ₽</span>
+                </div>
             </div>
 
             <div class="only-print">
@@ -953,7 +1047,6 @@
                 });
                 saveToStorage();
                 
-                // Сворачиваем блок «Материалы» при сбросе
                 document.body.classList.add('material-collapsed');
                 
                 renderAll();
@@ -1032,7 +1125,10 @@
                 return;
             }
 
-            const grandTotal = activeItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const rawTotal = activeItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const percentVal = parseFloat(document.getElementById('percentInput').value) || 0;
+            const grandTotal = rawTotal * (1 + percentVal / 100);
+
             const docMeta = {
                 num: document.getElementById('docNum').value,
                 date: document.getElementById('docDate').value,
@@ -1374,19 +1470,38 @@
             tbody.innerHTML = '';
             
             const activeItems = items.filter(i => (i.quantity || 0) > 0);
-            
-            // Сортируем позиции в таблице строго по времени их добавления в чек (в самый низ)
             activeItems.sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
 
-            let grandTotal = 0;
+            let rawTotal = 0;
+            const percentVal = parseFloat(document.getElementById('percentInput').value) || 0;
 
             if (activeItems.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#999; padding:12px;">Выберите количество в материалах выше</td></tr>';
             } else {
                 activeItems.forEach((item, index) => {
                     const qty = item.quantity || 0;
-                    const total = qty * item.price;
-                    grandTotal += total;
+                    const itemRawTotal = qty * item.price;
+                    rawTotal += itemRawTotal;
+
+                    const itemNewPrice = item.price * (1 + percentVal / 100);
+                    const itemNewTotal = itemRawTotal * (1 + percentVal / 100);
+
+                    let priceHtml = '';
+                    let totalHtml = '';
+
+                    if (percentVal !== 0) {
+                        priceHtml = `
+                            <span class="old-cell-price">${item.price.toLocaleString('ru-RU', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</span>
+                            <span class="new-cell-price">${itemNewPrice.toLocaleString('ru-RU', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</span>
+                        `;
+                        totalHtml = `
+                            <span class="old-cell-price">${itemRawTotal.toLocaleString('ru-RU', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</span>
+                            <span class="new-cell-price">${itemNewTotal.toLocaleString('ru-RU', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</span>
+                        `;
+                    } else {
+                        priceHtml = `${item.price.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                        totalHtml = `${itemRawTotal.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                    }
 
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
@@ -1399,9 +1514,9 @@
                             <span style="font-size:0.7rem; color:#555;">${escapeHtml(item.unit || 'шт')}</span>
                         </td>
                         <td class="col-price editable-cell" title="Нажмите для изменения цены" onclick="makeCellEditable(this, ${item.id}, 'price', ${item.price})">
-                            ${item.price.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            ${priceHtml}
                         </td>
-                        <td class="col-total">${total.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td class="col-total">${totalHtml}</td>
                         <td class="col-del">
                             <button class="tbl-del-btn" onclick="setQuantity(${item.id}, 0); renderAll();">✕</button>
                         </td>
@@ -1410,12 +1525,24 @@
                 });
             }
 
-            const totalFormatted = grandTotal.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('grandTotal').textContent = `${totalFormatted} ₽`;
-            document.getElementById('grandTotalPrint').textContent = totalFormatted;
+            const finalTotal = rawTotal * (1 + percentVal / 100);
+
+            const rawFormatted = rawTotal.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            const finalFormatted = finalTotal.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+            const oldContainer = document.getElementById('oldTotalContainer');
+            if (percentVal !== 0) {
+                oldContainer.style.display = 'inline-block';
+                document.getElementById('grandTotalPrintOld').textContent = `${rawFormatted} ₽`;
+            } else {
+                oldContainer.style.display = 'none';
+            }
+
+            document.getElementById('grandTotal').textContent = `${finalFormatted} ₽`;
+            document.getElementById('grandTotalPrint').textContent = `${finalFormatted} ₽`;
             document.getElementById('totalItemsCount').textContent = activeItems.length;
-            document.getElementById('totalAmountText').textContent = `${totalFormatted} руб.`;
-            document.getElementById('totalInWords').textContent = numberToWordsRu(grandTotal);
+            document.getElementById('totalAmountText').textContent = `${finalFormatted} руб.`;
+            document.getElementById('totalInWords').textContent = numberToWordsRu(finalTotal);
         }
 
         function makeCellEditable(cell, id, type, currentValue) {
@@ -1463,9 +1590,24 @@
                 return;
             }
 
-            let text = activeItems.map(item => `${item.name} - ${item.quantity} ${item.unit || 'шт'} x ${item.price} ₽ = ${item.quantity * item.price} ₽`).join('\n');
-            let grandTotal = activeItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-            text += `\n\nИтого: ${grandTotal.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽`;
+            const percentVal = parseFloat(document.getElementById('percentInput').value) || 0;
+
+            let lines = activeItems.map(item => {
+                const itemTotal = item.quantity * item.price;
+                if (percentVal !== 0) {
+                    const newItemPrice = item.price * (1 + percentVal / 100);
+                    const newItemTotal = itemTotal * (1 + percentVal / 100);
+                    return `${item.name} - ${item.quantity} ${item.unit || 'шт'} x ${newItemPrice.toFixed(0)} ₽ = ${newItemTotal.toFixed(0)} ₽`;
+                } else {
+                    return `${item.name} - ${item.quantity} ${item.unit || 'шт'} x ${item.price} ₽ = ${itemTotal} ₽`;
+                }
+            });
+            let text = lines.join('\n\n');
+
+            const rawTotal = activeItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const finalTotal = rawTotal * (1 + percentVal / 100);
+
+            text += `\n\nИтого: ${finalTotal.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽`;
 
             navigator.clipboard.writeText(text).then(() => showToast('Смета скопирована!'));
         }
@@ -1476,7 +1618,7 @@
                 return;
             }
 
-            let text = items.map(item => `${item.name} — ${item.price} ₽ (за ${item.unit || 'шт'})`).join('\n');
+            let text = items.map(item => `${item.name} — ${item.price} ₽ (за ${item.unit || 'шт'})`).join('\n\n');
             navigator.clipboard.writeText(text).then(() => showToast('Список материалов скопирован!'));
         }
 
