@@ -947,7 +947,10 @@
 
         function resetEstimateTable() {
             if (confirm('Сбросить весь выбранный список в чеке? Имена продавца и покупателя сохранятся.')) {
-                items.forEach(item => item.quantity = 0);
+                items.forEach(item => {
+                    item.quantity = 0;
+                    delete item.addedAt;
+                });
                 saveToStorage();
                 renderAll();
                 showToast('Таблица сброшена!');
@@ -1144,10 +1147,23 @@
                         existing.price = price;
                     }
                 }
-                existing.quantity = (existing.quantity || 0) + qtyToAdd;
+                const oldQty = existing.quantity || 0;
+                existing.quantity = oldQty + qtyToAdd;
                 existing.unit = unit;
+                if (oldQty === 0 && existing.quantity > 0) {
+                    existing.addedAt = Date.now();
+                } else if (existing.quantity === 0) {
+                    delete existing.addedAt;
+                }
             } else {
-                items.push({ id: Date.now(), name, price, unit, quantity: qtyToAdd });
+                items.push({ 
+                    id: Date.now(), 
+                    name, 
+                    price, 
+                    unit, 
+                    quantity: qtyToAdd,
+                    addedAt: qtyToAdd > 0 ? Date.now() : undefined
+                });
             }
 
             saveToStorage();
@@ -1171,7 +1187,16 @@
         function updateQuantity(id, delta) {
             const item = items.find(i => i.id === id);
             if (item) {
-                item.quantity = Math.max(0, (item.quantity || 0) + delta);
+                const oldQty = item.quantity || 0;
+                const newQty = Math.max(0, oldQty + delta);
+                item.quantity = newQty;
+
+                if (oldQty === 0 && newQty > 0) {
+                    item.addedAt = Date.now();
+                } else if (newQty === 0) {
+                    delete item.addedAt;
+                }
+
                 saveToStorage();
                 
                 const qtyInput = document.getElementById(`qty-input-${id}`);
@@ -1188,7 +1213,16 @@
             const item = items.find(i => i.id === id);
             if (item) {
                 const qty = parseFloat(value);
-                item.quantity = isNaN(qty) || qty < 0 ? 0 : qty;
+                const newQty = isNaN(qty) || qty < 0 ? 0 : qty;
+                const oldQty = item.quantity || 0;
+                item.quantity = newQty;
+
+                if (oldQty === 0 && newQty > 0) {
+                    item.addedAt = Date.now();
+                } else if (newQty === 0) {
+                    delete item.addedAt;
+                }
+
                 saveToStorage();
 
                 const cardTotal = document.getElementById(`card-total-${id}`);
@@ -1217,18 +1251,25 @@
             }
 
             const currentQty = item.quantity || 0;
+            const currentAddedAt = item.addedAt;
             item.quantity = 0; 
+            delete item.addedAt;
 
             let existingTarget = items.find(i => i.name.toLowerCase() === nameTrimmed.toLowerCase());
             if (existingTarget) {
-                existingTarget.quantity = (existingTarget.quantity || 0) + currentQty;
+                const oldTargetQty = existingTarget.quantity || 0;
+                existingTarget.quantity = oldTargetQty + currentQty;
+                if (oldTargetQty === 0 && existingTarget.quantity > 0) {
+                    existingTarget.addedAt = currentAddedAt || Date.now();
+                }
             } else {
                 items.push({
                     id: Date.now(),
                     name: nameTrimmed,
                     price: item.price,
                     unit: item.unit,
-                    quantity: currentQty
+                    quantity: currentQty,
+                    addedAt: currentQty > 0 ? (currentAddedAt || Date.now()) : undefined
                 });
             }
 
@@ -1250,11 +1291,9 @@
 
             if (query.length > 0) {
                 clearBtn.style.display = 'block';
-                // Если есть текст в поиске — открываем раздел «Материалы»
                 document.body.classList.remove('material-collapsed');
             } else {
                 clearBtn.style.display = 'none';
-                // Если поиск пустой — автоматически сворачиваем (закрываем) раздел «Материалы»
                 document.body.classList.add('material-collapsed');
             }
             
@@ -1270,7 +1309,6 @@
             const searchInput = document.getElementById('searchInput');
             searchInput.value = '';
             document.getElementById('clearSearchBtn').style.display = 'none';
-            // Принудительно сворачиваем раздел материалов при очиске
             document.body.classList.add('material-collapsed');
             filterItems();
         }
@@ -1332,6 +1370,10 @@
             tbody.innerHTML = '';
             
             const activeItems = items.filter(i => (i.quantity || 0) > 0);
+            
+            // Сортируем позиции в таблице строго по времени их добавления в чек (в самый низ)
+            activeItems.sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
+
             let grandTotal = 0;
 
             if (activeItems.length === 0) {
@@ -1410,6 +1452,8 @@
 
         function copyList() {
             const activeItems = items.filter(i => (i.quantity || 0) > 0);
+            activeItems.sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
+
             if (activeItems.length === 0) {
                 alert('Таблица пуста');
                 return;
