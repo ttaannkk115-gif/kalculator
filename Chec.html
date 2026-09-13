@@ -150,6 +150,15 @@
             cursor: pointer;
         }
 
+        .materials-count-badge {
+            background: #e2e8f0;
+            color: #1e3a8a;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 700;
+        }
+
         .main-material-header .arrow-icon {
             font-size: 0.85rem;
             color: #666;
@@ -169,6 +178,12 @@
             display: none;
         }
 
+        .header-material-btns {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
         .btn-copy-catalog {
             background: #f1f5f9;
             border: 1px solid #cbd5e1;
@@ -185,6 +200,24 @@
 
         .btn-copy-catalog:active {
             background: #e2e8f0;
+        }
+
+        .btn-clear-catalog {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 5px 9px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-clear-catalog:active {
+            background: #fee2e2;
         }
 
         .main-material-body {
@@ -371,6 +404,37 @@
             overflow-y: auto;
         }
 
+        .preview-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        .preview-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex-grow: 1;
+            padding-right: 8px;
+            overflow: hidden;
+        }
+
+        .preview-item-name {
+            font-weight: 700;
+            color: #1a1a1a;
+            word-break: break-word;
+        }
+
+        .preview-item-details {
+            color: #555;
+            font-size: 0.78rem;
+        }
+
         /* ----- БЛОК ДОБАВЛЕНИЯ МАТЕРИАЛА ----- */
         .inline-add-section {
             background: #ffffff;
@@ -429,17 +493,43 @@
             font-size: 0.85rem;
         }
 
+        .inline-add-actions {
+            display: flex;
+            gap: 8px;
+        }
+
         .btn-add-catalog {
-            width: 100%;
+            flex: 1;
             padding: 12px;
             border: none;
             border-radius: 10px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 700;
             cursor: pointer;
             background-color: #4a71f1;
             color: white;
             margin-top: 2px;
+        }
+
+        .btn-paste-clipboard {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            background-color: #f1f5f9;
+            color: #2b6be8;
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .btn-paste-clipboard:active {
+            background-color: #e2e8f0;
         }
 
         /* ----- СТИЛЬ КАРТОЧЕК АРХИВА ----- */
@@ -661,7 +751,6 @@
             font-weight: bold;
         }
 
-        /* Стили перечеркнутых цен в таблице */
         .old-cell-price {
             text-decoration: line-through;
             color: #94a3b8;
@@ -815,6 +904,7 @@
             font-size: 0.85rem;
             display: none;
             z-index: 10001;
+            text-align: center;
         }
 
         @media print {
@@ -823,15 +913,11 @@
             .doc-container, .doc-container * { visibility: visible; }
             .doc-container { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; padding: 0; margin: 0; }
             
-            /* Скрываем строку с адресом объекта при печати */
             .print-address-row { display: none !important; }
-
-            /* Скрываем поле ввода процентов и зачеркнутую старую итоговую сумму при печати */
             .percent-row { display: none !important; }
             #oldTotalContainer { display: none !important; }
             
             .table-footer-controls { border-top: 2px solid #000 !important; margin-top: 10px !important; padding-top: 8px !important; }
-            
             .old-cell-price { display: none !important; }
 
             .col-del, .tbl-del-btn, .bottom-bar, .top-header, .btn-today-date, .main-material-section, .inline-add-section { display: none !important; }
@@ -880,6 +966,24 @@
         </div>
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО ПРЕДПРОСМОТРА БУФЕРА -->
+    <div class="modal-overlay" id="clipboardModal" onclick="closeModalOuter(event, 'clipboardModal')">
+        <div class="modal-card" style="max-width: 430px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h3 style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">Распознано из буфера 📋</h3>
+                <button onclick="closeClipboardModal()" style="background:none; border:none; font-size: 1.2rem; cursor:pointer; font-weight:bold; color: #555;">✕</button>
+            </div>
+            <div style="font-size: 0.82rem; color: #666;">Уберите галочки или удалите позиции, которые не нужно добавлять:</div>
+            <div id="clipboardPreviewContainer" style="display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow-y: auto; padding: 2px;">
+                <!-- Список распознанных позиций -->
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 5px;">
+                <button onclick="confirmPasteClipboard()" style="flex: 1; background: #2b6be8; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer;">Добавить выбранные</button>
+                <button onclick="closeClipboardModal()" style="background: #e2e8f0; color: #333; border: none; padding: 12px 16px; border-radius: 10px; font-weight: 700; cursor: pointer;">Отмена</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ГЛАВНЫЙ КОНТЕЙНЕР -->
     <div class="main-content">
         
@@ -888,9 +992,13 @@
             <div class="main-material-header">
                 <div class="main-material-title-area" onclick="toggleMainMaterial()">
                     <span>Материалы</span>
+                    <span class="materials-count-badge" id="materialsCountBadge">0</span>
                     <span class="arrow-icon">▼</span>
                 </div>
-                <button class="btn-copy-catalog" onclick="copyCatalogList()" title="Скопировать все материалы">📋 Копировать</button>
+                <div class="header-material-btns" onclick="event.stopPropagation()">
+                    <button class="btn-copy-catalog" onclick="copyCatalogList()" title="Скопировать все материалы">📋 Копировать</button>
+                    <button class="btn-clear-catalog" onclick="clearEntireCatalog()" title="Удалить весь список материалов">✕</button>
+                </div>
             </div>
             <div class="main-material-body">
                 <div class="list-container" id="itemsContainer">
@@ -913,7 +1021,10 @@
                     <option value="компл">за компл</option>
                 </select>
             </div>
-            <button class="btn-add-catalog" onclick="addItem()">Добавить материал</button>
+            <div class="inline-add-actions">
+                <button class="btn-add-catalog" onclick="addItem()">Добавить материал</button>
+                <button class="btn-paste-clipboard" onclick="prepareClipboardPreview()">📥 Вставить из буфера</button>
+            </div>
         </div>
 
         <!-- 2. БЛОК ДОКУМЕНТА (ЧЕК) -->
@@ -943,7 +1054,7 @@
                 </div>
                 <div class="doc-meta-item print-address-row">
                     <label>Адрес / Объект:</label>
-                    <input type="text" id="docAddress" placeholder="этот окно не отображается в чеке" oninput="saveDocMeta(); syncPrintText();">
+                    <input type="text" id="docAddress" placeholder="это окно не отображается в чеке" oninput="saveDocMeta(); syncPrintText();">
                     <span class="print-text-val" id="docAddressVal"></span>
                 </div>
             </div>
@@ -1019,6 +1130,7 @@
     <script>
         let items = JSON.parse(localStorage.getItem('voltmaster_materials')) || [];
         let archive = JSON.parse(localStorage.getItem('voltmaster_archive')) || [];
+        let tempClipboardItems = [];
 
         function toggleMainMaterial() {
             document.body.classList.toggle('material-collapsed');
@@ -1033,9 +1145,15 @@
             document.getElementById('archiveModal').style.display = 'none';
         }
 
+        function closeClipboardModal() {
+            document.getElementById('clipboardModal').style.display = 'none';
+            tempClipboardItems = [];
+        }
+
         function closeModalOuter(event, modalId) {
             if (event.target.classList.contains('modal-overlay')) {
                 document.getElementById(modalId).style.display = 'none';
+                if (modalId === 'clipboardModal') tempClipboardItems = [];
             }
         }
 
@@ -1046,9 +1164,7 @@
                     delete item.addedAt;
                 });
                 saveToStorage();
-                
                 document.body.classList.add('material-collapsed');
-                
                 renderAll();
                 showToast('Таблица сброшена!');
             }
@@ -1276,6 +1392,173 @@
             showToast('Материал добавлен в таблицу!');
         }
 
+        /* --- ПОЛНОЕ УДАЛЕНИЕ ВСЕХ МАТЕРИАЛОВ --- */
+        function clearEntireCatalog() {
+            if (items.length === 0) {
+                alert('Список материалов уже пуст');
+                return;
+            }
+            if (confirm('⚠️ ВНИМАНИЕ! Вы действительно хотите полностью удалить ВСЕ материалы из базы? Это действие нельзя отменить.')) {
+                items = [];
+                saveToStorage();
+                renderAll();
+                showToast('Весь список материалов очищен!');
+            }
+        }
+
+        /* --- ПРЕДПРОСМОТР И ВСТАВКА ИЗ БУФЕРА ОБМЕНА --- */
+        async function prepareClipboardPreview() {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (!text || !text.trim()) {
+                    alert('Буфер обмена пуст');
+                    return;
+                }
+
+                const lines = text.split('\n');
+                tempClipboardItems = [];
+
+                lines.forEach((line, index) => {
+                    const cleanLine = line.trim();
+                    if (!cleanLine || cleanLine.toLowerCase().startsWith('итого')) return;
+
+                    let name = '';
+                    let price = 0;
+                    let unit = 'шт';
+                    let qty = 0;
+
+                    if (cleanLine.includes('—') && cleanLine.includes('₽')) {
+                        const parts = cleanLine.split('—');
+                        name = parts[0].trim();
+                        let rest = parts[1];
+                        
+                        const priceMatch = rest.match(/([\d\s,.]+)\s*₽/);
+                        if (priceMatch) {
+                            price = parseFloat(priceMatch[1].replace(/\s/g, '').replace(',', '.'));
+                        }
+
+                        if (rest.includes('за ')) {
+                            const unitMatch = rest.match(/за\s+([а-яА-ЯёЁ]+)/);
+                            if (unitMatch) unit = unitMatch[1].toLowerCase();
+                        }
+                    } else if (cleanLine.includes('x') && cleanLine.includes('₽')) {
+                        const parts = cleanLine.split('-');
+                        name = parts[0].trim();
+                        let rest = parts.slice(1).join('-');
+
+                        const qtyMatch = rest.match(/([\d\s,.]+)\s*([а-яА-ЯёЁ]+)?\s*x/);
+                        if (qtyMatch) {
+                            qty = parseFloat(qtyMatch[1].replace(/\s/g, '').replace(',', '.'));
+                            if (qtyMatch[2]) unit = qtyMatch[2].toLowerCase();
+                        }
+
+                        const priceMatch = rest.match(/x\s*([\d\s,.]+)\s*₽/);
+                        if (priceMatch) {
+                            price = parseFloat(priceMatch[1].replace(/\s/g, '').replace(',', '.'));
+                        }
+                    }
+
+                    if (name && !isNaN(price) && price > 0) {
+                        tempClipboardItems.push({
+                            tempId: index,
+                            name: name,
+                            price: price,
+                            unit: unit,
+                            quantity: qty
+                        });
+                    }
+                });
+
+                if (tempClipboardItems.length > 0) {
+                    renderClipboardPreviewList();
+                    document.getElementById('clipboardModal').style.display = 'flex';
+                } else {
+                    alert('Не удалось распознать формат в буфере обмена. Убедитесь, что копируете список материалов.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Не удалось прочитать буфер обмена. Разрешите доступ к буферу в браузере.');
+            }
+        }
+
+        function renderClipboardPreviewList() {
+            const container = document.getElementById('clipboardPreviewContainer');
+            container.innerHTML = '';
+
+            if (tempClipboardItems.length === 0) {
+                container.innerHTML = '<div class="empty-text">Список пуст</div>';
+                return;
+            }
+
+            tempClipboardItems.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'preview-item';
+                div.id = `preview-row-${item.tempId}`;
+                div.innerHTML = `
+                    <div class="preview-item-info">
+                        <span class="preview-item-name">${escapeHtml(item.name)}</span>
+                        <span class="preview-item-details">${item.quantity > 0 ? item.quantity + ' ' + item.unit + ' x ' : ''}${item.price} ₽ (${item.unit})</span>
+                    </div>
+                    <button class="btn-delete" onclick="removePreviewItem(${item.tempId})">✕</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function removePreviewItem(tempId) {
+            tempClipboardItems = tempClipboardItems.filter(i => i.tempId !== tempId);
+            const row = document.getElementById(`preview-row-${tempId}`);
+            if (row) row.remove();
+            if (tempClipboardItems.length === 0) {
+                document.getElementById('clipboardPreviewContainer').innerHTML = '<div class="empty-text">Список пуст</div>';
+            }
+        }
+
+        function confirmPasteClipboard() {
+            if (tempClipboardItems.length === 0) {
+                closeClipboardModal();
+                return;
+            }
+
+            let addedNewCount = 0;
+            let updatedPriceCount = 0;
+
+            tempClipboardItems.forEach(item => {
+                let existing = items.find(i => i.name.toLowerCase() === item.name.toLowerCase());
+                
+                if (existing) {
+                    if (existing.price !== item.price) {
+                        const shouldUpdate = confirm(`Товар «${existing.name}» уже есть в базе.\nСтарая цена: ${existing.price} ₽\nНовая цена из буфера: ${item.price} ₽\n\nИзменить цену на новую?`);
+                        if (shouldUpdate) {
+                            existing.price = item.price;
+                            updatedPriceCount++;
+                        }
+                    }
+                    existing.unit = item.unit;
+                    if (item.quantity > 0) {
+                        const oldQty = existing.quantity || 0;
+                        existing.quantity = oldQty + item.quantity;
+                        if (oldQty === 0) existing.addedAt = Date.now();
+                    }
+                } else {
+                    items.push({
+                        id: Date.now() + Math.random(),
+                        name: item.name,
+                        price: item.price,
+                        unit: item.unit,
+                        quantity: item.quantity,
+                        addedAt: item.quantity > 0 ? Date.now() : undefined
+                    });
+                    addedNewCount++;
+                }
+            });
+
+            closeClipboardModal();
+            saveToStorage();
+            renderAll();
+            showToast(`Добавлено новых: ${addedNewCount}, сменены цены: ${updatedPriceCount}`);
+        }
+
         function deleteItem(id, name) {
             if (confirm(`Удалить "${name}" из списка?`)) {
                 items = items.filter(item => item.id !== id);
@@ -1379,11 +1662,11 @@
         }
 
         function renderAll() {
+            document.getElementById('materialsCountBadge').textContent = items.length;
             filterItems();
             renderEstimateTable();
         }
 
-        /* --- ПОИСК С АВТОМАТИЧЕСКИМ ОТКРЫТИЕМ И ЗАКРЫТИЕМ --- */
         function filterItems() {
             const searchInput = document.getElementById('searchInput');
             const clearBtn = document.getElementById('clearSearchBtn');
@@ -1626,7 +1909,7 @@
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.style.display = 'block';
-            setTimeout(() => toast.style.display = 'none', 2000);
+            setTimeout(() => toast.style.display = 'none', 3000);
         }
 
         function escapeHtml(text) {
