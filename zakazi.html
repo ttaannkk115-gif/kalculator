@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<title>VoltMaster</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:#0a0a0a;color:#e8edf5;padding-bottom:90px;font-size:16px;min-height:100vh}
+
+header{background:#0a0a0a;padding:24px 18px 16px;text-align:center;border-bottom:1px solid #1c1c1e;position:sticky;top:0;z-index:10;backdrop-filter:blur(10px)}
+header h1{font-size:18px;font-weight:800;letter-spacing:2px;color:#f59e0b;margin-bottom:10px;text-transform:uppercase}
+.id-badge{display:inline-flex;align-items:center;gap:6px;background:#1a1a1c;border:1px solid #2c2c2e;padding:6px 14px;border-radius:20px;font-size:12px;color:#9ca3af;font-weight:600}
+.id-dot{width:6px;height:6px;background:#f59e0b;border-radius:50%}
+
+.container{padding:16px}
+
+.screen{display:none}
+.screen.active{display:block}
+
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.kpi{background:#161618;border:1px solid #222225;border-radius:16px;padding:14px}
+.kpi .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;font-weight:700;margin-bottom:6px}
+.kpi .val{font-size:22px;font-weight:800;color:#fff}
+.kpi .val.green{color:#22c55e}
+.kpi .val.orange{color:#f59e0b}
+.kpi .val.blue{color:#38bdf8}
+
+.filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.chip{padding:8px 14px;background:#161618;border:1px solid #222225;color:#9ca3af;border-radius:20px;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;transition:.15s}
+.chip.active{background:#f59e0b;color:#000;border-color:#f59e0b}
+
+.order{background:#161618;border:1px solid #222225;border-radius:16px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden;animation:pop .3s ease;cursor:pointer;transition:all .2s}
+.order:hover{border-color:#38bdf8;background:#1a1a1e}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.order::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
+.order.new::before{background:#38bdf8}
+.order.progress::before{background:#f59e0b}
+.order.done::before{background:#22c55e}
+.order.paid::before{background:#a855f7}
+
+.order .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.order h3{font-size:16px;font-weight:700;color:#fff;line-height:1.3}
+.order .client{font-size:12px;color:#9ca3af;margin-top:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.order .client a.call-link{color:#38bdf8;text-decoration:none;background:#0c4a6e;padding:2px 8px;border-radius:6px;font-weight:600;display:inline-flex;align-items:center;gap:3px}
+
+.order-right-side{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.order .price{font-size:18px;font-weight:800;color:#22c55e;white-space:nowrap}
+.order .price.unpaid{color:#f59e0b}
+
+.card-actions-top{display:flex;gap:4px}
+.btn-action-mini{width:26px;height:26px;font-size:12px;background:#222225;color:#e8edf5;border:1px solid #2c2c35;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.btn-action-mini.share{color:#38bdf8}
+.btn-action-mini.del{color:#f87171}
+
+.order-toggle-hint{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px dashed #222225;font-size:11px;color:#6b7280;font-weight:600}
+.order.expanded .order-toggle-hint span{transform:rotate(180deg)}
+.order-toggle-hint span{display:inline-block;transition:transform .2s}
+
+.order-details{display:none;margin-top:10px;padding-top:10px;border-top:1px solid #222225}
+.order.expanded .order-details{display:block}
+.order.expanded .order-toggle-hint{border-top:1px solid #222225}
+
+.order .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{font-size:11px;font-weight:600;padding:4px 9px;border-radius:20px;background:#0a0a0a;color:#9ca3af;border:1px solid #222225;display:inline-flex;align-items:center;gap:4px;text-decoration:none}
+.tag.status-new{background:#082f49;color:#38bdf8;border-color:#0c4a6e}
+.tag.status-progress{background:#3b2a06;color:#fbbf24;border-color:#78350f}
+.tag.status-done{background:#052e16;color:#4ade80;border-color:#166534}
+.tag.status-paid{background:#2e1065;color:#c084fc;border-color:#6b21a8}
+.tag.urgent{background:#450a0a;color:#f87171;border-color:#7f1d1d}
+.tag.time-info{background:#111827;color:#93c5fd;border-color:#1e3a8a}
+a.nav-link{border-color:#1e3a8a;color:#93c5fd;cursor:pointer}
+
+.order-desc{font-size:13px;color:#cbd5e1;margin-top:8px;background:#111113;padding:8px 10px;border-radius:8px;border:1px solid #1f1f23;white-space:pre-wrap}
+.order-receipts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.order-receipts img{width:60px;height:60px;border-radius:8px;border:1px solid #222225;object-fit:cover;cursor:pointer}
+
+.order-actions-row{display:flex;gap:8px;margin-top:10px;align-items:center}
+.btn-status-long{flex:1;padding:11px;border-radius:10px;font-size:13px;font-weight:700;border:none;cursor:pointer;background:#f59e0b;color:#000;text-align:center}
+.btn-icon{background:#1e1e24;color:#e8edf5;border:1px solid #2c2c35;width:41px;height:41px;border-radius:10px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none}
+
+.empty{text-align:center;padding:50px 20px;color:#6b7280;font-size:14px}
+.empty span{font-size:52px;display:block;margin-bottom:12px;opacity:.5}
+
+.archive-header{margin-bottom:16px;background:#161618;border:1px solid #222225;border-radius:16px;padding:16px;text-align:center}
+.archive-header h2{font-size:18px;color:#fff;margin-bottom:4px}
+.archive-header p{font-size:13px;color:#9ca3af;margin-bottom:12px}
+.btn-clear-archive{background:#2a1215;color:#f87171;border:1px solid #7f1d1d;padding:8px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;display:none;align-items:flex-end;backdrop-filter:blur(4px)}
+.modal-bg.show{display:flex}
+.modal{background:#161618;width:100%;max-height:92vh;overflow-y:auto;border-radius:24px 24px 0 0;padding:22px 18px 30px;border-top:1px solid #222225}
+.modal h2{font-size:19px;color:#fff;margin-bottom:4px;font-weight:700}
+.modal .sub{font-size:13px;color:#9ca3af;margin-bottom:16px}
+
+label{display:block;font-size:11px;font-weight:700;color:#9ca3af;margin-bottom:6px;margin-top:14px;text-transform:uppercase;letter-spacing:.5px}
+label:first-of-type{margin-top:0}
+
+input,select,textarea{width:100%;padding:13px 14px;border-radius:12px;border:1px solid #222225;font-size:16px;background:#0a0a0a;color:#e8edf5;-webkit-appearance:none;appearance:none;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#f59e0b}
+textarea{resize:vertical;min-height:70px}
+
+.file-btn{display:block;width:100%;padding:12px;background:#0a0a0a;border:1px dashed #333338;color:#9ca3af;border-radius:12px;text-align:center;font-size:13px;font-weight:600;cursor:pointer}
+.previews-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.preview-thumb{position:relative;width:60px;height:60px}
+.preview-thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid #222225}
+.preview-thumb button{position:absolute;top:-4px;right:-4px;background:#450a0a;color:#f87171;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5}
+
+.priority-row{display:flex;gap:8px;margin-top:6px}
+.priority-btn{flex:1;padding:11px;border-radius:12px;border:1px solid #222225;background:#0a0a0a;color:#9ca3af;font-size:13px;font-weight:700;cursor:pointer}
+.priority-btn.active{background:#f59e0b;color:#000;border-color:transparent}
+
+.modal-actions{display:flex;gap:8px;margin-top:22px}
+.modal-actions button{flex:1;padding:15px;border-radius:14px;font-size:15px;font-weight:700;border:none;cursor:pointer}
+.btn-save{background:#f59e0b;color:#000}
+.btn-cancel{background:#0a0a0a;color:#9ca3af;border:1px solid #222225}
+
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.98);z-index:99999;display:none;align-items:center;justify-content:center;overflow:auto;padding:10px}
+.lightbox.show{display:flex}
+.lightbox img{display:block;max-width:100%;max-height:100vh;margin:auto;object-fit:contain;border-radius:8px}
+.lightbox-close{position:fixed;top:15px;right:15px;background:#333;color:#fff;border:none;width:44px;height:44px;border-radius:50%;font-size:24px;cursor:pointer;z-index:100000;display:flex;align-items:center;justify-content:center}
+
+.nav{position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;border-top:1px solid #1c1c1e;display:flex;padding:10px 0 16px;z-index:40}
+.nav-item{flex:1;text-align:center;color:#6b7280;font-size:10px;font-weight:700;cursor:pointer;padding:4px;text-transform:uppercase;letter-spacing:.5px}
+.nav-item.active{color:#f59e0b}
+.nav-item .ico{font-size:20px;display:block;margin-bottom:3px}
+</style>
+</head>
+<body>
+
+<header>
+    <h1>VoltMaster</h1>
+    <div class="id-badge">
+        <span class="id-dot"></span>
+        <span id="userIdBadge">ID: ----</span>
+    </div>
+</header>
+
+<div class="container">
+    <div id="screenOrders" class="screen active">
+        <div class="kpi-grid">
+            <div class="kpi">
+                <div class="lbl">Активных</div>
+                <div class="val blue" id="kpiActive">0</div>
+            </div>
+            <div class="kpi">
+                <div class="lbl">Заработано</div>
+                <div class="val green" id="kpiPaid">0 ₽</div>
+            </div>
+            <div class="kpi">
+                <div class="lbl">Ждёт оплаты</div>
+                <div class="val orange" id="kpiUnpaid">0 ₽</div>
+            </div>
+            <div class="kpi">
+                <div class="lbl">Средний чек</div>
+                <div class="val" id="kpiAvg">0 ₽</div>
+            </div>
+        </div>
+
+        <div class="filters" id="filters">
+            <div class="chip active" data-f="all">Все</div>
+            <div class="chip" data-f="new">🔵 Новые</div>
+            <div class="chip" data-f="progress">🟡 В работе</div>
+            <div class="chip" data-f="done">🟢 Выполнены</div>
+            <div class="chip" data-f="urgent">🔥 Срочные</div>
+        </div>
+
+        <div id="ordersList"></div>
+    </div>
+
+    <div id="screenArchive" class="screen">
+        <div class="archive-header">
+            <h2>🗄️ Архив заказов</h2>
+            <p id="archiveSub">Оплаченные выполненные работы</p>
+            <button class="btn-clear-archive" onclick="clearArchive()">🗑 Очистить архив</button>
+        </div>
+        <div id="archiveList"></div>
+    </div>
+</div>
+
+<nav class="nav">
+    <div class="nav-item active" id="navOrders" onclick="switchScreen('orders', this)">
+        <span class="ico">📋</span>Заказы
+    </div>
+    <div class="nav-item" onclick="openModal()">
+        <span class="ico">＋</span>Создать
+    </div>
+    <div class="nav-item" id="navArchive" onclick="switchScreen('archive', this)">
+        <span class="ico">📁</span>Архив
+    </div>
+</nav>
+
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+        <h2 id="modalTitle">Новый заказ</h2>
+        <p class="sub" id="modalSub">Заполните данные о работе</p>
+
+        <label>Название работы</label>
+        <input type="text" id="fTitle" placeholder="Например: Замена проводки">
+
+        <label>Клиент</label>
+        <input type="text" id="fClient" placeholder="Имя / компания">
+
+        <label>Телефон клиента</label>
+        <input type="tel" id="fPhone" placeholder="+7 ..." inputmode="tel">
+
+        <label>Адрес объекта</label>
+        <input type="text" id="fAddress" placeholder="Улица, дом, квартира">
+
+        <div style="display:flex;gap:10px">
+            <div style="flex:1">
+                <label>Стоимость (₽)</label>
+                <input type="number" id="fPrice" placeholder="0" min="0" step="1" inputmode="decimal">
+            </div>
+            <div style="flex:1">
+                <label>Дедлайн</label>
+                <input type="date" id="fDeadline">
+            </div>
+        </div>
+
+        <label>Приоритет</label>
+        <div class="priority-row">
+            <button class="priority-btn active" data-p="normal" onclick="setPriority('normal')">Обычный</button>
+            <button class="priority-btn" data-p="urgent" onclick="setPriority('urgent')">🔥 Срочный</button>
+        </div>
+
+        <label>Статус</label>
+        <select id="fStatus">
+            <option value="new">🔵 Новый</option>
+            <option value="progress">🟡 В работе</option>
+            <option value="done">🟢 Выполнен</option>
+            <option value="paid">🟣 Оплачен</option>
+        </select>
+
+        <label>Заметки / Договорённости</label>
+        <textarea id="fDescription" placeholder="Подробное описание задачи..."></textarea>
+
+        <label>Прикрепить чеки / фото</label>
+        <div class="file-input-wrapper">
+            <label class="file-btn" for="fReceipts">📎 Добавить фото / чеки</label>
+            <input type="file" id="fReceipts" accept="image/*" multiple style="display:none" onchange="handleImageUpload(this)">
+            <div id="previewsGrid" class="previews-grid" style="display:none"></div>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModal()">Отмена</button>
+            <button class="btn-save" onclick="saveOrder()">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()">×</button>
+    <img id="lightboxImg" src="" alt="Просмотр">
+</div>
+
+<script>
+// Синхронизация ID с твоим основным приложением
+let userID = localStorage.getItem('volt_master_uid') || Math.floor(1000 + Math.random() * 9000).toString();
+localStorage.setItem('volt_master_uid', userID);
+document.getElementById('userIdBadge').textContent = `ID: ${userID}`;
+
+let orders = JSON.parse(localStorage.getItem('voltmaster_crm') || '[]');
+let currentFilter = 'all';
+let editingId = null;
+let currentPriority = 'normal';
+let activeScreen = 'orders';
+let tempReceipts = [];
+
+const STATUS_LABEL = {
+    new:      { txt:'🔵 Новый',     cls:'status-new' },
+    progress: { txt:'🟡 В работе',  cls:'status-progress' },
+    done:     { txt:'🟢 Выполнен',  cls:'status-done' },
+    paid:     { txt:'🟣 Оплачен',   cls:'status-paid' },
+};
+
+const NEXT_STATUS = {
+    new: 'progress',
+    progress: 'done',
+    done: 'paid',
+    paid: 'new'
+};
+
+const STATUS_TEXT = {
+    new: 'Новый',
+    progress: 'В работе',
+    done: 'Выполнен',
+    paid: 'Оплачен'
+};
+
+function save(){
+    localStorage.setItem('voltmaster_crm', JSON.stringify(orders));
+    render();
+}
+
+function switchScreen(screenName, el){
+    activeScreen = screenName;
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+    if(screenName === 'orders'){
+        document.getElementById('screenOrders').classList.add('active');
+        document.getElementById('navOrders').classList.add('active');
+    } else if(screenName === 'archive'){
+        document.getElementById('screenArchive').classList.add('active');
+        document.getElementById('navArchive').classList.add('active');
+    }
+    render();
+}
+
+function handleImageUpload(input){
+    if(input.files && input.files.length > 0){
+        Array.from(input.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e){
+                tempReceipts.push(e.target.result);
+                renderPreviews();
+            }
+            reader.readAsDataURL(file);
+        });
+    }
+    input.value = '';
+}
+
+function removeReceipt(index){
+    tempReceipts.splice(index, 1);
+    renderPreviews();
+}
+
+function renderPreviews(){
+    const grid = document.getElementById('previewsGrid');
+    if(tempReceipts.length === 0){
+        grid.style.display = 'none';
+        grid.innerHTML = '';
+        return;
+    }
+    grid.style.display = 'flex';
+    grid.innerHTML = tempReceipts.map((src, idx) => `
+        <div class="preview-thumb">
+            <img src="${src}" alt="Чек" onclick="event.stopPropagation(); openLightbox('${src}')">
+            <button type="button" onclick="removeReceipt(${idx})">×</button>
+        </div>
+    `).join('');
+}
+
+function openModal(id){
+    editingId = id || null;
+    currentPriority = 'normal';
+    tempReceipts = [];
+    renderPreviews();
+
+    document.getElementById('modalTitle').textContent = id ? 'Редактировать заказ' : 'Новый заказ';
+    document.getElementById('modalSub').textContent = id ? 'Измените данные' : 'Заполните данные о работе';
+
+    if(id){
+        const o = orders.find(x=>x.id===id);
+        if(!o) return;
+        document.getElementById('fTitle').value = o.title || '';
+        document.getElementById('fClient').value = o.client || '';
+        document.getElementById('fPhone').value = o.phone || '';
+        document.getElementById('fAddress').value = o.address || '';
+        document.getElementById('fPrice').value = o.price || '';
+        document.getElementById('fDeadline').value = o.deadline || '';
+        document.getElementById('fStatus').value = o.status || 'new';
+        document.getElementById('fDescription').value = o.description || '';
+        currentPriority = o.priority || 'normal';
+
+        if(o.receipts && Array.isArray(o.receipts)){
+            tempReceipts = [...o.receipts];
+            renderPreviews();
+        } else if(o.receipt){
+            tempReceipts = [o.receipt];
+            renderPreviews();
+        }
+    } else {
+        ['fTitle','fClient','fPhone','fAddress','fPrice','fDeadline','fDescription'].forEach(i=>document.getElementById(i).value='');
+        document.getElementById('fStatus').value = 'new';
+    }
+    updatePriorityBtns();
+    document.getElementById('modalBg').classList.add('show');
+}
+
+function closeModal(){
+    document.getElementById('modalBg').classList.remove('show');
+    editingId = null;
+}
+
+function setPriority(p){
+    currentPriority = p;
+    updatePriorityBtns();
+}
+
+function updatePriorityBtns(){
+    document.querySelectorAll('.priority-btn').forEach(b=>{
+        b.classList.toggle('active', b.dataset.p === currentPriority);
+    });
+}
+
+function saveOrder(){
+    const title = document.getElementById('fTitle').value.trim();
+    if(!title){ alert('Введите название работы'); return; }
+
+    const newStatus = document.getElementById('fStatus').value;
+    const nowTime = Date.now();
+
+    const data = {
+        title: title,
+        client: document.getElementById('fClient').value.trim(),
+        phone: document.getElementById('fPhone').value.trim(),
+        address: document.getElementById('fAddress').value.trim(),
+        price: parseFloat(document.getElementById('fPrice').value)||0,
+        deadline: document.getElementById('fDeadline').value,
+        status: newStatus,
+        description: document.getElementById('fDescription').value.trim(),
+        priority: currentPriority,
+        receipts: [...tempReceipts]
+    };
+
+    if(editingId){
+        const i = orders.findIndex(x=>x.id===editingId);
+        const oldOrder = orders[i];
+        let finishedAt = oldOrder.finishedAt;
+        if((newStatus === 'done' || newStatus === 'paid') && (!oldOrder.finishedAt || oldOrder.status === 'new' || oldOrder.status === 'progress')){
+            finishedAt = nowTime;
+        }
+        orders[i] = {...oldOrder, ...data, finishedAt, updatedAt: nowTime};
+    } else {
+        const finishedAt = (newStatus === 'done' || newStatus === 'paid') ? nowTime : null;
+        orders.unshift({ id: nowTime, ...data, createdAt: nowTime, finishedAt });
+    }
+    save();
+    closeModal();
+}
+
+function delOrder(id, event){
+    event.stopPropagation();
+    if(!confirm('Удалить заказ?')) return;
+    orders = orders.filter(o=>o.id!==id);
+    save();
+}
+
+function clearArchive(){
+    if(!confirm('Очистить весь архив оплаченных заказов?')) return;
+    orders = orders.filter(o=>o.status!=='paid');
+    save();
+}
+
+function nextStatus(id, event){
+    event.stopPropagation();
+    const order = orders.find(o => o.id === id);
+    if(!order) return;
+    const nextSt = NEXT_STATUS[order.status] || 'new';
+    const stName = STATUS_TEXT[nextSt];
+
+    if(!confirm(`Изменить статус заказа на «${stName}»?`)) return;
+
+    const nowTime = Date.now();
+    orders = orders.map(o => {
+        if(o.id === id){
+            let finishedAt = o.finishedAt;
+            if((nextSt === 'done' || nextSt === 'paid') && !o.finishedAt){
+                finishedAt = nowTime;
+            }
+            return {...o, status: nextSt, finishedAt};
+        }
+        return o;
+    });
+    save();
+}
+
+function openLightbox(src){
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightbox').classList.add('show');
+}
+
+function closeLightbox(){
+    document.getElementById('lightbox').classList.remove('show');
+}
+
+function toggleCard(cardEl, event){
+    if(event.target.closest('button') || event.target.closest('a')) return;
+    cardEl.classList.toggle('expanded');
+}
+
+function shareOrder(id, event){
+    event.stopPropagation();
+    const o = orders.find(x => x.id === id);
+    if(!o) return;
+
+    const st = STATUS_LABEL[o.status] ? STATUS_LABEL[o.status].txt : 'Новый';
+    
+    let text = `⚡ Заказ: ${o.title}\n`;
+    text += `📌 Статус: ${st}\n`;
+    if(o.client) text += `👤 Клиент: ${o.client}\n`;
+    if(o.phone) text += `📞 Телефон: ${o.phone}\n`;
+    if(o.address) text += `📍 Адрес: ${o.address}\n`;
+    if(o.price) text += `💰 Стоимость: ${o.price.toLocaleString('ru-RU')} ₽\n`;
+    if(o.deadline) text += `📅 Срок: ${formatDate(o.deadline)}\n`;
+    if(o.priority === 'urgent') text += `🔥 Срочный заказ!\n`;
+    if(o.description) text += `\n📝 Заметки:\n${o.description}\n`;
+
+    if (navigator.share) {
+        navigator.share({
+            title: o.title,
+            text: text
+        }).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(text);
+        alert('Информация о заказе скопирована в буфер обмена!');
+    }
+}
+
+document.getElementById('filters').addEventListener('click', e=>{
+    if(!e.target.classList.contains('chip')) return;
+    document.querySelectorAll('#filters .chip').forEach(c=>c.classList.remove('active'));
+    e.target.classList.add('active');
+    currentFilter = e.target.dataset.f;
+    render();
+});
+
+function render(){
+    const active = orders.filter(o=>o.status==='new'||o.status==='progress'||o.status==='done').length;
+    const paid = orders.filter(o=>o.status==='paid').reduce((s,o)=>s+o.price,0);
+    const unpaid = orders.filter(o=>o.status==='done').reduce((s,o)=>s+o.price,0);
+    const allPaid = orders.filter(o=>o.status==='paid');
+    const avg = allPaid.length ? paid/allPaid.length : 0;
+
+    document.getElementById('kpiActive').textContent = active;
+    document.getElementById('kpiPaid').textContent = paid.toLocaleString('ru-RU') + ' ₽';
+    document.getElementById('kpiUnpaid').textContent = unpaid.toLocaleString('ru-RU') + ' ₽';
+    document.getElementById('kpiAvg').textContent = avg.toLocaleString('ru-RU') + ' ₽';
+
+    if(activeScreen === 'orders'){
+        const list = document.getElementById('ordersList');
+        let filtered = orders.filter(o => o.status !== 'paid');
+
+        if(currentFilter === 'urgent'){
+            filtered = filtered.filter(o=>o.priority==='urgent');
+        } else if(currentFilter !== 'all'){
+            filtered = filtered.filter(o=>o.status===currentFilter);
+        }
+
+        filtered = [...filtered].sort((a,b)=>{
+            if(a.priority==='urgent' && b.priority!=='urgent') return -1;
+            if(a.priority!=='urgent' && b.priority==='urgent') return 1;
+            return (b.createdAt||0) - (a.createdAt||0);
+        });
+
+        if(filtered.length===0){
+            list.innerHTML = '<div class="empty"><span>📭</span>Нет активных заказов</div>';
+            return;
+        }
+
+        list.innerHTML = filtered.map(o => buildOrderCard(o, false)).join('');
+    }
+
+    if(activeScreen === 'archive'){
+        const archiveList = document.getElementById('archiveList');
+        const archived = orders.filter(o => o.status === 'paid');
+        const totalArchivedSum = archived.reduce((s,o)=>s+o.price,0);
+        
+        document.getElementById('archiveSub').textContent = `${archived.length} оплаченных заказов на сумму ${totalArchivedSum.toLocaleString('ru-RU')} ₽`;
+
+        if(archived.length === 0){
+            archiveList.innerHTML = '<div class="empty"><span>📁</span>Архив пуст</div>';
+            return;
+        }
+
+        archiveList.innerHTML = archived.map(o => buildOrderCard(o, true)).join('');
+    }
+}
+
+function buildOrderCard(o, isArchive){
+    const s = STATUS_LABEL[o.status] || STATUS_LABEL.new;
+    const paidCls = o.status==='paid' ? '' : 'unpaid';
+    const urgent = o.priority==='urgent' ? '<span class="tag urgent">🔥 Срочно</span>' : '';
+    const deadline = o.deadline ? `<span class="tag">📅 Срок: ${formatDate(o.deadline)}</span>` : '';
+    const addr = o.address ? `<a href="yandexnavi://build_route_on_map?text=${encodeURIComponent(o.address)}" class="tag nav-link" onclick="event.stopPropagation()">📍 ${esc(o.address)} ↗</a>` : '';
+    const createdTime = o.createdAt ? `<span class="tag time-info">📥 Принят: ${formatDateTime(o.createdAt)}</span>` : '';
+    const finishedTime = o.finishedAt ? `<span class="tag time-info">✅ Завершен: ${formatDateTime(o.finishedAt)}</span>` : '';
+    const descBlock = o.description ? `<div class="order-desc">📝 ${esc(o.description)}</div>` : '';
+    
+    let allImgs = [];
+    if(o.receipts && Array.isArray(o.receipts)) allImgs = o.receipts;
+    else if(o.receipt) allImgs = [o.receipt];
+
+    const receiptsBlock = allImgs.length > 0 ? `
+        <div class="order-receipts">
+            ${allImgs.map(imgSrc => `<img src="${imgSrc}" alt="Чек" onclick="event.stopPropagation(); openLightbox('${imgSrc}')">`).join('')}
+        </div>
+    ` : '';
+
+    const clientLine = o.client || o.phone ? `
+        <div class="client">
+            👤 ${esc(o.client || 'Клиент')}
+            ${o.phone ? `<a href="tel:${o.phone.replace(/[^+\d]/g,'')}" class="call-link" onclick="event.stopPropagation()">📞 ${esc(o.phone)}</a>` : ''}
+        </div>
+    ` : '';
+
+    const actionRowBlock = isArchive ? `
+        <div class="order-actions-row">
+            <button class="btn-icon" onclick="openModal(${o.id}); event.stopPropagation()" title="Редактировать">✏️</button>
+        </div>
+    ` : `
+        <div class="order-actions-row">
+            <button class="btn-status-long" onclick="nextStatus(${o.id}, event)">→ Изменить статус на следующий</button>
+            <button class="btn-icon" onclick="openModal(${o.id}); event.stopPropagation()" title="Редактировать">✏️</button>
+        </div>
+    `;
+
+    return `
+        <div class="order ${o.status}" onclick="toggleCard(this, event)">
+            <div class="top">
+                <div style="flex:1;min-width:0">
+                    <h3>${esc(o.title)}</h3>
+                    ${clientLine}
+                </div>
+                <div class="order-right-side">
+                    <div class="price ${paidCls}">${o.price.toLocaleString('ru-RU')} ₽</div>
+                    <div class="card-actions-top">
+                        <button class="btn-action-mini share" onclick="shareOrder(${o.id}, event)" title="Поделиться">🔗</button>
+                        <button class="btn-action-mini del" onclick="delOrder(${o.id}, event)" title="Удалить">×</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="order-toggle-hint">
+                Подробнее <span>▼</span>
+            </div>
+
+            <div class="order-details">
+                <div class="meta">
+                    <span class="tag ${s.cls}">${s.txt}</span>
+                    ${urgent}
+                    ${deadline}
+                    ${addr}
+                    ${createdTime}
+                    ${finishedTime}
+                </div>
+                ${descBlock}
+                ${receiptsBlock}
+                ${actionRowBlock}
+            </div>
+        </div>
+    `;
+}
+
+function esc(t){
+    const d = document.createElement('div');
+    d.textContent = t || '';
+    return d.innerHTML;
+}
+
+function formatDate(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const diff = Math.floor((d - today)/(1000*60*60*24));
+    if(diff===0) return 'сегодня';
+    if(diff===1) return 'завтра';
+    if(diff<0)   return 'просрочен';
+    return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'});
+}
+
+function formatDateTime(ts){
+    if(!ts) return '';
+    const d = new Date(ts);
+    return d.toLocaleDateString('ru-RU', {day:'2-digit', month:'2-digit'}) + ' в ' + d.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+}
+
+render();
+</script>
+</body>
+</html>
