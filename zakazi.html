@@ -40,37 +40,46 @@ header h1{font-size:18px;font-weight:800;letter-spacing:2px;color:#f59e0b;margin
 .order.done::before{background:#22c55e}
 .order.paid::before{background:#a855f7}
 
-.order .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.order h3{font-size:16px;font-weight:700;color:#fff;line-height:1.3}
-.order .client{font-size:12px;color:#9ca3af;margin-top:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.order .client a.call-link{color:#38bdf8;text-decoration:none;background:#0c4a6e;padding:2px 8px;border-radius:6px;font-weight:600;display:inline-flex;align-items:center;gap:3px}
-
-.order-right-side{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.order .price{font-size:18px;font-weight:800;color:#22c55e;white-space:nowrap}
-.order .price.unpaid{color:#f59e0b}
+.card-top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.card-top-left{display:flex;align-items:center;gap:8px}
+.order .price-header{font-size:16px;font-weight:800;color:#22c55e}
+.order .price-header.unpaid{color:#f59e0b}
 
 .card-actions-top{display:flex;gap:4px}
 .btn-action-mini{width:26px;height:26px;font-size:12px;background:#222225;color:#e8edf5;border:1px solid #2c2c35;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .btn-action-mini.share{color:#38bdf8}
 .btn-action-mini.del{color:#f87171}
 
-.order-toggle-hint{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px dashed #222225;font-size:11px;color:#6b7280;font-weight:600}
+.order-compact-grid{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;font-size:13px}
+.compact-client{font-weight:700;color:#fff;font-size:15px}
+.compact-phone{text-align:right}
+.compact-phone a{color:#38bdf8;text-decoration:none;background:#0c4a6e;padding:2px 8px;border-radius:6px;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:3px}
+
+.compact-address{color:#93c5fd}
+.compact-address a{color:#93c5fd;text-decoration:none;display:inline-flex;align-items:center;gap:3px}
+.compact-advance{text-align:right;color:#86efac;font-weight:600;font-size:12px}
+
+.compact-time{color:#9ca3af;font-size:11px}
+.compact-finished{text-align:right;color:#9ca3af;font-size:11px}
+
+.order-bottom-bar{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed #222225}
+.order .remainder{font-size:12px;font-weight:700;color:#f97316}
+
+.order-toggle-hint{font-size:11px;color:#6b7280;font-weight:600;display:flex;align-items:center;gap:4px}
 .order.expanded .order-toggle-hint span{transform:rotate(180deg)}
 .order-toggle-hint span{display:inline-block;transition:transform .2s}
 
 .order-details{display:none;margin-top:10px;padding-top:10px;border-top:1px solid #222225}
 .order.expanded .order-details{display:block}
-.order.expanded .order-toggle-hint{border-top:1px solid #222225}
 
-.order .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.order .meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .tag{font-size:11px;font-weight:600;padding:4px 9px;border-radius:20px;background:#0a0a0a;color:#9ca3af;border:1px solid #222225;display:inline-flex;align-items:center;gap:4px;text-decoration:none}
 .tag.status-new{background:#082f49;color:#38bdf8;border-color:#0c4a6e}
 .tag.status-progress{background:#3b2a06;color:#fbbf24;border-color:#78350f}
 .tag.status-done{background:#052e16;color:#4ade80;border-color:#166534}
 .tag.status-paid{background:#2e1065;color:#c084fc;border-color:#6b21a8}
 .tag.urgent{background:#450a0a;color:#f87171;border-color:#7f1d1d}
-.tag.time-info{background:#111827;color:#93c5fd;border-color:#1e3a8a}
-a.nav-link{border-color:#1e3a8a;color:#93c5fd;cursor:pointer}
+.tag.mat-tag{background:#271c08;color:#fbbf24;border-color:#78350f}
 
 .order-desc{font-size:13px;color:#cbd5e1;margin-top:8px;background:#111113;padding:8px 10px;border-radius:8px;border:1px solid #1f1f23;white-space:pre-wrap}
 .order-receipts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
@@ -96,10 +105,15 @@ a.nav-link{border-color:#1e3a8a;color:#93c5fd;cursor:pointer}
 
 label{display:block;font-size:11px;font-weight:700;color:#9ca3af;margin-bottom:6px;margin-top:14px;text-transform:uppercase;letter-spacing:.5px}
 label:first-of-type{margin-top:0}
+.required-mark{color:#f87171;margin-left:3px}
 
 input,select,textarea{width:100%;padding:13px 14px;border-radius:12px;border:1px solid #222225;font-size:16px;background:#0a0a0a;color:#e8edf5;-webkit-appearance:none;appearance:none;font-family:inherit}
 input:focus,select:focus,textarea:focus{outline:none;border-color:#f59e0b}
 textarea{resize:vertical;min-height:70px}
+
+.checkbox-row{display:flex;align-items:center;gap:10px;margin-top:12px;background:#0a0a0a;padding:12px;border-radius:12px;border:1px solid #222225;cursor:pointer}
+.checkbox-row input{width:20px;height:20px;accent-color:#f59e0b;cursor:pointer}
+.checkbox-row label{margin:0;cursor:pointer;color:#e8edf5;text-transform:none;font-size:14px}
 
 .file-btn{display:block;width:100%;padding:12px;background:#0a0a0a;border:1px dashed #333338;color:#9ca3af;border-radius:12px;text-align:center;font-size:13px;font-weight:600;cursor:pointer}
 .previews-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
@@ -194,29 +208,36 @@ textarea{resize:vertical;min-height:70px}
 <div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
     <div class="modal" onclick="event.stopPropagation()">
         <h2 id="modalTitle">Новый заказ</h2>
-        <p class="sub" id="modalSub">Заполните данные о работе</p>
+        <p class="sub" id="modalSub">Заполните данные о заказе</p>
 
-        <label>Название работы</label>
-        <input type="text" id="fTitle" placeholder="Например: Замена проводки">
-
-        <label>Клиент</label>
+        <label>Клиент <span class="required-mark">*</span></label>
         <input type="text" id="fClient" placeholder="Имя / компания">
 
         <label>Телефон клиента</label>
         <input type="tel" id="fPhone" placeholder="+7 ..." inputmode="tel">
 
-        <label>Адрес объекта</label>
+        <label>Адрес объекта <span class="required-mark">*</span></label>
         <input type="text" id="fAddress" placeholder="Улица, дом, квартира">
 
         <div style="display:flex;gap:10px">
             <div style="flex:1">
-                <label>Стоимость (₽)</label>
+                <label>Стоимость работ (₽) <span class="required-mark">*</span></label>
                 <input type="number" id="fPrice" placeholder="0" min="0" step="1" inputmode="decimal">
             </div>
             <div style="flex:1">
-                <label>Дедлайн</label>
-                <input type="date" id="fDeadline">
+                <label>Аванс (₽)</label>
+                <input type="number" id="fAdvance" placeholder="0" min="0" step="1" inputmode="decimal">
             </div>
+        </div>
+
+        <div class="checkbox-row" onclick="onMaterialCheckboxRowClick(event)">
+            <input type="checkbox" id="fMaterialUnpaid" onchange="onMaterialCheckboxChange()">
+            <label for="fMaterialUnpaid">Клиент не оплатил материал</label>
+        </div>
+
+        <div id="materialDebtWrapper" style="display:none; margin-top:10px;">
+            <label>Сумма долга за материал (₽)</label>
+            <input type="number" id="fMaterialDebt" placeholder="0" min="0" step="1" inputmode="decimal">
         </div>
 
         <label>Приоритет</label>
@@ -256,7 +277,6 @@ textarea{resize:vertical;min-height:70px}
 </div>
 
 <script>
-// Синхронизация ID с твоим основным приложением
 let userID = localStorage.getItem('volt_master_uid') || Math.floor(1000 + Math.random() * 9000).toString();
 localStorage.setItem('volt_master_uid', userID);
 document.getElementById('userIdBadge').textContent = `ID: ${userID}`;
@@ -344,6 +364,23 @@ function renderPreviews(){
     `).join('');
 }
 
+function onMaterialCheckboxRowClick(e){
+    if(e.target.tagName !== 'INPUT'){
+        const chk = document.getElementById('fMaterialUnpaid');
+        chk.checked = !chk.checked;
+        onMaterialCheckboxChange();
+    }
+}
+
+function onMaterialCheckboxChange(){
+    const chk = document.getElementById('fMaterialUnpaid');
+    const wrap = document.getElementById('materialDebtWrapper');
+    wrap.style.display = chk.checked ? 'block' : 'none';
+    if(!chk.checked){
+        document.getElementById('fMaterialDebt').value = '';
+    }
+}
+
 function openModal(id){
     editingId = id || null;
     currentPriority = 'normal';
@@ -351,17 +388,22 @@ function openModal(id){
     renderPreviews();
 
     document.getElementById('modalTitle').textContent = id ? 'Редактировать заказ' : 'Новый заказ';
-    document.getElementById('modalSub').textContent = id ? 'Измените данные' : 'Заполните данные о работе';
+    document.getElementById('modalSub').textContent = id ? 'Измените данные' : 'Заполните данные о заказе';
 
     if(id){
         const o = orders.find(x=>x.id===id);
         if(!o) return;
-        document.getElementById('fTitle').value = o.title || '';
         document.getElementById('fClient').value = o.client || '';
         document.getElementById('fPhone').value = o.phone || '';
         document.getElementById('fAddress').value = o.address || '';
         document.getElementById('fPrice').value = o.price || '';
-        document.getElementById('fDeadline').value = o.deadline || '';
+        document.getElementById('fAdvance').value = o.advance || '';
+        
+        const hasMatDebt = (o.materialDebt && o.materialDebt > 0);
+        document.getElementById('fMaterialUnpaid').checked = hasMatDebt;
+        document.getElementById('fMaterialDebt').value = hasMatDebt ? o.materialDebt : '';
+        document.getElementById('materialDebtWrapper').style.display = hasMatDebt ? 'block' : 'none';
+
         document.getElementById('fStatus').value = o.status || 'new';
         document.getElementById('fDescription').value = o.description || '';
         currentPriority = o.priority || 'normal';
@@ -374,7 +416,9 @@ function openModal(id){
             renderPreviews();
         }
     } else {
-        ['fTitle','fClient','fPhone','fAddress','fPrice','fDeadline','fDescription'].forEach(i=>document.getElementById(i).value='');
+        ['fClient','fPhone','fAddress','fPrice','fAdvance','fMaterialDebt','fDescription'].forEach(i=>document.getElementById(i).value='');
+        document.getElementById('fMaterialUnpaid').checked = false;
+        document.getElementById('materialDebtWrapper').style.display = 'none';
         document.getElementById('fStatus').value = 'new';
     }
     updatePriorityBtns();
@@ -398,19 +442,27 @@ function updatePriorityBtns(){
 }
 
 function saveOrder(){
-    const title = document.getElementById('fTitle').value.trim();
-    if(!title){ alert('Введите название работы'); return; }
+    const client = document.getElementById('fClient').value.trim();
+    const address = document.getElementById('fAddress').value.trim();
+    const priceInput = document.getElementById('fPrice').value.trim();
+
+    if(!client){ alert('Пожалуйста, укажите имя клиента'); return; }
+    if(!address){ alert('Пожалуйста, укажите адрес объекта'); return; }
+    if(priceInput === '' || isNaN(priceInput)){ alert('Пожалуйста, укажите стоимость работ'); return; }
+
+    const isMatUnpaid = document.getElementById('fMaterialUnpaid').checked;
+    const materialDebtVal = isMatUnpaid ? (parseFloat(document.getElementById('fMaterialDebt').value) || 0) : 0;
 
     const newStatus = document.getElementById('fStatus').value;
     const nowTime = Date.now();
 
     const data = {
-        title: title,
-        client: document.getElementById('fClient').value.trim(),
+        client: client,
         phone: document.getElementById('fPhone').value.trim(),
-        address: document.getElementById('fAddress').value.trim(),
-        price: parseFloat(document.getElementById('fPrice').value)||0,
-        deadline: document.getElementById('fDeadline').value,
+        address: address,
+        price: parseFloat(priceInput)||0,
+        advance: parseFloat(document.getElementById('fAdvance').value)||0,
+        materialDebt: materialDebtVal,
         status: newStatus,
         description: document.getElementById('fDescription').value.trim(),
         priority: currentPriority,
@@ -490,19 +542,26 @@ function shareOrder(id, event){
 
     const st = STATUS_LABEL[o.status] ? STATUS_LABEL[o.status].txt : 'Новый';
     
-    let text = `⚡ Заказ: ${o.title}\n`;
+    let text = `⚡ Заказ VoltMaster\n`;
     text += `📌 Статус: ${st}\n`;
     if(o.client) text += `👤 Клиент: ${o.client}\n`;
     if(o.phone) text += `📞 Телефон: ${o.phone}\n`;
     if(o.address) text += `📍 Адрес: ${o.address}\n`;
-    if(o.price) text += `💰 Стоимость: ${o.price.toLocaleString('ru-RU')} ₽\n`;
-    if(o.deadline) text += `📅 Срок: ${formatDate(o.deadline)}\n`;
+    if(o.price) text += `💰 Работы: ${o.price.toLocaleString('ru-RU')} ₽\n`;
+    if(o.advance) text += `💵 Аванс: ${o.advance.toLocaleString('ru-RU')} ₽\n`;
+    if(o.materialDebt && o.materialDebt > 0) text += `🛠 Долг за материал: ${o.materialDebt.toLocaleString('ru-RU')} ₽\n`;
+    
+    const workRem = Math.max(0, (o.price || 0) - (o.advance || 0));
+    const matRem = o.materialDebt || 0;
+    const totalRem = workRem + matRem;
+
+    if(o.status !== 'paid' && totalRem > 0) text += `⏳ Итого к доплате: ${totalRem.toLocaleString('ru-RU')} ₽\n`;
     if(o.priority === 'urgent') text += `🔥 Срочный заказ!\n`;
     if(o.description) text += `\n📝 Заметки:\n${o.description}\n`;
 
     if (navigator.share) {
         navigator.share({
-            title: o.title,
+            title: 'Заказ VoltMaster',
             text: text
         }).catch(() => {});
     } else {
@@ -522,7 +581,13 @@ document.getElementById('filters').addEventListener('click', e=>{
 function render(){
     const active = orders.filter(o=>o.status==='new'||o.status==='progress'||o.status==='done').length;
     const paid = orders.filter(o=>o.status==='paid').reduce((s,o)=>s+o.price,0);
-    const unpaid = orders.filter(o=>o.status==='done').reduce((s,o)=>s+o.price,0);
+    
+    const unpaid = orders.filter(o=>o.status==='done').reduce((s,o)=>{
+        const workRem = Math.max(0, (o.price || 0) - (o.advance || 0));
+        const matRem = o.materialDebt || 0;
+        return s + workRem + matRem;
+    }, 0);
+
     const allPaid = orders.filter(o=>o.status==='paid');
     const avg = allPaid.length ? paid/allPaid.length : 0;
 
@@ -575,10 +640,28 @@ function buildOrderCard(o, isArchive){
     const s = STATUS_LABEL[o.status] || STATUS_LABEL.new;
     const paidCls = o.status==='paid' ? '' : 'unpaid';
     const urgent = o.priority==='urgent' ? '<span class="tag urgent">🔥 Срочно</span>' : '';
-    const deadline = o.deadline ? `<span class="tag">📅 Срок: ${formatDate(o.deadline)}</span>` : '';
-    const addr = o.address ? `<a href="yandexnavi://build_route_on_map?text=${encodeURIComponent(o.address)}" class="tag nav-link" onclick="event.stopPropagation()">📍 ${esc(o.address)} ↗</a>` : '';
-    const createdTime = o.createdAt ? `<span class="tag time-info">📥 Принят: ${formatDateTime(o.createdAt)}</span>` : '';
-    const finishedTime = o.finishedAt ? `<span class="tag time-info">✅ Завершен: ${formatDateTime(o.finishedAt)}</span>` : '';
+    
+    const phoneHtml = o.phone ? `<a href="tel:${o.phone.replace(/[^+\d]/g,'')}" onclick="event.stopPropagation()">📞 ${esc(o.phone)}</a>` : '';
+    const addressHtml = o.address ? `<a href="yandexnavi://build_route_on_map?text=${encodeURIComponent(o.address)}" onclick="event.stopPropagation()">📍 ${esc(o.address)} ↗</a>` : '<span style="color:#6b7280">Без адреса</span>';
+    const advanceHtml = (o.advance && o.advance > 0) ? `💵 Аванс: ${o.advance.toLocaleString('ru-RU')} ₽` : '';
+    const createdHtml = o.createdAt ? `📥 ${formatDateTime(o.createdAt)}` : '';
+    const finishedHtml = o.finishedAt ? `✅ ${formatDateTime(o.finishedAt)}` : '';
+
+    let materialBadge = '';
+    if(o.materialDebt && o.materialDebt > 0){
+        materialBadge = `<span class="tag mat-tag">🛠 Материал (долг): ${o.materialDebt.toLocaleString('ru-RU')} ₽</span>`;
+    }
+
+    let remainderLine = '';
+    if(o.status !== 'paid'){
+        const workRem = Math.max(0, (o.price || 0) - (o.advance || 0));
+        const matRem = o.materialDebt || 0;
+        const totalRem = workRem + matRem;
+        if(totalRem > 0){
+            remainderLine = `<div class="remainder">Остаток к доплате: ${totalRem.toLocaleString('ru-RU')} ₽</div>`;
+        }
+    }
+
     const descBlock = o.description ? `<div class="order-desc">📝 ${esc(o.description)}</div>` : '';
     
     let allImgs = [];
@@ -588,13 +671,6 @@ function buildOrderCard(o, isArchive){
     const receiptsBlock = allImgs.length > 0 ? `
         <div class="order-receipts">
             ${allImgs.map(imgSrc => `<img src="${imgSrc}" alt="Чек" onclick="event.stopPropagation(); openLightbox('${imgSrc}')">`).join('')}
-        </div>
-    ` : '';
-
-    const clientLine = o.client || o.phone ? `
-        <div class="client">
-            👤 ${esc(o.client || 'Клиент')}
-            ${o.phone ? `<a href="tel:${o.phone.replace(/[^+\d]/g,'')}" class="call-link" onclick="event.stopPropagation()">📞 ${esc(o.phone)}</a>` : ''}
         </div>
     ` : '';
 
@@ -611,32 +687,41 @@ function buildOrderCard(o, isArchive){
 
     return `
         <div class="order ${o.status}" onclick="toggleCard(this, event)">
-            <div class="top">
-                <div style="flex:1;min-width:0">
-                    <h3>${esc(o.title)}</h3>
-                    ${clientLine}
+            <div class="card-top-row">
+                <div class="card-top-left">
+                    <span class="tag ${s.cls}">${s.txt}</span>
+                    <span class="price-header ${paidCls}">${o.price.toLocaleString('ru-RU')} ₽</span>
                 </div>
-                <div class="order-right-side">
-                    <div class="price ${paidCls}">${o.price.toLocaleString('ru-RU')} ₽</div>
-                    <div class="card-actions-top">
-                        <button class="btn-action-mini share" onclick="shareOrder(${o.id}, event)" title="Поделиться">🔗</button>
-                        <button class="btn-action-mini del" onclick="delOrder(${o.id}, event)" title="Удалить">×</button>
-                    </div>
+                <div class="card-actions-top">
+                    <button class="btn-action-mini share" onclick="shareOrder(${o.id}, event)" title="Поделиться">🔗</button>
+                    <button class="btn-action-mini del" onclick="delOrder(${o.id}, event)" title="Удалить">×</button>
                 </div>
             </div>
-            
-            <div class="order-toggle-hint">
-                Подробнее <span>▼</span>
+
+            <div class="order-compact-grid">
+                <div class="compact-client">👤 ${esc(o.client || 'Клиент')}</div>
+                <div class="compact-phone">${phoneHtml}</div>
+
+                <div class="compact-address">${addressHtml}</div>
+                <div class="compact-advance">${advanceHtml}</div>
+
+                <div class="compact-time">${createdHtml}</div>
+                <div class="compact-finished">${finishedHtml}</div>
+            </div>
+
+            <div class="order-bottom-bar">
+                <div>
+                    ${remainderLine}
+                </div>
+                <div class="order-toggle-hint">
+                    Подробнее <span>▼</span>
+                </div>
             </div>
 
             <div class="order-details">
                 <div class="meta">
-                    <span class="tag ${s.cls}">${s.txt}</span>
                     ${urgent}
-                    ${deadline}
-                    ${addr}
-                    ${createdTime}
-                    ${finishedTime}
+                    ${materialBadge}
                 </div>
                 ${descBlock}
                 ${receiptsBlock}
@@ -650,18 +735,6 @@ function esc(t){
     const d = document.createElement('div');
     d.textContent = t || '';
     return d.innerHTML;
-}
-
-function formatDate(iso){
-    if(!iso) return '';
-    const d = new Date(iso);
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const diff = Math.floor((d - today)/(1000*60*60*24));
-    if(diff===0) return 'сегодня';
-    if(diff===1) return 'завтра';
-    if(diff<0)   return 'просрочен';
-    return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'});
 }
 
 function formatDateTime(ts){
