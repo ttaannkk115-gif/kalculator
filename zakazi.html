@@ -206,7 +206,7 @@ textarea{resize:vertical;min-height:70px}
 </nav>
 
 <div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
-    <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal" id="modalContentBox" onclick="event.stopPropagation()">
         <h2 id="modalTitle">Новый заказ</h2>
         <p class="sub" id="modalSub">Заполните данные о заказе</p>
 
@@ -423,6 +423,10 @@ function openModal(id){
     }
     updatePriorityBtns();
     document.getElementById('modalBg').classList.add('show');
+    
+    // Сбрасываем прокрутку модального окна на самый верх
+    const modalBox = document.getElementById('modalContentBox');
+    if(modalBox) modalBox.scrollTop = 0;
 }
 
 function closeModal(){
@@ -641,7 +645,7 @@ function buildOrderCard(o, isArchive){
     const paidCls = o.status==='paid' ? '' : 'unpaid';
     const urgent = o.priority==='urgent' ? '<span class="tag urgent">🔥 Срочно</span>' : '';
     
-    const phoneHtml = o.phone ? `<a href="tel:${o.phone.replace(/[^+\d]/g,'')}" onclick="event.stopPropagation()">📞 ${esc(o.phone)}</a>` : '';
+    const phoneHtml = o.phone ? `<a href="tel:${o.phone.replace(/[^+\d]/g, '')}" onclick="event.stopPropagation()">📞 ${esc(o.phone)}</a>` : '';
     const addressHtml = o.address ? `<a href="yandexnavi://build_route_on_map?text=${encodeURIComponent(o.address)}" onclick="event.stopPropagation()">📍 ${esc(o.address)} ↗</a>` : '<span style="color:#6b7280">Без адреса</span>';
     const advanceHtml = (o.advance && o.advance > 0) ? `💵 Аванс: ${o.advance.toLocaleString('ru-RU')} ₽` : '';
     const createdHtml = o.createdAt ? `📥 ${formatDateTime(o.createdAt)}` : '';
