@@ -334,8 +334,31 @@ function handleImageUpload(input){
         Array.from(input.files).forEach(file => {
             const reader = new FileReader();
             reader.onload = function(e){
-                tempReceipts.push(e.target.result);
-                renderPreviews();
+                const img = new Image();
+                img.onload = function(){
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const maxDim = 1200;
+                    
+                    if(width > height && width > maxDim){
+                        height *= maxDim / width;
+                        width = maxDim;
+                    } else if(height > maxDim){
+                        width *= maxDim / height;
+                        height = maxDim;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    tempReceipts.push(compressedDataUrl);
+                    renderPreviews();
+                }
+                img.src = e.target.result;
             }
             reader.readAsDataURL(file);
         });
@@ -424,7 +447,6 @@ function openModal(id){
     updatePriorityBtns();
     document.getElementById('modalBg').classList.add('show');
     
-    // Сбрасываем прокрутку модального окна на самый верх
     const modalBox = document.getElementById('modalContentBox');
     if(modalBox) modalBox.scrollTop = 0;
 }
