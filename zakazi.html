@@ -80,10 +80,9 @@ header h1{font-size:18px;font-weight:800;letter-spacing:2px;color:#f59e0b;margin
 .tag.status-paid{background:#2e1065;color:#c084fc;border-color:#6b21a8}
 .tag.urgent{background:#450a0a;color:#f87171;border-color:#7f1d1d}
 .tag.mat-tag{background:#271c08;color:#fbbf24;border-color:#78350f}
+.tag.partner-tag{background:#1e1b4b;color:#818cf8;border-color:#3730a3}
 
 .order-desc{font-size:13px;color:#cbd5e1;margin-top:8px;background:#111113;padding:8px 10px;border-radius:8px;border:1px solid #1f1f23;white-space:pre-wrap}
-.order-receipts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.order-receipts img{width:60px;height:60px;border-radius:8px;border:1px solid #222225;object-fit:cover;cursor:pointer}
 
 .order-actions-row{display:flex;gap:8px;margin-top:10px;align-items:center}
 .btn-status-long{flex:1;padding:11px;border-radius:10px;font-size:13px;font-weight:700;border:none;cursor:pointer;background:#f59e0b;color:#000;text-align:center}
@@ -111,15 +110,18 @@ input,select,textarea{width:100%;padding:13px 14px;border-radius:12px;border:1px
 input:focus,select:focus,textarea:focus{outline:none;border-color:#f59e0b}
 textarea{resize:vertical;min-height:70px}
 
-.checkbox-row{display:flex;align-items:center;gap:10px;margin-top:12px;background:#0a0a0a;padding:12px;border-radius:12px;border:1px solid #222225;cursor:pointer}
-.checkbox-row input{width:20px;height:20px;accent-color:#f59e0b;cursor:pointer}
-.checkbox-row label{margin:0;cursor:pointer;color:#e8edf5;text-transform:none;font-size:14px}
+/* Кастомный чекбокс с гарантированной галочкой */
+.checkbox-row{display:flex;align-items:center;gap:12px;margin-top:12px;background:#0a0a0a;padding:12px 14px;border-radius:12px;border:1px solid #222225;cursor:pointer;user-select:none}
+.checkbox-row input[type="checkbox"]{position:absolute;opacity:0;cursor:pointer;height:0;width:0}
+.custom-checkbox{width:22px;height:22px;background:#111113;border:2px solid #333338;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all .15s ease;flex-shrink:0}
+.checkbox-row input[type="checkbox"]:checked ~ .custom-checkbox{background:#f59e0b;border-color:#f59e0b}
+.custom-checkbox::after{content:"";display:none;width:6px;height:11px;border:solid #000;border-width:0 2.5px 2.5px 0;-webkit-transform:rotate(45deg);transform:rotate(45deg);margin-bottom:2px}
+.checkbox-row input[type="checkbox"]:checked ~ .custom-checkbox::after{display:block}
+.checkbox-row label{margin:0;cursor:pointer;color:#e8edf5;text-transform:none;font-size:14px;font-weight:500}
 
-.file-btn{display:block;width:100%;padding:12px;background:#0a0a0a;border:1px dashed #333338;color:#9ca3af;border-radius:12px;text-align:center;font-size:13px;font-weight:600;cursor:pointer}
-.previews-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.preview-thumb{position:relative;width:60px;height:60px}
-.preview-thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid #222225}
-.preview-thumb button{position:absolute;top:-4px;right:-4px;background:#450a0a;color:#f87171;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5}
+.type-toggle{display:flex;gap:6px;margin-top:6px}
+.type-btn{flex:1;padding:10px;border-radius:10px;border:1px solid #222225;background:#0a0a0a;color:#9ca3af;font-size:12px;font-weight:700;cursor:pointer;text-align:center}
+.type-btn.active{background:#f59e0b;color:#000;border-color:transparent}
 
 .priority-row{display:flex;gap:8px;margin-top:6px}
 .priority-btn{flex:1;padding:11px;border-radius:12px;border:1px solid #222225;background:#0a0a0a;color:#9ca3af;font-size:13px;font-weight:700;cursor:pointer}
@@ -129,11 +131,6 @@ textarea{resize:vertical;min-height:70px}
 .modal-actions button{flex:1;padding:15px;border-radius:14px;font-size:15px;font-weight:700;border:none;cursor:pointer}
 .btn-save{background:#f59e0b;color:#000}
 .btn-cancel{background:#0a0a0a;color:#9ca3af;border:1px solid #222225}
-
-.lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.98);z-index:99999;display:none;align-items:center;justify-content:center;overflow:auto;padding:10px}
-.lightbox.show{display:flex}
-.lightbox img{display:block;max-width:100%;max-height:100vh;margin:auto;object-fit:contain;border-radius:8px}
-.lightbox-close{position:fixed;top:15px;right:15px;background:#333;color:#fff;border:none;width:44px;height:44px;border-radius:50%;font-size:24px;cursor:pointer;z-index:100000;display:flex;align-items:center;justify-content:center}
 
 .nav{position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;border-top:1px solid #1c1c1e;display:flex;padding:10px 0 16px;z-index:40}
 .nav-item{flex:1;text-align:center;color:#6b7280;font-size:10px;font-weight:700;cursor:pointer;padding:4px;text-transform:uppercase;letter-spacing:.5px}
@@ -159,7 +156,7 @@ textarea{resize:vertical;min-height:70px}
                 <div class="val blue" id="kpiActive">0</div>
             </div>
             <div class="kpi">
-                <div class="lbl">Заработано</div>
+                <div class="lbl">Заработано (моё)</div>
                 <div class="val green" id="kpiPaid">0 ₽</div>
             </div>
             <div class="kpi">
@@ -230,14 +227,40 @@ textarea{resize:vertical;min-height:70px}
             </div>
         </div>
 
-        <div class="checkbox-row" onclick="onMaterialCheckboxRowClick(event)">
+        <div class="checkbox-row" onclick="toggleCheckbox('fMaterialUnpaid'); onMaterialCheckboxChange()">
             <input type="checkbox" id="fMaterialUnpaid" onchange="onMaterialCheckboxChange()">
+            <div class="custom-checkbox"></div>
             <label for="fMaterialUnpaid">Клиент не оплатил материал</label>
         </div>
 
         <div id="materialDebtWrapper" style="display:none; margin-top:10px;">
             <label>Сумма долга за материал (₽)</label>
             <input type="number" id="fMaterialDebt" placeholder="0" min="0" step="1" inputmode="decimal">
+        </div>
+
+        <!-- Напарник -->
+        <div class="checkbox-row" onclick="toggleCheckbox('fHasPartner'); onPartnerCheckboxChange()" style="margin-top:14px;">
+            <input type="checkbox" id="fHasPartner" onchange="onPartnerCheckboxChange()">
+            <div class="custom-checkbox"></div>
+            <label for="fHasPartner">Работа с напарником</label>
+        </div>
+
+        <div id="partnerDetailsWrapper" style="display:none; margin-top:10px;">
+            <label>Тип расчета напарника</label>
+            <div class="type-toggle">
+                <button type="button" class="type-btn active" id="partnerTypePercent" onclick="setPartnerType('percent')">Процент (%)</button>
+                <button type="button" class="type-btn" id="partnerTypeFixed" onclick="setPartnerType('fixed')">Сумма (₽)</button>
+            </div>
+
+            <div id="partnerPercentRow" style="margin-top:10px;">
+                <label>Процент напарнику (%)</label>
+                <input type="number" id="fPartnerPercent" placeholder="50" min="0" max="100" step="1" inputmode="decimal" value="50">
+            </div>
+
+            <div id="partnerFixedRow" style="display:none; margin-top:10px;">
+                <label>Сумма напарнику (₽)</label>
+                <input type="number" id="fPartnerFixed" placeholder="0" min="0" step="1" inputmode="decimal">
+            </div>
         </div>
 
         <label>Приоритет</label>
@@ -257,23 +280,11 @@ textarea{resize:vertical;min-height:70px}
         <label>Заметки / Договорённости</label>
         <textarea id="fDescription" placeholder="Подробное описание задачи..."></textarea>
 
-        <label>Прикрепить чеки / фото</label>
-        <div class="file-input-wrapper">
-            <label class="file-btn" for="fReceipts">📎 Добавить фото / чеки</label>
-            <input type="file" id="fReceipts" accept="image/*" multiple style="display:none" onchange="handleImageUpload(this)">
-            <div id="previewsGrid" class="previews-grid" style="display:none"></div>
-        </div>
-
         <div class="modal-actions">
             <button class="btn-cancel" onclick="closeModal()">Отмена</button>
             <button class="btn-save" onclick="saveOrder()">Сохранить</button>
         </div>
     </div>
-</div>
-
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-    <button class="lightbox-close" onclick="closeLightbox()">×</button>
-    <img id="lightboxImg" src="" alt="Просмотр">
 </div>
 
 <script>
@@ -285,8 +296,8 @@ let orders = JSON.parse(localStorage.getItem('voltmaster_crm') || '[]');
 let currentFilter = 'all';
 let editingId = null;
 let currentPriority = 'normal';
+let partnerCalcType = 'percent'; // 'percent' или 'fixed'
 let activeScreen = 'orders';
-let tempReceipts = [];
 
 const STATUS_LABEL = {
     new:      { txt:'🔵 Новый',     cls:'status-new' },
@@ -329,85 +340,10 @@ function switchScreen(screenName, el){
     render();
 }
 
-async function handleImageUpload(input){
-    if(input.files && input.files.length > 0){
-        const filesArr = Array.from(input.files);
-        for(let file of filesArr){
-            try{
-                const base64 = await readFileAsDataURL(file);
-                const compressed = await compressImage(base64, 1000, 0.75);
-                tempReceipts.push(compressed);
-                renderPreviews();
-            }catch(err){
-                console.error("Ошибка загрузки фото", err);
-            }
-        }
-    }
-    input.value = '';
-}
-
-function readFileAsDataURL(file){
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-
-function compressImage(dataUrl, maxDim, quality){
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = function(){
-            let width = img.width;
-            let height = img.height;
-            if(width > height && width > maxDim){
-                height *= maxDim / width;
-                width = maxDim;
-            } else if(height > maxDim){
-                width *= maxDim / height;
-                height = maxDim;
-            }
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', quality));
-        };
-        img.onerror = function(){
-            resolve(dataUrl); // если не удалось сжать, возвращаем оригинал
-        };
-        img.src = dataUrl;
-    });
-}
-
-function removeReceipt(index){
-    tempReceipts.splice(index, 1);
-    renderPreviews();
-}
-
-function renderPreviews(){
-    const grid = document.getElementById('previewsGrid');
-    if(tempReceipts.length === 0){
-        grid.style.display = 'none';
-        grid.innerHTML = '';
-        return;
-    }
-    grid.style.display = 'flex';
-    grid.innerHTML = tempReceipts.map((src, idx) => `
-        <div class="preview-thumb">
-            <img src="${src}" alt="Чек" onclick="event.stopPropagation(); openLightbox('${src}')">
-            <button type="button" onclick="removeReceipt(${idx})">×</button>
-        </div>
-    `).join('');
-}
-
-function onMaterialCheckboxRowClick(e){
-    if(e.target.tagName !== 'INPUT'){
-        const chk = document.getElementById('fMaterialUnpaid');
+function toggleCheckbox(id){
+    const chk = document.getElementById(id);
+    if(chk){
         chk.checked = !chk.checked;
-        onMaterialCheckboxChange();
     }
 }
 
@@ -420,11 +356,29 @@ function onMaterialCheckboxChange(){
     }
 }
 
+function onPartnerCheckboxChange(){
+    const chk = document.getElementById('fHasPartner');
+    const wrap = document.getElementById('partnerDetailsWrapper');
+    wrap.style.display = chk.checked ? 'block' : 'none';
+    if(!chk.checked){
+        document.getElementById('fPartnerPercent').value = '50';
+        document.getElementById('fPartnerFixed').value = '';
+    }
+}
+
+function setPartnerType(type){
+    partnerCalcType = type;
+    document.getElementById('partnerTypePercent').classList.toggle('active', type === 'percent');
+    document.getElementById('partnerTypeFixed').classList.toggle('active', type === 'fixed');
+    document.getElementById('partnerPercentRow').style.display = type === 'percent' ? 'block' : 'none';
+    document.getElementById('partnerFixedRow').style.display = type === 'fixed' ? 'block' : 'none';
+}
+
 function openModal(id){
     editingId = id || null;
     currentPriority = 'normal';
-    tempReceipts = [];
-    renderPreviews();
+    partnerCalcType = 'percent';
+    setPartnerType('percent');
 
     document.getElementById('modalTitle').textContent = id ? 'Редактировать заказ' : 'Новый заказ';
     document.getElementById('modalSub').textContent = id ? 'Измените данные' : 'Заполните данные о заказе';
@@ -443,21 +397,32 @@ function openModal(id){
         document.getElementById('fMaterialDebt').value = hasMatDebt ? o.materialDebt : '';
         document.getElementById('materialDebtWrapper').style.display = hasMatDebt ? 'block' : 'none';
 
+        const hasPartner = !!o.hasPartner;
+        document.getElementById('fHasPartner').checked = hasPartner;
+        document.getElementById('partnerDetailsWrapper').style.display = hasPartner ? 'block' : 'none';
+
+        if(hasPartner){
+            partnerCalcType = o.partnerType || 'percent';
+            setPartnerType(partnerCalcType);
+            document.getElementById('fPartnerPercent').value = o.partnerPercent !== undefined ? o.partnerPercent : 50;
+            document.getElementById('fPartnerFixed').value = o.partnerFixed || '';
+        } else {
+            document.getElementById('fPartnerPercent').value = '50';
+            document.getElementById('fPartnerFixed').value = '';
+        }
+
         document.getElementById('fStatus').value = o.status || 'new';
         document.getElementById('fDescription').value = o.description || '';
         currentPriority = o.priority || 'normal';
-
-        if(o.receipts && Array.isArray(o.receipts)){
-            tempReceipts = [...o.receipts];
-            renderPreviews();
-        } else if(o.receipt){
-            tempReceipts = [o.receipt];
-            renderPreviews();
-        }
     } else {
-        ['fClient','fPhone','fAddress','fPrice','fAdvance','fMaterialDebt','fDescription'].forEach(i=>document.getElementById(i).value='');
+        ['fClient','fPhone','fAddress','fPrice','fAdvance','fMaterialDebt','fPartnerFixed','fDescription'].forEach(i=>document.getElementById(i).value='');
         document.getElementById('fMaterialUnpaid').checked = false;
         document.getElementById('materialDebtWrapper').style.display = 'none';
+        
+        document.getElementById('fHasPartner').checked = false;
+        document.getElementById('fPartnerPercent').value = '50';
+        document.getElementById('partnerDetailsWrapper').style.display = 'none';
+
         document.getElementById('fStatus').value = 'new';
     }
     updatePriorityBtns();
@@ -495,6 +460,10 @@ function saveOrder(){
     const isMatUnpaid = document.getElementById('fMaterialUnpaid').checked;
     const materialDebtVal = isMatUnpaid ? (parseFloat(document.getElementById('fMaterialDebt').value) || 0) : 0;
 
+    const hasPartner = document.getElementById('fHasPartner').checked;
+    const partnerPercent = (hasPartner && partnerCalcType === 'percent') ? (parseFloat(document.getElementById('fPartnerPercent').value) || 0) : 0;
+    const partnerFixed = (hasPartner && partnerCalcType === 'fixed') ? (parseFloat(document.getElementById('fPartnerFixed').value) || 0) : 0;
+
     const newStatus = document.getElementById('fStatus').value;
     const nowTime = Date.now();
 
@@ -505,10 +474,13 @@ function saveOrder(){
         price: parseFloat(priceInput)||0,
         advance: parseFloat(document.getElementById('fAdvance').value)||0,
         materialDebt: materialDebtVal,
+        hasPartner: hasPartner,
+        partnerType: partnerCalcType,
+        partnerPercent: partnerPercent,
+        partnerFixed: partnerFixed,
         status: newStatus,
         description: document.getElementById('fDescription').value.trim(),
-        priority: currentPriority,
-        receipts: [...tempReceipts]
+        priority: currentPriority
     };
 
     if(editingId){
@@ -563,18 +535,19 @@ function nextStatus(id, event){
     save();
 }
 
-function openLightbox(src){
-    document.getElementById('lightboxImg').src = src;
-    document.getElementById('lightbox').classList.add('show');
-}
-
-function closeLightbox(){
-    document.getElementById('lightbox').classList.remove('show');
-}
-
 function toggleCard(cardEl, event){
     if(event.target.closest('button') || event.target.closest('a')) return;
     cardEl.classList.toggle('expanded');
+}
+
+function getMyEarnings(o) {
+    const total = o.price || 0;
+    if (!o.hasPartner) return total;
+    if (o.partnerType === 'fixed') {
+        return Math.max(0, total - (o.partnerFixed || 0));
+    } else {
+        return total * (1 - ((o.partnerPercent || 0) / 100));
+    }
 }
 
 function shareOrder(id, event){
@@ -590,6 +563,10 @@ function shareOrder(id, event){
     if(o.phone) text += `📞 Телефон: ${o.phone}\n`;
     if(o.address) text += `📍 Адрес: ${o.address}\n`;
     if(o.price) text += `💰 Работы: ${o.price.toLocaleString('ru-RU')} ₽\n`;
+    if(o.hasPartner){
+        if(o.partnerType === 'fixed') text += `🤝 Напарник: ${o.partnerFixed.toLocaleString('ru-RU')} ₽\n`;
+        else text += `🤝 Напарник: ${o.partnerPercent}%\n`;
+    }
     if(o.advance) text += `💵 Аванс: ${o.advance.toLocaleString('ru-RU')} ₽\n`;
     if(o.materialDebt && o.materialDebt > 0) text += `🛠 Долг за материал: ${o.materialDebt.toLocaleString('ru-RU')} ₽\n`;
     
@@ -622,7 +599,8 @@ document.getElementById('filters').addEventListener('click', e=>{
 
 function render(){
     const active = orders.filter(o=>o.status==='new'||o.status==='progress'||o.status==='done').length;
-    const paid = orders.filter(o=>o.status==='paid').reduce((s,o)=>s+o.price,0);
+    
+    const paid = orders.filter(o=>o.status==='paid').reduce((s,o)=>s + getMyEarnings(o), 0);
     
     const unpaid = orders.filter(o=>o.status==='done').reduce((s,o)=>{
         const workRem = Math.max(0, (o.price || 0) - (o.advance || 0));
@@ -665,9 +643,9 @@ function render(){
     if(activeScreen === 'archive'){
         const archiveList = document.getElementById('archiveList');
         const archived = orders.filter(o => o.status === 'paid');
-        const totalArchivedSum = archived.reduce((s,o)=>s+o.price,0);
+        const totalArchivedSum = archived.reduce((s,o)=>s + getMyEarnings(o), 0);
         
-        document.getElementById('archiveSub').textContent = `${archived.length} оплаченных заказов на сумму ${totalArchivedSum.toLocaleString('ru-RU')} ₽`;
+        document.getElementById('archiveSub').textContent = `${archived.length} оплаченных заказов на сумму ${totalArchivedSum.toLocaleString('ru-RU')} ₽ (моя доля)`;
 
         if(archived.length === 0){
             archiveList.innerHTML = '<div class="empty"><span>📁</span>Архив пуст</div>';
@@ -694,6 +672,16 @@ function buildOrderCard(o, isArchive){
         materialBadge = `<span class="tag mat-tag">🛠 Материал (долг): ${o.materialDebt.toLocaleString('ru-RU')} ₽</span>`;
     }
 
+    let partnerBadge = '';
+    if(o.hasPartner){
+        const myPart = getMyEarnings(o);
+        if(o.partnerType === 'fixed'){
+            partnerBadge = `<span class="tag partner-tag">🤝 Напарник (${(o.partnerFixed||0).toLocaleString('ru-RU')} ₽): моя доля ${myPart.toLocaleString('ru-RU')} ₽</span>`;
+        } else {
+            partnerBadge = `<span class="tag partner-tag">🤝 Напарник (${o.partnerPercent}%): моя доля ${myPart.toLocaleString('ru-RU')} ₽</span>`;
+        }
+    }
+
     let remainderLine = '';
     if(o.status !== 'paid'){
         const workRem = Math.max(0, (o.price || 0) - (o.advance || 0));
@@ -705,16 +693,6 @@ function buildOrderCard(o, isArchive){
     }
 
     const descBlock = o.description ? `<div class="order-desc">📝 ${esc(o.description)}</div>` : '';
-    
-    let allImgs = [];
-    if(o.receipts && Array.isArray(o.receipts)) allImgs = o.receipts;
-    else if(o.receipt) allImgs = [o.receipt];
-
-    const receiptsBlock = allImgs.length > 0 ? `
-        <div class="order-receipts">
-            ${allImgs.map(imgSrc => `<img src="${imgSrc}" alt="Чек" onclick="event.stopPropagation(); openLightbox('${imgSrc}')">`).join('')}
-        </div>
-    ` : '';
 
     const actionRowBlock = isArchive ? `
         <div class="order-actions-row">
@@ -764,9 +742,9 @@ function buildOrderCard(o, isArchive){
                 <div class="meta">
                     ${urgent}
                     ${materialBadge}
+                    ${partnerBadge}
                 </div>
                 ${descBlock}
-                ${receiptsBlock}
                 ${actionRowBlock}
             </div>
         </div>
