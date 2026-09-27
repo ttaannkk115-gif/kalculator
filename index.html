@@ -248,24 +248,54 @@
             user-select: none;
         }
 
-        .loading-overlay {
+        /* --- Экран загрузки / автовхода --- */
+        #splash-screen {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.8);
+            background: #0d0d0d;
             display: none;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 9999;
-            color: #ff9900;
-            font-weight: bold;
+            gap: 20px;
         }
 
-        .loading-overlay.active { display: flex; }
+        #splash-screen.active { display: flex; }
+
+        .splash-logo {
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            animation: pulseLogo 1.5s ease-in-out infinite;
+        }
+
+        .splash-logo span { color: #ff9900; }
+
+        .splash-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 153, 0, 0.2);
+            border-top-color: #ff9900;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @keyframes pulseLogo {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
     </style>
 </head>
 <body>
 
-<div class="loading-overlay" id="loading-overlay">Подключение...</div>
+<!-- Экран автовхода (виден только в момент проверки) -->
+<div id="splash-screen">
+    <div class="splash-logo">VOLT<span>MASTER</span></div>
+    <div class="splash-spinner"></div>
+</div>
 
 <div class="app-container">
     <div class="header" id="logo-trigger">
@@ -363,7 +393,19 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Безопасный ключ для Firebase (убирает запрещённые символы)
+    // ============ АВТОВХОД ============
+    // Если пользователь уже входил ранее — сразу перекидываем в menu.html.
+    // Проверяем и ID, и логин — если оба есть, значит сессия активна.
+    const savedUid = localStorage.getItem('volt_master_uid');
+    const savedLogin = localStorage.getItem('volt_master_login');
+
+    if (savedUid && savedLogin) {
+        // Показываем экран загрузки и сразу уходим в menu.html
+        document.getElementById('splash-screen').classList.add('active');
+        window.location.replace('menu.html');
+    }
+
+    // Безопасный ключ для Firebase
     function safeKey(str) {
         return String(str).replace(/[.#$\[\]\/]/g, '_').toLowerCase();
     }
@@ -373,7 +415,6 @@
     let users = [];
     let adminLoggedIn = false;
 
-    // Слушатели реального времени
     database.ref('vm_applications').on('value', snap => {
         applications = [];
         snap.forEach(child => {
@@ -449,16 +490,18 @@
         btn.disabled = true;
         btn.textContent = 'Проверка...';
 
-        // Ищем пользователя в Firebase по логину
         database.ref('vm_users/' + safeKey(loginVal)).once('value').then(snap => {
             const user = snap.val();
 
             if (user && user.password === passVal && user.id) {
-                // УСПЕХ: сохраняем ID в localStorage — тот же, что в menu.html
+                // СОХРАНЯЕМ СЕССИЮ НАВСЕГДА
                 localStorage.setItem('volt_master_uid', user.id);
                 localStorage.setItem('volt_master_login', user.login);
-                // Переход в menu.html
-                window.location.href = 'menu.html';
+                // Дополнительный флаг — чтобы точно знать, что это "залогиненный" пользователь
+                localStorage.setItem('volt_master_logged_in', 'true');
+
+                // Переход в menu.html без возможности вернуться назад
+                window.location.replace('menu.html');
             } else {
                 btn.disabled = false;
                 btn.textContent = 'Войти';
@@ -498,13 +541,11 @@
         phoneInput.classList.remove('input-error');
         phoneError.style.display = 'none';
 
-        // Генерируем ID в том же формате, что и в menu.html (4 цифры)
         const newId = Math.floor(1000 + Math.random() * 9000).toString();
 
         btn.disabled = true;
         btn.textContent = 'Отправка...';
 
-        // Проверяем, не занят ли логин
         database.ref('vm_users/' + safeKey(login)).once('value').then(userSnap => {
             if (userSnap.exists()) {
                 btn.disabled = false;
@@ -513,7 +554,6 @@
                 return;
             }
 
-            // Сохраняем заявку в Firebase (ключ = логин)
             return database.ref('vm_applications/' + safeKey(login)).set({
                 id: newId,
                 phone: phone,
@@ -714,7 +754,6 @@
         const app = applications.find(a => a._key === key);
         if (!app) return;
 
-        // Перемещаем в vm_users (тот же ключ = логин, тот же ID)
         database.ref('vm_users/' + key).set({
             id: app.id,
             phone: app.phone,
