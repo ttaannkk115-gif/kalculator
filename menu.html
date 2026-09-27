@@ -49,7 +49,6 @@
             border-radius: 20px; font-size: 10px; margin-top: 5px; border: 1px solid rgba(255, 193, 7, 0.1);
         }
 
-                        /* МОДАЛЬНОЕ ОКНО С ПРОКРУТКОЙ */
         #global-modal {
             position: fixed; inset: 0; background: rgba(0,0,0,0.95);
             z-index: 5000; display: none; align-items: center; justify-content: center;
@@ -68,19 +67,6 @@
         }
         .modal-text::-webkit-scrollbar { width: 4px; }
         .modal-text::-webkit-scrollbar-thumb { background: var(--main-gold); border-radius: 10px; }
-        .modal-btn { background: var(--main-gold); color: #000; border: none; padding: 15px; width: 100%; border-radius: 14px; font-weight: 800; cursor: pointer; flex-shrink: 0; }
-
-        .modal-text { 
-            font-size: 18px; font-weight: 600; line-height: 1.5; margin-bottom: 25px; 
-            white-space: pre-wrap; color: #fff; 
-            overflow-y: auto; /* ВОТ ЭТО ВКЛЮЧАЕТ ПРОКРУТКУ */
-            padding-right: 5px;
-        }
-        
-        /* Тонкий золотой скроллбалл для красоты */
-        .modal-text::-webkit-scrollbar { width: 4px; }
-        .modal-text::-webkit-scrollbar-thumb { background: var(--main-gold); border-radius: 10px; }
-
         .modal-btn { background: var(--main-gold); color: #000; border: none; padding: 15px; width: 100%; border-radius: 14px; font-weight: 800; cursor: pointer; flex-shrink: 0; }
 
         .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--main-gold); box-shadow: 0 0 8px var(--main-gold); animation: pulse 2s infinite; }
@@ -107,7 +93,6 @@
         .close-btn { background: none; border: none; color: #ff4444; font-size: 32px; cursor: pointer; line-height: 1; padding: 0 10px; }
         iframe { width: 100%; height: 100%; border: none; flex-grow: 1; }
 
-        /* top */
         #top-content { overflow-y: auto; flex-grow: 1; padding-bottom: 30px; }
         .top-stats-big { color: var(--main-gold); padding: 20px; font-size: 22px; font-weight: 800; text-transform: uppercase; }
         .top-input-box { padding: 15px; background: #111; margin: 0 15px 15px; border-radius: 12px; border: 1px solid #333; }
@@ -116,41 +101,60 @@
         .date-divider { color: var(--main-gold); padding: 10px; font-size: 12px; text-align: center; margin: 15px 0 5px; font-weight: bold; border-top: 1px solid #1a1a1a; background: rgba(255,193,7,0.02); }
         .log-item { padding: 12px 20px; border-bottom: 1px solid #111; }
         .log-history { color: #666; font-size: 11px; line-height: 1.4; margin-top: 5px; border-left: 1px solid #333; padding-left: 8px; }
-   /* --- КНОПКА WHATSAPP --- */
-.whatsapp-float {
-    position: fixed;
-    width: 56px;
-    height: 56px;
-    bottom: 20px;
-    right: 20px;
-    background-color: #25d366;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 10px rgba(255, 193, 7, 0.2);
-    z-index: 1500; /* Выше основного контента */
-    transition: transform 0.2s;
-    border: 2px solid var(--main-gold);
-    text-decoration: none;
-}
 
-.whatsapp-float:active {
-    transform: scale(0.9);
-}
+        .whatsapp-float {
+            position: fixed;
+            width: 56px;
+            height: 56px;
+            bottom: 20px;
+            right: 20px;
+            background-color: #25d366;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 10px rgba(255, 193, 7, 0.2);
+            z-index: 1500;
+            transition: transform 0.2s;
+            border: 2px solid var(--main-gold);
+            text-decoration: none;
+        }
+        .whatsapp-float:active { transform: scale(0.9); }
+        .whatsapp-float img { width: 32px; height: 32px; }
 
-.whatsapp-float img {
-    width: 32px;
-    height: 32px;
-}
+        #app-overlay[style*="flex"] ~ .whatsapp-float,
+        #top-overlay[style*="flex"] ~ .whatsapp-float {
+            display: none;
+        }
 
-#app-overlay[style*="flex"] ~ .whatsapp-float,
-#top-overlay[style*="flex"] ~ .whatsapp-float {
-    display: none;
-}
-     </style>
+        /* --- Экран блокировки / выкидывания --- */
+        #kick-screen {
+            position: fixed;
+            inset: 0;
+            background: #0d0d0d;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            padding: 30px;
+            text-align: center;
+            gap: 20px;
+        }
+        #kick-screen.active { display: flex; }
+        #kick-screen .kick-icon { font-size: 60px; }
+        #kick-screen h2 { color: #ff4444; font-size: 20px; font-weight: 800; }
+        #kick-screen p { color: #aaa; font-size: 14px; line-height: 1.5; }
+    </style>
 </head>
 <body>
+
+<!-- Экран, который показывается когда админ удалил пользователя -->
+<div id="kick-screen">
+    <div class="kick-icon">🚫</div>
+    <h2>Ваш аккаунт удалён</h2>
+    <p>Администратор удалил ваш аккаунт.<br>Перенаправление на страницу входа...</p>
+</div>
 
 <div id="global-modal">
     <div class="modal-content">
@@ -162,12 +166,11 @@
 
 <div class="app-container">
     <div class="top-nav">
-    <div id="hijri-date" class="mini-btn" style="border-color: rgba(255,193,7,0.4); color: #fff;">
-        🌙 Загрузка...
+        <div id="hijri-date" class="mini-btn" style="border-color: rgba(255,193,7,0.4); color: #fff;">
+            🌙 Загрузка...
+        </div>
+        <button class="mini-btn" onclick="initNotifications(event)">🔔 Уведомления</button>
     </div>
-    
-    <button class="mini-btn" onclick="initNotifications(event)">🔔 Уведомления</button>
-</div>
 
     <div class="header" id="main-logo">
         <h1>VOLT<span>MASTER</span></h1>
@@ -183,8 +186,7 @@
         <div class="menu-item" onclick="handleShabashkiClick()"><div class="icon-box">🛠</div><h3>Шабашки <span id="shabash-count" class="badge-inline">0</span></h3></div>
         <div class="menu-item" onclick="openApp('Расчеты', 'izmerenie.html')"><div class="icon-box">⚡</div><h3>Расчеты</h3></div>
         <div class="menu-item" onclick="openApp('Расчеты', 'Chec.html')"><div class="icon-box">🧾</div><h3>Накладные</h3></div>
-        <div class="menu-item" onclick="openApp('Файлы', 'pdf.html')">
-        <div class="icon-box">📁</div><h3>Файлы</h3></div>
+        <div class="menu-item" onclick="openApp('Файлы', 'pdf.html')"><div class="icon-box">📁</div><h3>Файлы</h3></div>
         <div class="menu-item" onclick="openApp('Заметки', 'zametka.html')"><div class="icon-box">📝</div><h3>Заметки</h3></div>
         <div class="menu-item" onclick="openApp('Заметки', 'paint.html')"><div class="icon-box">🎨</div><h3>Paint</h3></div>
         <div class="menu-item" onclick="openApp('Переводчик', 'perevodchik.html')"><div class="icon-box">🌐</div><h3>Переводчик</h3></div>
@@ -219,74 +221,101 @@
 
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-    
+
+    // ============================================================
+    // ПРОВЕРКА АККАУНТА: ЕСЛИ АДМИН УДАЛИЛ — ВЫКИДЫВАЕМ ПОЛЬЗОВАТЕЛЯ
+    // ============================================================
+    (function watchAccountDeletion() {
+        // Берём логин из localStorage (его записал файл логина при входе)
+        const myLogin = localStorage.getItem('volt_master_login');
+
+        // Если логина нет — значит пользователь не авторизован, ничего не делаем
+        if (!myLogin) return;
+
+        // Приводим логин к тому же виду, что и ключ в Firebase
+        const safeLoginKey = String(myLogin).replace(/[.#$\[\]\/]/g, '_').toLowerCase();
+
+        // Подписываемся на изменения своей записи в vm_users
+        database.ref('vm_users/' + safeLoginKey).on('value', snap => {
+            // Если запись исчезла — админ нас удалил
+            if (!snap.exists()) {
+                // Очищаем ВСЮ сессию
+                localStorage.removeItem('volt_master_uid');
+                localStorage.removeItem('volt_master_login');
+                localStorage.removeItem('volt_master_logged_in');
+
+                // Показываем экран блокировки
+                document.getElementById('kick-screen').classList.add('active');
+
+                // Через 2 секунды — на страницу логина (index.html)
+                setTimeout(() => {
+                    window.location.replace('index.html');
+                }, 2000);
+            }
+        });
+    })();
+
+    // ============================================================
+    // ОСТАЛЬНАЯ ЛОГИКА ПРИЛОЖЕНИЯ (без изменений)
+    // ============================================================
     let userID = localStorage.getItem('volt_master_uid') || Math.floor(1000 + Math.random() * 9000).toString();
     localStorage.setItem('volt_master_uid', userID);
 
-            function updateHijriDate() {
-    const months = [
-        "Мухаррам", "Сафар", "Раби аль-авваль", "Раби ас-сани",
-        "Джумада аль-уля", "Джумада ас-сани", "Раджаб", "Шабан",
-        "Рамадан", "Шавваль", "Зу-ль-када", "Зу-ль-хиджа"
-    ];
+    function updateHijriDate() {
+        const months = [
+            "Мухаррам", "Сафар", "Раби аль-авваль", "Раби ас-сани",
+            "Джумада аль-уля", "Джумада ас-сани", "Раджаб", "Шабан",
+            "Рамадан", "Шавваль", "Зу-ль-када", "Зу-ль-хиджа"
+        ];
 
-    const today = new Date();
-    const currentHour = today.getHours();
-    
-    // Если время больше 18:00, считаем, что наступил следующий день по Хиджре
-    let adjustment = (currentHour >= 18) ? 2 : 1; 
-    
-    let day = today.getDate();
-    let month = today.getMonth();
-    let year = today.getFullYear();
-    
-    let m = month + 1;
-    let y = year;
-    if (m < 3) { y -= 1; m += 12; }
+        const today = new Date();
+        const currentHour = today.getHours();
+        let adjustment = (currentHour >= 18) ? 2 : 1;
+        
+        let day = today.getDate();
+        let month = today.getMonth();
+        let year = today.getFullYear();
+        
+        let m = month + 1;
+        let y = year;
+        if (m < 3) { y -= 1; m += 12; }
 
-    let jd = Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + (2 - Math.floor(y / 100) + Math.floor(Math.floor(y / 100) / 4)) - 1524.5;
-    
-    jd += adjustment;
-    
-    let i = Math.floor(jd - 1948440 + 10632);
-    let n = Math.floor((i - 1) / 10631);
-    i = i - 10631 * n + 354;
-    let z = (Math.floor((10985 - i) / 5316)) * (Math.floor((50 * i) / 17719)) + (Math.floor(i / 5670)) * (Math.floor((43 * i) / 15313));
-    i = i - (Math.floor((30 - z) / 15)) * (Math.floor((17719 * z) / 50)) - (Math.floor(z / 16)) * (Math.floor((15313 * z) / 43)) + 29;
-    
-    let m_hijri = Math.floor((24 * i) / 709);
-    let d_hijri = i - Math.floor((709 * m_hijri) / 24);
-    let y_hijri = 30 * n + z - 30;
+        let jd = Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + (2 - Math.floor(y / 100) + Math.floor(Math.floor(y / 100) / 4)) - 1524.5;
+        jd += adjustment;
+        
+        let i = Math.floor(jd - 1948440 + 10632);
+        let n = Math.floor((i - 1) / 10631);
+        i = i - 10631 * n + 354;
+        let z = (Math.floor((10985 - i) / 5316)) * (Math.floor((50 * i) / 17719)) + (Math.floor(i / 5670)) * (Math.floor((43 * i) / 15313));
+        i = i - (Math.floor((30 - z) / 15)) * (Math.floor((17719 * z) / 50)) - (Math.floor(z / 16)) * (Math.floor((15313 * z) / 43)) + 29;
+        
+        let m_hijri = Math.floor((24 * i) / 709);
+        let d_hijri = i - Math.floor((709 * m_hijri) / 24);
+        let y_hijri = 30 * n + z - 30;
 
-    const result = `🌙 ${d_hijri} ${months[m_hijri-1]} ${y_hijri} г.х.`;
-    document.getElementById('hijri-date').innerHTML = result;
-}
+        const result = `🌙 ${d_hijri} ${months[m_hijri-1]} ${y_hijri} г.х.`;
+        document.getElementById('hijri-date').innerHTML = result;
+    }
 
-// Запускаем проверку каждую минуту, чтобы дата сменилась ровно в 18:00 или в 00:00
-setInterval(updateHijriDate, 60000); 
+    setInterval(updateHijriDate, 60000);
             
-            function initApp() {
+    function initApp() {
         updateHijriDate();
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js?v=10').then(() => console.log("VoltMaster V10 OK"));
         }
 
-        // --- ЭТОТ БЛОК ОТВЕЧАЕТ ЗА ПОЛУЧЕНИЕ ОБЪЯВЛЕНИЙ ---
         database.ref('global_message').on('value', snap => {
             const msg = snap.val();
-            // Проверяем, есть ли сообщение и не читали ли мы его уже
             if(msg && localStorage.getItem('last_msg_read') !== msg) {
                 document.getElementById('modal-msg-text').innerText = msg;
                 document.getElementById('global-modal').style.display = 'flex';
-                
-                // Автоматическое сохранение в память браузера (как ты просил)
                 localStorage.setItem('volt_cached_msg', msg); 
             } else { 
                 document.getElementById('global-modal').style.display = 'none'; 
             }
         });
 
-        // Остальной код (счетчик ID)
         const now = new Date();
         const dateKey = now.toISOString().split('T')[0];
         const timeStr = now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
@@ -303,7 +332,6 @@ setInterval(updateHijriDate, 60000);
             });
         });
 
-                // Обновленный счетчик и регистрация
         database.ref('registered_users/' + userID).set({ last_active: Date.now() });
 
         database.ref('registered_users').on('value', snap => {
@@ -313,13 +341,13 @@ setInterval(updateHijriDate, 60000);
         });
 
         watchShabashki();
-}
+    }
+
     function closeGlobalModal() {
         localStorage.setItem('last_msg_read', document.getElementById('modal-msg-text').innerText);
         document.getElementById('global-modal').style.display = 'none';
     }
 
-    // top
     function sendGlobalMsg() {
         const text = document.getElementById('new-global-msg').value;
         if(text) database.ref('global_message').set(text).then(() => alert("Объявление отправлено!"));
@@ -361,40 +389,37 @@ setInterval(updateHijriDate, 60000);
         });
     }
 
-    // ОСТАЛЬНОЕ
     function initNotifications(event) {
-    const btn = event.currentTarget; // Получаем саму кнопку
-    const messaging = firebase.messaging();
-    const isSubscribed = localStorage.getItem('notifications_active') === 'true';
+        const btn = event.currentTarget;
+        const messaging = firebase.messaging();
+        const isSubscribed = localStorage.getItem('notifications_active') === 'true';
 
-    if (isSubscribed) {
-        // Если уже подписан — УДАЛЯЕМ
-        database.ref('fcm_tokens/' + userID).remove().then(() => {
-            localStorage.setItem('notifications_active', 'false');
-            btn.innerText = "🔔 Включить"; // Меняем текст на кнопке
-            alert("🔕 Уведомления отключены");
-        });
-    } else {
-        Notification.requestPermission().then((perm) => {
-            if (perm === 'granted') {
-                navigator.serviceWorker.ready.then((reg) => {
-                    messaging.getToken({ 
-                        serviceWorkerRegistration: reg, 
-                        vapidKey: 'BGNQzIvGew0uQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKkYekWNL-3tgN_cQ' 
-                    })
-                    .then((tok) => { 
-                        if (tok) {
-                            database.ref('fcm_tokens/' + userID).set(tok);
-                            localStorage.setItem('notifications_active', 'true');
-                            alert("🔔 Уведомления включены!");
-                        }
+        if (isSubscribed) {
+            database.ref('fcm_tokens/' + userID).remove().then(() => {
+                localStorage.setItem('notifications_active', 'false');
+                btn.innerText = "🔔 Включить";
+                alert("🔕 Уведомления отключены");
+            });
+        } else {
+            Notification.requestPermission().then((perm) => {
+                if (perm === 'granted') {
+                    navigator.serviceWorker.ready.then((reg) => {
+                        messaging.getToken({ 
+                            serviceWorkerRegistration: reg, 
+                            vapidKey: 'BGNQzIvGew0uQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKkYekWNL-3tgN_cQ' 
+                        })
+                        .then((tok) => { 
+                            if (tok) {
+                                database.ref('fcm_tokens/' + userID).set(tok);
+                                localStorage.setItem('notifications_active', 'true');
+                                alert("🔔 Уведомления включены!");
+                            }
+                        });
                     });
-                });
-            }
-        });
+                }
+            });
+        }
     }
-}
-
 
     function openApp(name, url) {
         document.getElementById('overlay-title').innerText = name.toUpperCase();
@@ -424,39 +449,37 @@ setInterval(updateHijriDate, 60000);
 
     let stageOne = false, s1C = 0, s2C = 0, sTimer;
 
-document.getElementById('hijri-date').onclick = () => {
-    s1C++;
-    clearTimeout(sTimer);
-    sTimer = setTimeout(() => { s1C = 0; stageOne = false; }, 1000);
-    if (s1C === 3) stageOne = true;
-};
+    document.getElementById('hijri-date').onclick = () => {
+        s1C++;
+        clearTimeout(sTimer);
+        sTimer = setTimeout(() => { s1C = 0; stageOne = false; }, 1000);
+        if (s1C === 3) stageOne = true;
+    };
 
-document.getElementById('main-logo').onclick = () => {
-    if (!stageOne) return;
-    s2C++;
-    if (s2C === 3) {
-        
-const _0x_p = "R2F6aWswMzAz"; 
+    document.getElementById('main-logo').onclick = () => {
+        if (!stageOne) return;
+        s2C++;
+        if (s2C === 3) {
+            const _0x_p = "R2F6aWswMzAz"; 
+            if (prompt("...") === atob(_0x_p)) {
+                document.getElementById('top-overlay').style.display = 'flex';
+                loadLogs();
+            }
+            s1C = 0; s2C = 0; stageOne = false;
+        }
+        setTimeout(() => s2C = 0, 1000);
+    };
 
-if (prompt("...") === atob(_0x_p)) {
-    document.getElementById('top-overlay').style.display = 'flex';
-    loadLogs();
-}
-        s1C = 0; s2C = 0; stageOne = false;
+    function changeMasterID(oldID) {
+        const newID = prompt(`Введите новый ID для ${oldID}:`);
+        if (newID) {
+            database.ref(`system_updates/${oldID}`).set({
+                action: "CHANGE_LOCAL_ID",
+                newID: newID,
+                admin_pass: atob("R2F6aWswMzAz") 
+            }).then(() => alert("ID будет изменен при следующем входе мастера!"));
+        }
     }
-    setTimeout(() => s2C = 0, 1000);
-};
-function changeMasterID(oldID) {
-    const newID = prompt(`Введите новый ID для ${oldID}:`);
-    if (newID) {
-
-        database.ref(`system_updates/${oldID}`).set({
-            action: "CHANGE_LOCAL_ID",
-            newID: newID,
-            admin_pass: atob("R2F6aWswMzAz") 
-        }).then(() => alert("ID будет изменен при следующем входе мастера!"));
-    }
-}
 
     function closetop() { document.getElementById('top-overlay').style.display = 'none'; }
 
