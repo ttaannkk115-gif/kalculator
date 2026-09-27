@@ -3,223 +3,383 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VoltMaster</title>
-    
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="apple-touch-icon" href="logo.png">
+    <title>VOLTMASTER</title>
 
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-messaging-compat.js"></script>
 
     <style>
-        :root {
-            --main-gold: #ffc107;
-            --dark-bg: #0f0f0f;
-            --card-bg: rgba(255, 255, 255, 0.07);
-            --text-main: #ffffff;
-            --red-notif: #ff4444;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            margin: 0; font-family: 'Segoe UI', Roboto, sans-serif;
-            background: var(--dark-bg); color: var(--text-main);
-            display: flex; justify-content: center; min-height: 100vh;
-            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 100%);
-            overflow-x: hidden;
-        }
-
-        .app-container { width: 92%; max-width: 380px; padding: 10px 0 100px 0; }
-
-        .top-nav { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .mini-btn {
-            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 193, 7, 0.2);
-            color: var(--main-gold); padding: 5px 12px; border-radius: 8px; font-size: 10px;
-            font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;
-        }
-
-        .header { text-align: center; margin-bottom: 20px; cursor: pointer; }
-        .header h1 { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: 1px; }
-        .header span { color: var(--main-gold); }
-        
-        .status-badge {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: rgba(255, 193, 7, 0.05); padding: 5px 15px;
-            border-radius: 20px; font-size: 10px; margin-top: 5px; border: 1px solid rgba(255, 193, 7, 0.1);
-        }
-
-        #global-modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
-            z-index: 5000; display: none; align-items: center; justify-content: center;
-            padding: 20px; backdrop-filter: blur(10px);
-        }
-        .modal-content {
-            background: #161616; border: 2px solid var(--main-gold);
-            border-radius: 24px; padding: 25px 15px; width: 100%; max-width: 320px;
-            max-height: 80vh; display: flex; flex-direction: column; 
-            text-align: center; box-shadow: 0 0 50px rgba(255, 193, 7, 0.2);
-        }
-        .modal-title { color: var(--main-gold); font-size: 12px; font-weight: 900; text-transform: uppercase; margin-bottom: 15px; flex-shrink: 0; }
-        .modal-text { 
-            font-size: 18px; font-weight: 600; line-height: 1.5; margin-bottom: 25px; 
-            white-space: pre-wrap; color: #fff; overflow-y: auto; padding-right: 5px;
-        }
-        .modal-text::-webkit-scrollbar { width: 4px; }
-        .modal-text::-webkit-scrollbar-thumb { background: var(--main-gold); border-radius: 10px; }
-        .modal-btn { background: var(--main-gold); color: #000; border: none; padding: 15px; width: 100%; border-radius: 14px; font-weight: 800; cursor: pointer; flex-shrink: 0; }
-
-        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--main-gold); box-shadow: 0 0 8px var(--main-gold); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-
-        .menu-grid { display: grid; gap: 10px; }
-        .menu-item {
-            background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 15px; padding: 15px; display: flex; align-items: center;
-            cursor: pointer; position: relative; transition: 0.2s;
-        }
-        .menu-item:active { transform: scale(0.97); background: rgba(255,255,255,0.12); }
-
-        .badge-inline {
-            background: var(--red-notif); color: white; font-size: 10px; font-weight: 900;
-            padding: 2px 8px; border-radius: 10px; margin-left: auto; display: none;
-        }
-
-        .icon-box { width: 42px; height: 42px; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-right: 15px; font-size: 18px; background: rgba(255,193,7,0.1); color: var(--main-gold); }
-        .menu-item h3 { margin: 0; font-size: 16px; font-weight: 600; flex: 1; }
-
-        .overlay { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; z-index: 2000; }
-        .overlay-header { padding: 15px; display: flex; justify-content: flex-end; align-items: center; border-bottom: 1px solid #222; background: #000; }
-        .close-btn { background: none; border: none; color: #ff4444; font-size: 32px; cursor: pointer; line-height: 1; padding: 0 10px; }
-        iframe { width: 100%; height: 100%; border: none; flex-grow: 1; }
-
-        #top-content { overflow-y: auto; flex-grow: 1; padding-bottom: 30px; }
-        .top-stats-big { color: var(--main-gold); padding: 20px; font-size: 22px; font-weight: 800; text-transform: uppercase; }
-        .top-input-box { padding: 15px; background: #111; margin: 0 15px 15px; border-radius: 12px; border: 1px solid #333; }
-        .top-input-box textarea { background: #000; border: 1px solid #444; color: #fff; padding: 10px; width: 100%; box-sizing: border-box; border-radius: 8px; margin-bottom: 10px; font-family: inherit; }
-        .top-nav-btn { background: #111; border: 1px solid #333; color: var(--main-gold); padding: 18px; border-radius: 12px; margin: 0 15px 10px; text-align: center; cursor: pointer; font-weight: bold; font-size: 14px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .date-divider { color: var(--main-gold); padding: 10px; font-size: 12px; text-align: center; margin: 15px 0 5px; font-weight: bold; border-top: 1px solid #1a1a1a; background: rgba(255,193,7,0.02); }
-        .log-item { padding: 12px 20px; border-bottom: 1px solid #111; }
-        .log-history { color: #666; font-size: 11px; line-height: 1.4; margin-top: 5px; border-left: 1px solid #333; padding-left: 8px; }
-
-        .whatsapp-float {
-            position: fixed;
-            width: 56px;
-            height: 56px;
-            bottom: 20px;
-            right: 20px;
-            background-color: #25d366;
-            border-radius: 50%;
+            background-color: #0d0d0d;
+            color: #ffffff;
             display: flex;
             justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 10px rgba(255, 193, 7, 0.2);
-            z-index: 1500;
-            transition: transform 0.2s;
-            border: 2px solid var(--main-gold);
-            text-decoration: none;
+            min-height: 100vh;
+            padding: 20px 15px;
         }
-        .whatsapp-float:active { transform: scale(0.9); }
-        .whatsapp-float img { width: 32px; height: 32px; }
 
-        #app-overlay[style*="flex"] ~ .whatsapp-float,
-        #top-overlay[style*="flex"] ~ .whatsapp-float {
+        .app-container {
+            width: 100%;
+            max-width: 400px;
+            background-color: #151515;
+            border-radius: 16px;
+            border: 1px solid #2a2a2a;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            height: fit-content;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+        }
+
+        .header h1 span { color: #ff9900; }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #2a2a2a;
+            margin-bottom: 25px;
+        }
+
+        .tab {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #888888;
+            font-size: 16px;
+            font-weight: 600;
+            padding: 10px 0 15px 0;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #ff9900;
+            border-bottom: 2px solid #ff9900;
+        }
+
+        .form {
             display: none;
+            flex-direction: column;
+            gap: 18px;
         }
 
-        /* --- Экран выкидывания (короткий) --- */
-        #kick-screen {
+        .form.active { display: flex; animation: fadeIn 0.3s ease; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+
+        .input-group label { font-size: 15px; color: #a0a0a0; }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            background-color: #1e1e1e;
+            border: 1px solid #333333;
+            border-radius: 8px;
+            padding: 14px 16px;
+            color: #ffffff;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .input-group input::placeholder,
+        .input-group textarea::placeholder { color: #666666; }
+
+        .input-group input:focus,
+        .input-group textarea:focus { border-color: #ff9900; }
+
+        .input-group input.input-error { border-color: #ff3333 !important; }
+
+        .error-msg {
+            color: #ff3333;
+            font-size: 13px;
+            display: none;
+            margin-top: -4px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .input-group textarea { resize: none; min-height: 80px; }
+
+        .btn-primary {
+            background-color: #ff9900;
+            color: #000000;
+            border: none;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 5px;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-primary:active { background-color: #e68a00; }
+
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: #ff9900;
+            border: 1px solid #ff9900;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .btn-danger {
+            background-color: #ff3333;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        #admin-panel { display: none; flex-direction: column; gap: 20px; animation: fadeIn 0.3s ease; }
+        #admin-panel.active { display: flex; }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .admin-header h2 { font-size: 18px; color: #ff9900; }
+
+        .admin-section h3 { font-size: 16px; margin-bottom: 10px; color: #ccc; }
+
+        .list-item {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .list-item p { font-size: 13px; color: #ddd; word-break: break-all; }
+        .list-item p span { color: #888; }
+
+        .list-actions { display: flex; gap: 10px; margin-top: 5px; }
+
+        .empty-msg {
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 8px;
+        }
+
+        .search-input {
+            padding: 10px 14px !important;
+            font-size: 14px !important;
+            border-radius: 20px !important;
+            background-color: #1a1a1a !important;
+        }
+
+        .highlight {
+            background-color: #ffeb3b;
+            color: #000000;
+            font-weight: bold;
+            border-radius: 2px;
+            padding: 0 2px;
+        }
+
+        .password-hidden {
+            color: #ff9900;
+            cursor: pointer;
+            letter-spacing: 2px;
+            user-select: none;
+            font-weight: bold;
+        }
+
+        .password-visible {
+            color: #4dff88;
+            cursor: pointer;
+            font-weight: bold;
+            user-select: none;
+        }
+
+        /* --- Экран загрузки / автовхода --- */
+        #splash-screen {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.95);
+            background: #0d0d0d;
             display: none;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 99999;
-            padding: 30px;
-            text-align: center;
-            gap: 15px;
-            animation: fadeInKick 0.3s ease;
+            z-index: 9999;
+            gap: 20px;
         }
-        #kick-screen.active { display: flex; }
-        #kick-screen .kick-icon { font-size: 55px; animation: shakeKick 0.5s ease; }
-        #kick-screen h2 { color: #ff4444; font-size: 18px; font-weight: 800; }
-        #kick-screen p { color: #aaa; font-size: 13px; line-height: 1.4; }
 
-        @keyframes fadeInKick {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        #splash-screen.active { display: flex; }
+
+        .splash-logo {
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            animation: pulseLogo 1.5s ease-in-out infinite;
         }
-        @keyframes shakeKick {
-            0%, 100% { transform: rotate(0); }
-            25% { transform: rotate(-15deg); }
-            75% { transform: rotate(15deg); }
+
+        .splash-logo span { color: #ff9900; }
+
+        .splash-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 153, 0, 0.2);
+            border-top-color: #ff9900;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @keyframes pulseLogo {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
         }
     </style>
 </head>
 <body>
 
-<!-- Короткий экран выкидывания -->
-<div id="kick-screen">
-    <div class="kick-icon">🚫</div>
-    <h2>Аккаунт удалён</h2>
-    <p>Перенаправление на страницу входа...</p>
-</div>
-
-<div id="global-modal">
-    <div class="modal-content">
-        <div class="modal-title">📣 ОБЪЯВЛЕНИЕ</div>
-        <div class="modal-text" id="modal-msg-text">...</div>
-        <button class="modal-btn" onclick="closeGlobalModal()">Я ПРОЧИТАЛ</button>
-    </div>
+<!-- Экран автовхода (виден только в момент проверки) -->
+<div id="splash-screen">
+    <div class="splash-logo">VOLT<span>MASTER</span></div>
+    <div class="splash-spinner"></div>
 </div>
 
 <div class="app-container">
-    <div class="top-nav">
-        <div id="hijri-date" class="mini-btn" style="border-color: rgba(255,193,7,0.4); color: #fff;">
-            🌙 Загрузка...
-        </div>
-        <button class="mini-btn" onclick="initNotifications(event)">🔔 Уведомления</button>
-    </div>
-
-    <div class="header" id="main-logo">
+    <div class="header" id="logo-trigger">
         <h1>VOLT<span>MASTER</span></h1>
-        <div class="status-badge">
-            <div class="status-dot"></div>
-            <span id="stats-display">ID: ---- | ВСЕГО: 0</span>
+    </div>
+
+    <div id="user-view">
+        <div class="tabs">
+            <button class="tab active" id="tab-login" data-target="login-form">Вход</button>
+            <button class="tab" id="tab-register" data-target="register-form">Подать заявку</button>
+        </div>
+
+        <form id="login-form" class="form active" onsubmit="submitLogin(event)">
+            <div class="input-group">
+                <label>Логин</label>
+                <input type="text" id="login-username" placeholder="Введите логин" required>
+            </div>
+            <div class="input-group">
+                <label>Пароль</label>
+                <input type="password" id="login-password" placeholder="Введите пароль" required>
+            </div>
+            <div class="error-msg" id="login-error">Неверный логин или пароль</div>
+            <button type="submit" class="btn-primary" id="login-btn">Войти</button>
+        </form>
+
+        <form id="register-form" class="form" onsubmit="submitApplication(event)">
+            <div class="input-group">
+                <label>Номер телефона</label>
+                <input type="tel" id="reg-phone" placeholder="+7 (___) ___-__-__" required>
+                <span class="error-msg" id="phone-error">Неверный формат номера. Используйте: +7 (999) 123-45-67</span>
+            </div>
+            <div class="input-group">
+                <label>Желаемый логин</label>
+                <input type="text" id="reg-login" placeholder="Придумайте логин" required>
+            </div>
+            <div class="input-group">
+                <label>Пароль</label>
+                <input type="text" id="reg-password" placeholder="Придумайте пароль" required>
+            </div>
+            <div class="input-group">
+                <label>Комментарий к заявке</label>
+                <textarea id="reg-comment" placeholder="Зачем вам нужен аккаунт?" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn-primary" id="reg-btn">Отправить заявку</button>
+        </form>
+    </div>
+
+    <div id="admin-panel">
+        <div id="admin-login-section" style="display: flex; flex-direction: column; gap: 15px;">
+            <h2 style="text-align: center; color: #ff9900; font-size: 18px;">Вход для администратора</h2>
+            <div class="input-group">
+                <input type="password" id="admin-pass" placeholder="Введите пароль администратора">
+            </div>
+            <button class="btn-primary" onclick="loginAdmin()">Войти</button>
+            <button class="btn-secondary" onclick="closeAdminPanel()">Назад</button>
+        </div>
+
+        <div id="admin-dashboard" style="display: none;">
+            <div class="admin-header">
+                <h2>Панель Админа</h2>
+                <button class="btn-danger" style="padding: 5px 10px; font-size: 12px;" onclick="closeAdminPanel()">Выход</button>
+            </div>
+
+            <div class="admin-section" style="margin-top: 15px;">
+                <h3>📥 Заявки на регистрацию</h3>
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <input type="text" id="request-search" class="search-input" placeholder="🔍 Поиск по заявкам..." oninput="renderApplications()">
+                </div>
+                <div id="requests-list"></div>
+            </div>
+
+            <div class="admin-section" style="margin-top: 15px;">
+                <h3>👥 Пользователи</h3>
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <input type="text" id="user-search" class="search-input" placeholder="🔍 Поиск по пользователям..." oninput="renderUsers()">
+                </div>
+                <div id="users-list"></div>
+            </div>
         </div>
     </div>
-
-    <div class="menu-grid">
-        <div class="menu-item" onclick="openApp('Прайс-лист', 'prais.html')"><div class="icon-box">💸</div><h3>Прайс-лист</h3></div>
-        <div class="menu-item" onclick="openApp('Мои заказы', 'zakazi.html')"><div class="icon-box">💼</div><h3>Мои заказы</h3></div>
-        <div class="menu-item" onclick="handleShabashkiClick()"><div class="icon-box">🛠</div><h3>Шабашки <span id="shabash-count" class="badge-inline">0</span></h3></div>
-        <div class="menu-item" onclick="openApp('Расчеты', 'izmerenie.html')"><div class="icon-box">⚡</div><h3>Расчеты</h3></div>
-        <div class="menu-item" onclick="openApp('Расчеты', 'Chec.html')"><div class="icon-box">🧾</div><h3>Накладные</h3></div>
-        <div class="menu-item" onclick="openApp('Файлы', 'pdf.html')"><div class="icon-box">📁</div><h3>Файлы</h3></div>
-        <div class="menu-item" onclick="openApp('Заметки', 'zametka.html')"><div class="icon-box">📝</div><h3>Заметки</h3></div>
-        <div class="menu-item" onclick="openApp('Заметки', 'paint.html')"><div class="icon-box">🎨</div><h3>Paint</h3></div>
-        <div class="menu-item" onclick="openApp('Переводчик', 'perevodchik.html')"><div class="icon-box">🌐</div><h3>Переводчик</h3></div>
-        <div class="menu-item" onclick="openApp('Помощник', 'signa.html')"><div class="icon-box">💬</div><h3>Чат-помощник</h3></div>
-        <div class="menu-item" onclick="openApp('Перекур', 'igri.html')"><div class="icon-box">☕</div><h3>Перекур</h3></div>
-    </div>
-</div>
-
-<div id="app-overlay" class="overlay">
-    <div class="overlay-header">
-        <span id="overlay-title" style="color:var(--main-gold); font-weight:bold; font-size:14px; margin-right: auto;"></span>
-        <button class="close-btn" onclick="closeApp()">&times;</button>
-    </div>
-    <iframe id="app-frame"></iframe>
-</div>
-
-<div id="top-overlay" class="overlay">
-    <div class="overlay-header"><button class="close-btn" onclick="closetop()">&times;</button></div>
-    <div id="top-content"></div>
 </div>
 
 <script>
+    // ============ FIREBASE ============
     const firebaseConfig = {
         apiKey: "AIzaSyD-dIC8bm8y4kaY7RXmMrys2wOMLA5o8vY",
         authDomain: "voltmaster-332c0.firebaseapp.com",
@@ -233,275 +393,392 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // ============================================================
-    // ПРОВЕРКА УДАЛЕНИЯ АККАУНТА
-    // Если админ удалил пользователя — сразу выкидываем на index.html
-    // ============================================================
-    (function watchAccountDeletion() {
-        const myLogin = localStorage.getItem('volt_master_login');
+    // ============ АВТОВХОД ============
+    // Если пользователь уже входил ранее — сразу перекидываем в menu.html.
+    // Проверяем и ID, и логин — если оба есть, значит сессия активна.
+    const savedUid = localStorage.getItem('volt_master_uid');
+    const savedLogin = localStorage.getItem('volt_master_login');
 
-        // Нет логина — пользователь и так не авторизован, ничего не делаем
-        if (!myLogin) return;
-
-        // Приводим логин к тому же виду, что и ключ в Firebase
-        const safeLoginKey = String(myLogin).replace(/[.#$\[\]\/]/g, '_').toLowerCase();
-
-        // Следим за записью пользователя в реальном времени
-        database.ref('vm_users/' + safeLoginKey).on('value', snap => {
-            if (!snap.exists()) {
-                // --- ПОЛЬЗОВАТЕЛЬ УДАЛЁН ---
-
-                // 1. Очищаем всю сессию
-                localStorage.removeItem('volt_master_uid');
-                localStorage.removeItem('volt_master_login');
-                localStorage.removeItem('volt_master_logged_in');
-
-                // 2. Показываем короткое уведомление
-                document.getElementById('kick-screen').classList.add('active');
-
-                // 3. Через 800 мс — переход на страницу входа
-                setTimeout(() => {
-                    window.location.replace('index.html');
-                }, 800);
-            }
-        });
-    })();
-
-    // ============================================================
-    // ОСТАЛЬНАЯ ЛОГИКА ПРИЛОЖЕНИЯ
-    // ============================================================
-    let userID = localStorage.getItem('volt_master_uid') || Math.floor(1000 + Math.random() * 9000).toString();
-    localStorage.setItem('volt_master_uid', userID);
-
-    function updateHijriDate() {
-        const months = [
-            "Мухаррам", "Сафар", "Раби аль-авваль", "Раби ас-сани",
-            "Джумада аль-уля", "Джумада ас-сани", "Раджаб", "Шабан",
-            "Рамадан", "Шавваль", "Зу-ль-када", "Зу-ль-хиджа"
-        ];
-
-        const today = new Date();
-        const currentHour = today.getHours();
-        let adjustment = (currentHour >= 18) ? 2 : 1;
-        
-        let day = today.getDate();
-        let month = today.getMonth();
-        let year = today.getFullYear();
-        
-        let m = month + 1;
-        let y = year;
-        if (m < 3) { y -= 1; m += 12; }
-
-        let jd = Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + (2 - Math.floor(y / 100) + Math.floor(Math.floor(y / 100) / 4)) - 1524.5;
-        jd += adjustment;
-        
-        let i = Math.floor(jd - 1948440 + 10632);
-        let n = Math.floor((i - 1) / 10631);
-        i = i - 10631 * n + 354;
-        let z = (Math.floor((10985 - i) / 5316)) * (Math.floor((50 * i) / 17719)) + (Math.floor(i / 5670)) * (Math.floor((43 * i) / 15313));
-        i = i - (Math.floor((30 - z) / 15)) * (Math.floor((17719 * z) / 50)) - (Math.floor(z / 16)) * (Math.floor((15313 * z) / 43)) + 29;
-        
-        let m_hijri = Math.floor((24 * i) / 709);
-        let d_hijri = i - Math.floor((709 * m_hijri) / 24);
-        let y_hijri = 30 * n + z - 30;
-
-        const result = `🌙 ${d_hijri} ${months[m_hijri-1]} ${y_hijri} г.х.`;
-        document.getElementById('hijri-date').innerHTML = result;
+    if (savedUid && savedLogin) {
+        // Показываем экран загрузки и сразу уходим в menu.html
+        document.getElementById('splash-screen').classList.add('active');
+        window.location.replace('menu.html');
     }
 
-    setInterval(updateHijriDate, 60000);
-            
-    function initApp() {
-        updateHijriDate();
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js?v=10').then(() => console.log("VoltMaster V10 OK"));
+    // Безопасный ключ для Firebase
+    function safeKey(str) {
+        return String(str).replace(/[.#$\[\]\/]/g, '_').toLowerCase();
+    }
+
+    // ============ ДАННЫЕ ============
+    let applications = [];
+    let users = [];
+    let adminLoggedIn = false;
+
+    database.ref('vm_applications').on('value', snap => {
+        applications = [];
+        snap.forEach(child => {
+            const v = child.val() || {};
+            v._key = child.key;
+            applications.push(v);
+        });
+        if (adminLoggedIn) renderApplications();
+    });
+
+    database.ref('vm_users').on('value', snap => {
+        users = [];
+        snap.forEach(child => {
+            const v = child.val() || {};
+            v._key = child.key;
+            users.push(v);
+        });
+        if (adminLoggedIn) renderUsers();
+    });
+
+    // ============ ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ============
+    const tabs = document.querySelectorAll('.tab');
+    const forms = document.querySelectorAll('.form');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            forms.forEach(f => f.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(tab.getAttribute('data-target')).classList.add('active');
+
+            document.getElementById('login-error').style.display = 'none';
+            document.querySelectorAll('#login-form input').forEach(i => i.classList.remove('input-error'));
+            document.getElementById('phone-error').style.display = 'none';
+            document.getElementById('reg-phone').classList.remove('input-error');
+        });
+    });
+
+    // ============ МАСКА ТЕЛЕФОНА ============
+    const phoneInput = document.getElementById('reg-phone');
+    phoneInput.addEventListener('input', function (e) {
+        let input = e.target.value.replace(/\D/g, '');
+        let formatted = '';
+        if (input.length > 0) {
+            if (input[0] === '7' || input[0] === '8') input = input.substring(1);
+            formatted = '+7';
+            if (input.length > 0) formatted += ' (' + input.substring(0, 3);
+            if (input.length >= 4) formatted += ') ' + input.substring(3, 6);
+            if (input.length >= 7) formatted += '-' + input.substring(6, 8);
+            if (input.length >= 9) formatted += '-' + input.substring(8, 10);
+        }
+        e.target.value = formatted;
+    });
+
+    // ============ ВХОД ПОЛЬЗОВАТЕЛЯ ============
+    function submitLogin(event) {
+        event.preventDefault();
+
+        const loginInput = document.getElementById('login-username');
+        const passInput = document.getElementById('login-password');
+        const errorMsg = document.getElementById('login-error');
+        const btn = document.getElementById('login-btn');
+
+        const loginVal = loginInput.value.trim();
+        const passVal = passInput.value;
+
+        loginInput.classList.remove('input-error');
+        passInput.classList.remove('input-error');
+        errorMsg.style.display = 'none';
+
+        if (!loginVal || !passVal) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Проверка...';
+
+        database.ref('vm_users/' + safeKey(loginVal)).once('value').then(snap => {
+            const user = snap.val();
+
+            if (user && user.password === passVal && user.id) {
+                // СОХРАНЯЕМ СЕССИЮ НАВСЕГДА
+                localStorage.setItem('volt_master_uid', user.id);
+                localStorage.setItem('volt_master_login', user.login);
+                // Дополнительный флаг — чтобы точно знать, что это "залогиненный" пользователь
+                localStorage.setItem('volt_master_logged_in', 'true');
+
+                // Переход в menu.html без возможности вернуться назад
+                window.location.replace('menu.html');
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'Войти';
+                loginInput.classList.add('input-error');
+                passInput.classList.add('input-error');
+                errorMsg.style.display = 'block';
+            }
+        }).catch(err => {
+            btn.disabled = false;
+            btn.textContent = 'Войти';
+            alert('Ошибка подключения: ' + err.message);
+        });
+    }
+
+    // ============ ОТПРАВКА ЗАЯВКИ ============
+    function submitApplication(event) {
+        event.preventDefault();
+
+        const phone = phoneInput.value.trim();
+        const login = document.getElementById('reg-login').value.trim();
+        const password = document.getElementById('reg-password').value;
+        const comment = document.getElementById('reg-comment').value;
+        const phoneError = document.getElementById('phone-error');
+        const btn = document.getElementById('reg-btn');
+
+        const phoneRegex = /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
+
+        if (!phoneRegex.test(phone)) {
+            phoneInput.classList.add('input-error');
+            phoneError.style.display = 'block';
+            phoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
         }
 
-        database.ref('global_message').on('value', snap => {
-            const msg = snap.val();
-            if(msg && localStorage.getItem('last_msg_read') !== msg) {
-                document.getElementById('modal-msg-text').innerText = msg;
-                document.getElementById('global-modal').style.display = 'flex';
-                localStorage.setItem('volt_cached_msg', msg); 
-            } else { 
-                document.getElementById('global-modal').style.display = 'none'; 
+        if (!login || !password) return;
+
+        phoneInput.classList.remove('input-error');
+        phoneError.style.display = 'none';
+
+        const newId = Math.floor(1000 + Math.random() * 9000).toString();
+
+        btn.disabled = true;
+        btn.textContent = 'Отправка...';
+
+        database.ref('vm_users/' + safeKey(login)).once('value').then(userSnap => {
+            if (userSnap.exists()) {
+                btn.disabled = false;
+                btn.textContent = 'Отправить заявку';
+                alert('Такой логин уже зарегистрирован. Выберите другой.');
+                return;
             }
-        });
 
-        const now = new Date();
-        const dateKey = now.toISOString().split('T')[0];
-        const timeStr = now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
-        const visitRef = database.ref(`visits/${dateKey}/ID-${userID}`);
-        
-        visitRef.once('value', snap => {
-            const d = snap.val() || { count: 0, allTimes: "" };
-            visitRef.update({
-                id: userID,
-                count: d.count + 1,
-                lastTime: timeStr,
-                allTimes: d.allTimes ? d.allTimes + ", " + timeStr : timeStr,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
+            return database.ref('vm_applications/' + safeKey(login)).set({
+                id: newId,
+                phone: phone,
+                login: login,
+                password: password,
+                comment: comment,
+                timestamp: Date.now()
+            }).then(() => {
+                btn.disabled = false;
+                btn.textContent = 'Отправить заявку';
+                document.getElementById('register-form').reset();
+                phoneInput.value = '';
+                alert('Заявка успешно отправлена! Ожидайте одобрения администратора.');
             });
-        });
-
-        database.ref('registered_users/' + userID).set({ last_active: Date.now() });
-
-        database.ref('registered_users').on('value', snap => {
-            const total = snap.numChildren();
-            document.getElementById('stats-display').innerText = `ID: ${userID} | ВСЕГО: ${total}`;
-            localStorage.setItem('volt_total_users', total);
-        });
-
-        watchShabashki();
-    }
-
-    function closeGlobalModal() {
-        localStorage.setItem('last_msg_read', document.getElementById('modal-msg-text').innerText);
-        document.getElementById('global-modal').style.display = 'none';
-    }
-
-    function sendGlobalMsg() {
-        const text = document.getElementById('new-global-msg').value;
-        if(text) database.ref('global_message').set(text).then(() => alert("Объявление отправлено!"));
-    }
-
-    function deleteGlobalMsg() {
-        if(confirm("Удалить объявление?")) database.ref('global_message').remove();
-    }
-
-    function loadLogs() {
-        database.ref('visits').on('value', snap => {
-            const data = snap.val() || {};
-            let html = `
-                <div class="top-stats-big">панель</div>
-                <div class="top-input-box">
-                    <div style="color:var(--main-gold); font-size:11px; margin-bottom:8px; font-weight:bold;">ОБЪЯВЛЕНИЕ ПЕРЕД ЭКРАНОМ:</div>
-                    <textarea id="new-global-msg" rows="3" placeholder="Текст для всех..."></textarea>
-                    <button class="top-nav-btn" style="margin:0; width:100%;" onclick="sendGlobalMsg()">📢 ЗАБЛОКИРОВАТЬ ЭКРАНЫ</button>
-                    <button class="top-nav-btn" style="margin:10px 0 0; width:100%; color:#ff4444; border-color:#500;" onclick="deleteGlobalMsg()">❌ УДАЛИТЬ У ВСЕХ</button>
-                </div>
-                <div class="top-nav-btn" onclick="closetop(); openApp('Управление', 'volt.html')">🛠 УПРАВЛЕНИЕ ШАБАШКАМИ</div>
-            `;
-            
-            Object.keys(data).sort().reverse().forEach(date => {
-                html += `<div class="date-divider">--- ${date} --- (${Object.keys(data[date]).length})</div>`;
-                Object.values(data[date]).sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0)).forEach(v => {
-                    html += `
-                        <div class="log-item">
-                            <div style="display:flex;justify-content:space-between;align-items:baseline;">
-                                <div><span style="font-weight:bold;">ID: ${v.id}</span> <span style="color:var(--main-gold);font-size:12px;">x${v.count}</span></div>
-                                <span style="color:var(--main-gold);font-size:14px;font-weight:bold;">${v.lastTime}</span>
-                            </div>
-                            <div class="log-history">${v.allTimes || '---'}</div>
-                        </div>`;
-                });
-            });
-            html += `<button class="top-nav-btn" style="background:#ff4444; color:#fff; border:none; margin-top:20px;" onclick="if(confirm('Стереть историю?')) database.ref('visits').remove()">ОЧИСТИТЬ ЛОГИ</button>`;
-            document.getElementById('top-content').innerHTML = html;
+        }).catch(err => {
+            btn.disabled = false;
+            btn.textContent = 'Отправить заявку';
+            alert('Ошибка: ' + err.message);
         });
     }
 
-    function initNotifications(event) {
-        const btn = event.currentTarget;
-        const messaging = firebase.messaging();
-        const isSubscribed = localStorage.getItem('notifications_active') === 'true';
+    // ============ СЕКРЕТНАЯ КОМБИНАЦИЯ ============
+    let loginClickCount = 0;
+    let logoClickCount = 0;
+    let clickTimer;
 
-        if (isSubscribed) {
-            database.ref('fcm_tokens/' + userID).remove().then(() => {
-                localStorage.setItem('notifications_active', 'false');
-                btn.innerText = "🔔 Включить";
-                alert("🔕 Уведомления отключены");
-            });
+    document.getElementById('tab-login').addEventListener('click', () => {
+        loginClickCount++;
+        resetTimerIfNeeded();
+    });
+
+    document.getElementById('logo-trigger').addEventListener('click', () => {
+        if (loginClickCount >= 3) {
+            logoClickCount++;
+            resetTimerIfNeeded();
+            if (logoClickCount >= 3) {
+                document.getElementById('user-view').style.display = 'none';
+                document.getElementById('admin-panel').classList.add('active');
+                document.getElementById('admin-panel').style.display = 'flex';
+                document.getElementById('admin-login-section').style.display = 'flex';
+                document.getElementById('admin-dashboard').style.display = 'none';
+                document.getElementById('admin-pass').value = '';
+                loginClickCount = 0;
+                logoClickCount = 0;
+            }
         } else {
-            Notification.requestPermission().then((perm) => {
-                if (perm === 'granted') {
-                    navigator.serviceWorker.ready.then((reg) => {
-                        messaging.getToken({ 
-                            serviceWorkerRegistration: reg, 
-                            vapidKey: 'BGNQzIvGew0uQqFsOOLYdy8FATmZ_vX1Y6xWgqn7uggV_vTSaD3bGL7VOVD5Xllad74NgOYKkYekWNL-3tgN_cQ' 
-                        })
-                        .then((tok) => { 
-                            if (tok) {
-                                database.ref('fcm_tokens/' + userID).set(tok);
-                                localStorage.setItem('notifications_active', 'true');
-                                alert("🔔 Уведомления включены!");
-                            }
-                        });
-                    });
-                }
-            });
+            loginClickCount = 0;
+            logoClickCount = 0;
+        }
+    });
+
+    function resetTimerIfNeeded() {
+        clearTimeout(clickTimer);
+        clickTimer = setTimeout(() => {
+            loginClickCount = 0;
+            logoClickCount = 0;
+        }, 3000);
+    }
+
+    // ============ АДМИН ============
+    function loginAdmin() {
+        const pass = document.getElementById('admin-pass').value;
+        if (pass === 'gazik0303') {
+            adminLoggedIn = true;
+            document.getElementById('admin-login-section').style.display = 'none';
+            document.getElementById('admin-dashboard').style.display = 'block';
+            document.getElementById('request-search').value = '';
+            document.getElementById('user-search').value = '';
+            renderApplications();
+            renderUsers();
+        } else {
+            alert('Неверный пароль администратора!');
         }
     }
 
-    function openApp(name, url) {
-        document.getElementById('overlay-title').innerText = name.toUpperCase();
-        document.getElementById('app-frame').src = url + "?v=" + Date.now();
-        document.getElementById('app-overlay').style.display = 'flex';
+    function closeAdminPanel() {
+        adminLoggedIn = false;
+        document.getElementById('admin-panel').classList.remove('active');
+        document.getElementById('admin-panel').style.display = 'none';
+        document.getElementById('user-view').style.display = 'block';
     }
 
-    function closeApp() { document.getElementById('app-overlay').style.display = 'none'; document.getElementById('app-frame').src = ''; }
+    // ============ ПОДСВЕТКА ПОИСКА ============
+    function escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
 
-    function watchShabashki() {
-        database.ref('shabashki/active').on('value', snap => {
-            const count = Object.keys(snap.val() || {}).length;
-            const lastSeen = parseInt(localStorage.getItem('shabash_seen') || 0);
-            const badge = document.getElementById('shabash-count');
-            if (count > lastSeen) { badge.innerText = "+" + (count - lastSeen); badge.style.display = 'inline-block'; } 
-            else badge.style.display = 'none';
+    function highlightText(text, query) {
+        if (!query || !text) return text;
+        const escapedQuery = escapeRegExp(query);
+        const regex = new RegExp(`(${escapedQuery})`, 'gi');
+        return String(text).replace(regex, '<span class="highlight">$1</span>');
+    }
+
+    // ============ МАСКА ПАРОЛЯ ============
+    function renderPassword(password) {
+        if (!password) return '-';
+        const masked = '•'.repeat(Math.min(password.length, 8));
+        const escapedPassword = String(password).replace(/"/g, '&quot;');
+        return `<span class="password-hidden" 
+                       data-password="${escapedPassword}" 
+                       onclick="togglePassword(this)">${masked}</span>`;
+    }
+
+    function togglePassword(element) {
+        const realPassword = element.getAttribute('data-password');
+        if (element.classList.contains('password-hidden')) {
+            element.textContent = realPassword;
+            element.classList.remove('password-hidden');
+            element.classList.add('password-visible');
+        } else {
+            element.textContent = '•'.repeat(Math.min(realPassword.length, 8));
+            element.classList.remove('password-visible');
+            element.classList.add('password-hidden');
+        }
+    }
+
+    // ============ РЕНДЕР ЗАЯВОК ============
+    function renderApplications() {
+        const container = document.getElementById('requests-list');
+        const q = document.getElementById('request-search').value.toLowerCase().trim();
+        container.innerHTML = '';
+
+        const filtered = applications.filter(app => {
+            if (!q) return true;
+            return (
+                (app.id && String(app.id).toLowerCase().includes(q)) ||
+                (app.phone && String(app.phone).toLowerCase().includes(q)) ||
+                (app.login && String(app.login).toLowerCase().includes(q)) ||
+                (app.password && String(app.password).toLowerCase().includes(q)) ||
+                (app.comment && String(app.comment).toLowerCase().includes(q))
+            );
+        });
+
+        if (filtered.length === 0) {
+            container.innerHTML = `<div class="empty-msg">${q ? 'Ничего не найдено' : 'Нет новых заявок'}</div>`;
+            return;
+        }
+
+        filtered.forEach(app => {
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.innerHTML = `
+                <p><span>ID:</span> ${highlightText(app.id, q)}</p>
+                <p><span>Тел:</span> ${highlightText(app.phone, q)}</p>
+                <p><span>Логин:</span> ${highlightText(app.login, q)}</p>
+                <p><span>Пароль:</span> ${renderPassword(app.password)}</p>
+                <p><span>Коммент:</span> ${highlightText(app.comment || '-', q)}</p>
+                <div class="list-actions">
+                    <button class="btn-success" onclick="acceptRequest('${app._key}')">Принять</button>
+                    <button class="btn-danger" onclick="deleteRequest('${app._key}')">Отклонить</button>
+                </div>
+            `;
+            container.appendChild(div);
         });
     }
 
-    function handleShabashkiClick() {
-        database.ref('shabashki/active').once('value', snap => {
-            localStorage.setItem('shabash_seen', Object.keys(snap.val() || {}).length);
-            document.getElementById('shabash-count').style.display = 'none';
-            openApp('Шабашки', 'shabashki.html');
+    // ============ РЕНДЕР ПОЛЬЗОВАТЕЛЕЙ ============
+    function renderUsers() {
+        const container = document.getElementById('users-list');
+        const q = document.getElementById('user-search').value.toLowerCase().trim();
+        container.innerHTML = '';
+
+        const filtered = users.filter(u => {
+            if (!q) return true;
+            return (
+                (u.id && String(u.id).toLowerCase().includes(q)) ||
+                (u.phone && String(u.phone).toLowerCase().includes(q)) ||
+                (u.login && String(u.login).toLowerCase().includes(q)) ||
+                (u.password && String(u.password).toLowerCase().includes(q)) ||
+                (u.comment && String(u.comment).toLowerCase().includes(q))
+            );
+        });
+
+        if (filtered.length === 0) {
+            container.innerHTML = `<div class="empty-msg">${q ? 'Ничего не найдено' : 'Нет зарегистрированных пользователей'}</div>`;
+            return;
+        }
+
+        filtered.forEach(u => {
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.innerHTML = `
+                <p><span>ID:</span> ${highlightText(u.id, q)}</p>
+                <p><span>Тел:</span> ${highlightText(u.phone, q)}</p>
+                <p><span>Логин:</span> ${highlightText(u.login, q)}</p>
+                <p><span>Пароль:</span> ${renderPassword(u.password)}</p>
+                <div class="list-actions">
+                    <button class="btn-danger" onclick="deleteUser('${u._key}')">Удалить</button>
+                </div>
+            `;
+            container.appendChild(div);
         });
     }
 
-    let stageOne = false, s1C = 0, s2C = 0, sTimer;
+    // ============ ДЕЙСТВИЯ АДМИНА ============
+    function acceptRequest(key) {
+        const app = applications.find(a => a._key === key);
+        if (!app) return;
 
-    document.getElementById('hijri-date').onclick = () => {
-        s1C++;
-        clearTimeout(sTimer);
-        sTimer = setTimeout(() => { s1C = 0; stageOne = false; }, 1000);
-        if (s1C === 3) stageOne = true;
-    };
-
-    document.getElementById('main-logo').onclick = () => {
-        if (!stageOne) return;
-        s2C++;
-        if (s2C === 3) {
-            const _0x_p = "R2F6aWswMzAz"; 
-            if (prompt("...") === atob(_0x_p)) {
-                document.getElementById('top-overlay').style.display = 'flex';
-                loadLogs();
-            }
-            s1C = 0; s2C = 0; stageOne = false;
-        }
-        setTimeout(() => s2C = 0, 1000);
-    };
-
-    function changeMasterID(oldID) {
-        const newID = prompt(`Введите новый ID для ${oldID}:`);
-        if (newID) {
-            database.ref(`system_updates/${oldID}`).set({
-                action: "CHANGE_LOCAL_ID",
-                newID: newID,
-                admin_pass: atob("R2F6aWswMzAz") 
-            }).then(() => alert("ID будет изменен при следующем входе мастера!"));
-        }
+        database.ref('vm_users/' + key).set({
+            id: app.id,
+            phone: app.phone,
+            login: app.login,
+            password: app.password,
+            timestamp: Date.now()
+        }).then(() => {
+            return database.ref('vm_applications/' + key).remove();
+        }).then(() => {
+            alert(`✅ Пользователь ${app.login} принят. ID: ${app.id}`);
+        }).catch(err => {
+            alert('Ошибка: ' + err.message);
+        });
     }
 
-    function closetop() { document.getElementById('top-overlay').style.display = 'none'; }
+    function deleteRequest(key) {
+        database.ref('vm_applications/' + key).remove();
+    }
 
-    window.onload = initApp;
+    function deleteUser(key) {
+        if (confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+            database.ref('vm_users/' + key).remove();
+        }
+    }
 </script>
-<a href="https://chat.whatsapp.com/E10FzUdV9YLHem5KCVAQtQ?mode=hqctcli" 
-   class="whatsapp-float" 
-   target="_blank">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Group">
-</a>
 
 </body>
 </html>
