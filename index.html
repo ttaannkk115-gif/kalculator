@@ -103,34 +103,64 @@
         .log-history { color: #666; font-size: 11px; line-height: 1.4; margin-top: 5px; border-left: 1px solid #333; padding-left: 8px; }
 
         .whatsapp-float {
-            position: fixed; width: 56px; height: 56px; bottom: 20px; right: 20px;
-            background-color: #25d366; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
+            position: fixed;
+            width: 56px;
+            height: 56px;
+            bottom: 20px;
+            right: 20px;
+            background-color: #25d366;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 10px rgba(255, 193, 7, 0.2);
-            z-index: 1500; transition: transform 0.2s;
-            border: 2px solid var(--main-gold); text-decoration: none;
+            z-index: 1500;
+            transition: transform 0.2s;
+            border: 2px solid var(--main-gold);
+            text-decoration: none;
         }
         .whatsapp-float:active { transform: scale(0.9); }
         .whatsapp-float img { width: 32px; height: 32px; }
 
         #app-overlay[style*="flex"] ~ .whatsapp-float,
-        #top-overlay[style*="flex"] ~ .whatsapp-float { display: none; }
+        #top-overlay[style*="flex"] ~ .whatsapp-float {
+            display: none;
+        }
 
-        /* --- Экран выкидывания --- */
+        /* --- Экран выкидывания (короткий) --- */
         #kick-screen {
-            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.95);
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 99999; padding: 30px; text-align: center; gap: 15px;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            padding: 30px;
+            text-align: center;
+            gap: 15px;
+            animation: fadeInKick 0.3s ease;
         }
         #kick-screen.active { display: flex; }
-        #kick-screen .kick-icon { font-size: 55px; }
+        #kick-screen .kick-icon { font-size: 55px; animation: shakeKick 0.5s ease; }
         #kick-screen h2 { color: #ff4444; font-size: 18px; font-weight: 800; }
         #kick-screen p { color: #aaa; font-size: 13px; line-height: 1.4; }
+
+        @keyframes fadeInKick {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes shakeKick {
+            0%, 100% { transform: rotate(0); }
+            25% { transform: rotate(-15deg); }
+            75% { transform: rotate(15deg); }
+        }
     </style>
 </head>
 <body>
 
-<!-- Экран выкидывания -->
+<!-- Короткий экран выкидывания -->
 <div id="kick-screen">
     <div class="kick-icon">🚫</div>
     <h2>Аккаунт удалён</h2>
@@ -204,50 +234,41 @@
     const database = firebase.database();
 
     // ============================================================
-    // ПРОВЕРКА АККАУНТА ПРИ ЗАГРУЗКЕ
-    // Если пользователь не залогинен или удалён — сразу на вход
+    // ПРОВЕРКА УДАЛЕНИЯ АККАУНТА
+    // Если админ удалил пользователя — сразу выкидываем на index.html
     // ============================================================
-    (function checkAccount() {
+    (function watchAccountDeletion() {
         const myLogin = localStorage.getItem('volt_master_login');
-        const myUid = localStorage.getItem('volt_master_uid');
 
-        // Нет сессии — на страницу входа
-        if (!myLogin || !myUid) {
-            window.location.replace('index.html');
-            return;
-        }
+        // Нет логина — пользователь и так не авторизован, ничего не делаем
+        if (!myLogin) return;
 
-        const safeKey = String(myLogin).replace(/[.#$\[\]\/]/g, '_').toLowerCase();
+        // Приводим логин к тому же виду, что и ключ в Firebase
+        const safeLoginKey = String(myLogin).replace(/[.#$\[\]\/]/g, '_').toLowerCase();
 
-        // Проверяем один раз при загрузке — существует ли ещё пользователь
-        database.ref('vm_users/' + safeKey).once('value').then(snap => {
+        // Следим за записью пользователя в реальном времени
+        database.ref('vm_users/' + safeLoginKey).on('value', snap => {
             if (!snap.exists()) {
-                // Удалён — чистим и выкидываем
-                localStorage.removeItem('volt_master_uid');
-                localStorage.removeItem('volt_master_login');
-                localStorage.removeItem('volt_master_logged_in');
-                window.location.replace('index.html?kicked=1');
-            }
-        });
+                // --- ПОЛЬЗОВАТЕЛЬ УДАЛЁН ---
 
-        // Постоянный слушатель: если удалят прямо во время работы
-        database.ref('vm_users/' + safeKey).on('value', snap => {
-            if (!snap.exists()) {
+                // 1. Очищаем всю сессию
                 localStorage.removeItem('volt_master_uid');
                 localStorage.removeItem('volt_master_login');
                 localStorage.removeItem('volt_master_logged_in');
 
+                // 2. Показываем короткое уведомление
                 document.getElementById('kick-screen').classList.add('active');
 
+                // 3. Через 800 мс — переход на страницу входа
                 setTimeout(() => {
-                    window.location.replace('index.html?kicked=1');
-                }, 1500);
+                    window.location.replace('index.html');
+                }, 800);
             }
         });
     })();
 
     // ============================================================
-    // ЛОГИКА ПРИЛОЖЕНИЯ
+    // ОСТАЛЬНАЯ ЛОГИКА ПРИЛОЖЕНИЯ
     // ============================================================
     let userID = localStorage.getItem('volt_master_uid') || Math.floor(1000 + Math.random() * 9000).toString();
     localStorage.setItem('volt_master_uid', userID);
