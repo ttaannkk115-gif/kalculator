@@ -15,9 +15,10 @@
         input { width: 100%; padding: 16px; background: #222; border: 1px solid #333; border-radius: 15px; color: white; margin-bottom: 15px; box-sizing: border-box; outline: none; font-size: 16px; }
         input:focus { border-color: var(--gold); }
         .btn { background: var(--gold); color: black; border: none; padding: 18px; width: 100%; border-radius: 15px; font-weight: 800; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
-        #log { margin-top: 20px; background: black; border-radius: 15px; padding: 15px; font-family: monospace; font-size: 11px; text-align: left; height: 160px; overflow-y: auto; border: 1px solid #222; color: #0f0; }
+        #log { margin-top: 20px; background: black; border-radius: 15px; padding: 15px; font-family: monospace; font-size: 11px; text-align: left; height: 200px; overflow-y: auto; border: 1px solid #222; color: #0f0; }
         .log-warn { color: var(--gold); }
         .log-info { color: #2196f3; }
+        .log-err { color: #ff4444; }
     </style>
 </head>
 <body>
@@ -35,7 +36,6 @@
 </div>
 
 <script>
-    // Твой конфиг Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyD-dIC8bm8y4kaY7RXmMrys2wOMLA5o8vY",
         authDomain: "voltmaster-332c0.firebaseapp.com",
@@ -55,6 +55,34 @@
         box.scrollTop = box.scrollHeight;
     }
 
+    // ==================================================
+    // НОВОЕ: поиск пользователя в vm_users по ID
+    // ==================================================
+    async function findUserByID(targetID) {
+        const snap = await db.ref('vm_users').once('value');
+        const all = snap.val() || {};
+        for (const key in all) {
+            if (String(all[key].id) === String(targetID)) {
+                return { key, login: all[key].login, data: all[key] };
+            }
+        }
+        return null;
+    }
+
+    // ==================================================
+    // НОВОЕ: обновление ID в vm_users + localStorage у клиента
+    // ==================================================
+    async function updateUserID(oldID, newID) {
+        const user = await findUserByID(oldID);
+        if (!user) {
+            addLog(`⚠️ Пользователь с ID ${oldID} не найден в vm_users`, "log-warn");
+            return false;
+        }
+        await db.ref('vm_users/' + user.key + '/id').set(String(newID));
+        addLog(`✅ vm_users: ${user.login} (${oldID}) → ${newID}`, "log-info");
+        return true;
+    }
+
     async function executeFullRotation() {
         const oldID = document.getElementById('old-id').value.trim();
         const newID = document.getElementById('new-id').value.trim();
@@ -69,7 +97,7 @@
             const active = activeSnap.val() || {};
             const archive = archiveSnap.val() || {};
 
-            // 1. ПРОВЕРКА РОТАЦИИ (есть ли кто-то на новом ID?)
+            // 1. ПРОВЕРКА: занят ли новый ID?
             let isBusy = false;
             for(let k in active) if(active[k].ownerID == newID || active[k].workerID == newID) isBusy = true;
             for(let k in archive) if(archive[k].ownerID == newID || archive[k].finisherID == newID) isBusy = true;
@@ -78,10 +106,13 @@
                 const randID = Math.floor(1000 + Math.random() * 8999).toString();
                 addLog(`⚠️ ID ${newID} занят! Смещаю владельца на ${randID}`, "log-warn");
                 
-                // Переносим данные "жильца" на случайный ID в базе
+                // Переносим данные "жильца" на случайный ID
                 await performSwap(newID, randID, active, archive);
+
+                // Обновляем vm_users для "выселенного"
+                await updateUserID(newID, randID);
                 
-                // Шлем сигнал на телефон "выселенного" пользователя
+                // Шлём сигнал на телефон "выселенного"
                 await db.ref(`system_updates/${newID}`).set({
                     action: "CHANGE_LOCAL_ID",
                     newID: randID,
@@ -89,11 +120,14 @@
                 });
             }
 
-            // 2. ОСНОВНОЙ ПЕРЕНОС (твой старый ID на новый)
+            // 2. ОСНОВНОЙ ПЕРЕНОС (старый ID → новый)
             addLog(`🚀 Перенос ${oldID} -> ${newID}...`);
             await performSwap(oldID, newID, active, archive);
 
-            // Сигнал на твой телефон
+            // Обновляем vm_users для владельца
+            await updateUserID(oldID, newID);
+
+            // Сигнал на телефон
             await db.ref(`system_updates/${oldID}`).set({
                 action: "CHANGE_LOCAL_ID",
                 newID: newID,
@@ -101,10 +135,10 @@
             });
 
             addLog("✨ ВСЕ ПОЛЬЗОВАТЕЛИ СИНХРОНИЗИРОВАНЫ!", "log-info");
-            alert("Готово! Команды на обновление отправлены обоим пользователям.");
+            alert("Готово! ID обновлён в shabashki и vm_users. Команды отправлены.");
 
         } catch (e) {
-            addLog("❌ ОШИБКА: " + e.message, "log-warn");
+            addLog("❌ ОШИБКА: " + e.message, "log-err");
         }
     }
 
@@ -136,7 +170,7 @@
             if (String(item.finisherID) === from) upds.finisherID = to;
             if (Object.keys(upds).length > 0) await db.ref(`shabashki/archive/${key}`).update(upds);
         }
-        addLog(`✅ Данные в базе обновлены для ${from}`);
+        addLog(`✅ Данные в shabashki обновлены для ${from}`);
     }
 </script>
 </body>
