@@ -53,7 +53,6 @@
 
         .header h1 span { color: #ff9900; }
 
-        /* --- Баннер статуса заявки --- */
         #status-banner {
             display: none;
             padding: 14px 16px;
@@ -180,7 +179,6 @@
 
         .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* --- Маленькая ссылка "Написать админу" --- */
         .write-admin-link {
             display: block;
             text-align: center;
@@ -192,6 +190,7 @@
             padding: 8px 0;
             transition: color 0.2s ease;
             cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .write-admin-link:hover {
@@ -247,7 +246,38 @@
 
         .admin-header h2 { font-size: 18px; color: #ff9900; }
 
-        .admin-section h3 { font-size: 16px; margin-bottom: 10px; color: #ccc; }
+        /* Заголовок раздела с бейджем-счётчиком */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .section-header h3 {
+            font-size: 16px;
+            color: #ccc;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .count-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 26px;
+            height: 22px;
+            padding: 0 8px;
+            background-color: #ff9900;
+            color: #000;
+            font-size: 12px;
+            font-weight: 800;
+            border-radius: 11px;
+            line-height: 1;
+            box-shadow: 0 0 10px rgba(255, 153, 0, 0.35);
+        }
 
         .list-item {
             background-color: #1e1e1e;
@@ -360,8 +390,8 @@
         <div id="status-banner"></div>
 
         <div class="tabs">
-            <button class="tab active" id="tab-login" data-target="login-form">Вход</button>
-            <button class="tab" id="tab-register" data-target="register-form">Подать заявку</button>
+            <button type="button" class="tab active" id="tab-login" data-target="login-form">Вход</button>
+            <button type="button" class="tab" id="tab-register" data-target="register-form">Подать заявку</button>
         </div>
 
         <form id="login-form" class="form active" onsubmit="submitLogin(event)">
@@ -376,8 +406,7 @@
             <div class="error-msg" id="login-error">Неверный логин или пароль</div>
             <button type="submit" class="btn-primary" id="login-btn">Войти</button>
 
-            <!-- Маленькая ссылка "Написать админу" под кнопкой "Войти" -->
-            <a id="wa-btn-login" class="write-admin-link" href="https://wa.me/79640040355" target="_blank" rel="noopener">
+            <a class="write-admin-link" href="javascript:void(0)" onclick="openAdminWhatsApp(); return false;">
                 Написать админу
             </a>
         </form>
@@ -400,7 +429,7 @@
             </div>
             <div class="input-group">
                 <label>Комментарий к заявке</label>
-                <textarea id="reg-comment" placeholder="" rows="3"></textarea>
+                <textarea id="reg-comment" placeholder="Зачем вам нужен аккаунт?" rows="3"></textarea>
             </div>
             <button type="submit" class="btn-primary" id="reg-btn">Отправить заявку</button>
         </form>
@@ -423,7 +452,9 @@
             </div>
 
             <div class="admin-section" style="margin-top: 15px;">
-                <h3>📥 Заявки на регистрацию</h3>
+                <div class="section-header">
+                    <h3>📥 Заявки на регистрацию <span class="count-badge" id="requests-count">0</span></h3>
+                </div>
                 <div class="input-group" style="margin-bottom: 10px;">
                     <input type="text" id="request-search" class="search-input" placeholder="🔍 Поиск по заявкам..." oninput="renderApplications()">
                 </div>
@@ -431,7 +462,9 @@
             </div>
 
             <div class="admin-section" style="margin-top: 15px;">
-                <h3>👥 Пользователи</h3>
+                <div class="section-header">
+                    <h3>👥 Пользователи <span class="count-badge" id="users-count">0</span></h3>
+                </div>
                 <div class="input-group" style="margin-bottom: 10px;">
                     <input type="text" id="user-search" class="search-input" placeholder="🔍 Поиск по пользователям..." oninput="renderUsers()">
                 </div>
@@ -442,30 +475,91 @@
 </div>
 
 <script>
+    // ============ ФУНКЦИЯ ОТКРЫТИЯ WHATSAPP ============
+    function openAdminWhatsApp() {
+        try {
+            let loginValue = (document.getElementById('login-username')?.value || '').trim();
+            if (!loginValue) {
+                loginValue = (document.getElementById('reg-login')?.value || '').trim();
+            }
+            const loginText = loginValue ? loginValue : '(не указан)';
+            const message = 'Здравствуйте! Примите мою заявку.\nМой логин: ' + loginText;
+            const url = 'https://api.whatsapp.com/send?phone=79640040355&text=' + encodeURIComponent(message);
+            window.open(url, '_blank');
+        } catch (e) {
+            alert('Напишите админу в WhatsApp: +7 964 004-03-55');
+        }
+    }
+
+    // ============ ВКЛАДКИ + МАСКА ТЕЛЕФОНА ============
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabs = document.querySelectorAll('.tab');
+        const forms = document.querySelectorAll('.form');
+
+        tabs.forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                tabs.forEach(function(t) { t.classList.remove('active'); });
+                forms.forEach(function(f) { f.classList.remove('active'); });
+                this.classList.add('active');
+                document.getElementById(this.getAttribute('data-target')).classList.add('active');
+
+                var err1 = document.getElementById('login-error');
+                if (err1) err1.style.display = 'none';
+                document.querySelectorAll('#login-form input').forEach(function(i) { i.classList.remove('input-error'); });
+                var err2 = document.getElementById('phone-error');
+                if (err2) err2.style.display = 'none';
+                var regPhone = document.getElementById('reg-phone');
+                if (regPhone) regPhone.classList.remove('input-error');
+                var err3 = document.getElementById('reg-login-error');
+                if (err3) err3.style.display = 'none';
+                var regLogin = document.getElementById('reg-login');
+                if (regLogin) regLogin.classList.remove('input-error');
+                var err4 = document.getElementById('reg-password-error');
+                if (err4) err4.style.display = 'none';
+                var regPass = document.getElementById('reg-password');
+                if (regPass) regPass.classList.remove('input-error');
+            });
+        });
+
+        var phoneInput = document.getElementById('reg-phone');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function(e) {
+                var input = e.target.value.replace(/\D/g, '');
+                var formatted = '';
+                if (input.length > 0) {
+                    if (input[0] === '7' || input[0] === '8') input = input.substring(1);
+                    formatted = '+7';
+                    if (input.length > 0) formatted += ' (' + input.substring(0, 3);
+                    if (input.length >= 4) formatted += ') ' + input.substring(3, 6);
+                    if (input.length >= 7) formatted += '-' + input.substring(6, 8);
+                    if (input.length >= 9) formatted += '-' + input.substring(8, 10);
+                }
+                e.target.value = formatted;
+            });
+        }
+    });
+
     // ============ FIREBASE ============
-    const firebaseConfig = {
-        apiKey: "AIzaSyD-dIC8bm8y4kaY7RXmMrys2wOMLA5o8vY",
-        authDomain: "voltmaster-332c0.firebaseapp.com",
-        databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com",
-        projectId: "voltmaster-332c0",
-        storageBucket: "voltmaster-332c0.firebasestorage.app",
-        messagingSenderId: "312337098429",
-        appId: "1:312337098429:web:663e0f6787bd62d19bf9d4"
-    };
+    let database = null;
+    try {
+        const firebaseConfig = {
+            apiKey: "AIzaSyD-dIC8bm8y4kaY7RXmMrys2wOMLA5o8vY",
+            authDomain: "voltmaster-332c0.firebaseapp.com",
+            databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com",
+            projectId: "voltmaster-332c0",
+            storageBucket: "voltmaster-332c0.firebasestorage.app",
+            messagingSenderId: "312337098429",
+            appId: "1:312337098429:web:663e0f6787bd62d19bf9d4"
+        };
 
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+        firebase.initializeApp(firebaseConfig);
+        database = firebase.database();
+    } catch (e) {
+        console.error('Firebase init error:', e);
+    }
 
-    // Номер админа для WhatsApp
-    const ADMIN_WHATSAPP = '79640040355';
-
-    // ============ ССЫЛКА "НАПИСАТЬ АДМИНУ" ============
-    // Обновляем ссылку при вводе логина в форме регистрации
-    function updateWhatsAppLink() {
-        const loginValue = document.getElementById('reg-login').value.trim();
-        const loginText = loginValue ? loginValue : '(не указан)';
-        const message = `Здравствуйте! Примите мою заявку.\nМой логин: ${loginText}`;
-        document.getElementById('wa-btn-login').href = `https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(message)}`;
+    function safeKey(str) {
+        return String(str).replace(/[.#$\[\]\/]/g, '_').toLowerCase();
     }
 
     // ============ АВТОВХОД ============
@@ -480,171 +574,132 @@
     } else {
         const savedUid = localStorage.getItem('volt_master_uid');
         const savedLogin = localStorage.getItem('volt_master_login');
-
         if (savedUid && savedLogin) {
             document.getElementById('splash-screen').classList.add('active');
             window.location.replace('menu.html');
         }
     }
 
-    function safeKey(str) {
-        return String(str).replace(/[.#$\[\]\/]/g, '_').toLowerCase();
-    }
-
-    // ============ УВЕДОМЛЕНИЕ О СТАТУСЕ ЗАЯВКИ ============
-    function checkApplicationStatus() {
-        const pendingLogin = localStorage.getItem('volt_pending_login');
-        const pendingPassword = localStorage.getItem('volt_pending_password');
-        const banner = document.getElementById('status-banner');
-
-        if (!pendingLogin) {
-            banner.style.display = 'none';
-            return;
-        }
-
-        const key = safeKey(pendingLogin);
-
-        Promise.all([
-            database.ref('vm_users/' + key).once('value'),
-            database.ref('vm_applications/' + key).once('value')
-        ]).then(([userSnap, appSnap]) => {
-            if (userSnap.exists()) {
-                banner.className = 'accepted';
-                banner.innerHTML = `✅ <b>Ваша заявка принята!</b><br>Логин: <b>${pendingLogin}</b><br>Можете войти.`;
-                banner.style.display = 'block';
-
-                document.getElementById('login-username').value = pendingLogin;
-                if (pendingPassword) {
-                    document.getElementById('login-password').value = pendingPassword;
-                }
-
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
-                document.getElementById('tab-login').classList.add('active');
-                document.getElementById('login-form').classList.add('active');
-
-                localStorage.removeItem('volt_pending_login');
-                localStorage.removeItem('volt_pending_password');
-
-            } else if (appSnap.exists()) {
-                banner.className = 'pending';
-                banner.innerHTML = `⏳ <b>Заявка на рассмотрении</b><br>Логин: <b>${pendingLogin}</b><br>Вашу заявку примут в течение 24 часа.`;
-                banner.style.display = 'block';
-
-            } else {
-                banner.className = 'rejected';
-                banner.innerHTML = `❌ <b>Заявка отклонена</b><br>Вы можете подать новую заявку.`;
-                banner.style.display = 'block';
-
-                localStorage.removeItem('volt_pending_login');
-                localStorage.removeItem('volt_pending_password');
-            }
-        }).catch(err => {
-            console.error('Ошибка проверки заявки:', err);
-        });
-    }
-
-    function watchApplicationStatus() {
-        const pendingLogin = localStorage.getItem('volt_pending_login');
-        if (!pendingLogin) return;
-
-        const key = safeKey(pendingLogin);
-
-        database.ref('vm_users/' + key).on('value', snap => {
-            if (snap.exists()) {
-                const banner = document.getElementById('status-banner');
-                const pendingPassword = localStorage.getItem('volt_pending_password');
-
-                banner.className = 'accepted';
-                banner.innerHTML = `✅ <b>Ваша заявка принята!</b><br>Логин: <b>${pendingLogin}</b><br>Можете войти.`;
-                banner.style.display = 'block';
-
-                document.getElementById('login-username').value = pendingLogin;
-                if (pendingPassword) {
-                    document.getElementById('login-password').value = pendingPassword;
-                }
-
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
-                document.getElementById('tab-login').classList.add('active');
-                document.getElementById('login-form').classList.add('active');
-
-                localStorage.removeItem('volt_pending_login');
-                localStorage.removeItem('volt_pending_password');
-                database.ref('vm_users/' + key).off('value');
-            }
-        });
-    }
-
-    checkApplicationStatus();
-    watchApplicationStatus();
-
-    // ============ ДАННЫЕ ============
+    // ============ ЛОГИКА FIREBASE ============
     let applications = [];
     let users = [];
     let adminLoggedIn = false;
 
-    database.ref('vm_applications').on('value', snap => {
-        applications = [];
-        snap.forEach(child => {
-            const v = child.val() || {};
-            v._key = child.key;
-            applications.push(v);
-        });
-        if (adminLoggedIn) renderApplications();
-    });
+    if (database) {
+        function checkApplicationStatus() {
+            const pendingLogin = localStorage.getItem('volt_pending_login');
+            const pendingPassword = localStorage.getItem('volt_pending_password');
+            const banner = document.getElementById('status-banner');
 
-    database.ref('vm_users').on('value', snap => {
-        users = [];
-        snap.forEach(child => {
-            const v = child.val() || {};
-            v._key = child.key;
-            users.push(v);
-        });
-        if (adminLoggedIn) renderUsers();
-    });
+            if (!pendingLogin) {
+                banner.style.display = 'none';
+                return;
+            }
 
-    // ============ ВКЛАДКИ ============
-    const tabs = document.querySelectorAll('.tab');
-    const forms = document.querySelectorAll('.form');
+            const key = safeKey(pendingLogin);
 
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            forms.forEach(f => f.classList.remove('active'));
-            tab.classList.add('active');
-            document.getElementById(tab.getAttribute('data-target')).classList.add('active');
+            Promise.all([
+                database.ref('vm_users/' + key).once('value'),
+                database.ref('vm_applications/' + key).once('value')
+            ]).then(([userSnap, appSnap]) => {
+                if (userSnap.exists()) {
+                    banner.className = 'accepted';
+                    banner.innerHTML = `✅ <b>Ваша заявка принята!</b><br>Логин: <b>${pendingLogin}</b><br>Можете войти.`;
+                    banner.style.display = 'block';
 
-            document.getElementById('login-error').style.display = 'none';
-            document.querySelectorAll('#login-form input').forEach(i => i.classList.remove('input-error'));
-            document.getElementById('phone-error').style.display = 'none';
-            document.getElementById('reg-phone').classList.remove('input-error');
-            document.getElementById('reg-login-error').style.display = 'none';
-            document.getElementById('reg-login').classList.remove('input-error');
-            document.getElementById('reg-password-error').style.display = 'none';
-            document.getElementById('reg-password').classList.remove('input-error');
-        });
-    });
+                    document.getElementById('login-username').value = pendingLogin;
+                    if (pendingPassword) {
+                        document.getElementById('login-password').value = pendingPassword;
+                    }
 
-    // ============ МАСКА ТЕЛЕФОНА ============
-    const phoneInput = document.getElementById('reg-phone');
-    phoneInput.addEventListener('input', function (e) {
-        let input = e.target.value.replace(/\D/g, '');
-        let formatted = '';
-        if (input.length > 0) {
-            if (input[0] === '7' || input[0] === '8') input = input.substring(1);
-            formatted = '+7';
-            if (input.length > 0) formatted += ' (' + input.substring(0, 3);
-            if (input.length >= 4) formatted += ') ' + input.substring(3, 6);
-            if (input.length >= 7) formatted += '-' + input.substring(6, 8);
-            if (input.length >= 9) formatted += '-' + input.substring(8, 10);
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+                    document.getElementById('tab-login').classList.add('active');
+                    document.getElementById('login-form').classList.add('active');
+
+                    localStorage.removeItem('volt_pending_login');
+                    localStorage.removeItem('volt_pending_password');
+
+                } else if (appSnap.exists()) {
+                    banner.className = 'pending';
+                    banner.innerHTML = `⏳ <b>Заявка на рассмотрении</b><br>Логин: <b>${pendingLogin}</b><br>Вашу заявку примут в течение 24 часа.`;
+                    banner.style.display = 'block';
+
+                } else {
+                    banner.className = 'rejected';
+                    banner.innerHTML = `❌ <b>Заявка отклонена</b><br>Вы можете подать новую заявку.`;
+                    banner.style.display = 'block';
+
+                    localStorage.removeItem('volt_pending_login');
+                    localStorage.removeItem('volt_pending_password');
+                }
+            }).catch(err => {
+                console.error('Ошибка проверки заявки:', err);
+            });
         }
-        e.target.value = formatted;
-    });
 
-    // Обновляем ссылку WhatsApp при вводе логина в форме регистрации
-    document.getElementById('reg-login').addEventListener('input', updateWhatsAppLink);
-    updateWhatsAppLink();
+        function watchApplicationStatus() {
+            const pendingLogin = localStorage.getItem('volt_pending_login');
+            if (!pendingLogin) return;
+
+            const key = safeKey(pendingLogin);
+
+            database.ref('vm_users/' + key).on('value', snap => {
+                if (snap.exists()) {
+                    const banner = document.getElementById('status-banner');
+                    const pendingPassword = localStorage.getItem('volt_pending_password');
+
+                    banner.className = 'accepted';
+                    banner.innerHTML = `✅ <b>Ваша заявка принята!</b><br>Логин: <b>${pendingLogin}</b><br>Можете войти.`;
+                    banner.style.display = 'block';
+
+                    document.getElementById('login-username').value = pendingLogin;
+                    if (pendingPassword) {
+                        document.getElementById('login-password').value = pendingPassword;
+                    }
+
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+                    document.getElementById('tab-login').classList.add('active');
+                    document.getElementById('login-form').classList.add('active');
+
+                    localStorage.removeItem('volt_pending_login');
+                    localStorage.removeItem('volt_pending_password');
+                    database.ref('vm_users/' + key).off('value');
+                }
+            });
+        }
+
+        checkApplicationStatus();
+        watchApplicationStatus();
+
+        // Слушатели данных
+        database.ref('vm_applications').on('value', snap => {
+            applications = [];
+            snap.forEach(child => {
+                const v = child.val() || {};
+                v._key = child.key;
+                applications.push(v);
+            });
+            // Обновляем счётчик заявок
+            const reqCountEl = document.getElementById('requests-count');
+            if (reqCountEl) reqCountEl.textContent = applications.length;
+            if (adminLoggedIn) renderApplications();
+        });
+
+        database.ref('vm_users').on('value', snap => {
+            users = [];
+            snap.forEach(child => {
+                const v = child.val() || {};
+                v._key = child.key;
+                users.push(v);
+            });
+            // Обновляем счётчик пользователей
+            const usrCountEl = document.getElementById('users-count');
+            if (usrCountEl) usrCountEl.textContent = users.length;
+            if (adminLoggedIn) renderUsers();
+        });
+    }
 
     // ============ ВХОД ============
     function submitLogin(event) {
@@ -663,6 +718,11 @@
         errorMsg.style.display = 'none';
 
         if (!loginVal || !passVal) return;
+
+        if (!database) {
+            alert('Ошибка подключения к базе данных');
+            return;
+        }
 
         btn.disabled = true;
         btn.textContent = 'Проверка...';
@@ -697,7 +757,7 @@
     function submitApplication(event) {
         event.preventDefault();
 
-        const phone = phoneInput.value.trim();
+        const phone = document.getElementById('reg-phone').value.trim();
         const loginInput = document.getElementById('reg-login');
         const passwordInput = document.getElementById('reg-password');
         const login = loginInput.value.trim();
@@ -711,12 +771,12 @@
         const phoneRegex = /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
 
         if (!phoneRegex.test(phone)) {
-            phoneInput.classList.add('input-error');
+            document.getElementById('reg-phone').classList.add('input-error');
             phoneError.style.display = 'block';
-            phoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            document.getElementById('reg-phone').scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         } else {
-            phoneInput.classList.remove('input-error');
+            document.getElementById('reg-phone').classList.remove('input-error');
             phoneError.style.display = 'none';
         }
 
@@ -757,6 +817,11 @@
             return;
         }
 
+        if (!database) {
+            alert('Ошибка подключения к базе данных');
+            return;
+        }
+
         const newId = Math.floor(1000 + Math.random() * 9000).toString();
 
         btn.disabled = true;
@@ -784,8 +849,7 @@
                 btn.disabled = false;
                 btn.textContent = 'Отправить заявку';
                 document.getElementById('register-form').reset();
-                phoneInput.value = '';
-                updateWhatsAppLink();
+                document.getElementById('reg-phone').value = '';
 
                 const banner = document.getElementById('status-banner');
                 banner.className = 'pending';
@@ -813,13 +877,21 @@
 
     document.getElementById('tab-login').addEventListener('click', () => {
         loginClickCount++;
-        resetTimerIfNeeded();
+        clearTimeout(clickTimer);
+        clickTimer = setTimeout(() => {
+            loginClickCount = 0;
+            logoClickCount = 0;
+        }, 3000);
     });
 
     document.getElementById('logo-trigger').addEventListener('click', () => {
         if (loginClickCount >= 3) {
             logoClickCount++;
-            resetTimerIfNeeded();
+            clearTimeout(clickTimer);
+            clickTimer = setTimeout(() => {
+                loginClickCount = 0;
+                logoClickCount = 0;
+            }, 3000);
             if (logoClickCount >= 3) {
                 document.getElementById('user-view').style.display = 'none';
                 document.getElementById('admin-panel').classList.add('active');
@@ -835,14 +907,6 @@
             logoClickCount = 0;
         }
     });
-
-    function resetTimerIfNeeded() {
-        clearTimeout(clickTimer);
-        clickTimer = setTimeout(() => {
-            loginClickCount = 0;
-            logoClickCount = 0;
-        }, 3000);
-    }
 
     // ============ АДМИН ============
     function loginAdmin() {
@@ -867,7 +931,7 @@
         document.getElementById('user-view').style.display = 'block';
     }
 
-    // ============ ПОДСВЕТКА ПОИСКА ============
+    // ============ ПОДСВЕТКА ============
     function escapeRegExp(string) {
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
