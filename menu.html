@@ -127,11 +127,11 @@
             display: none;
         }
 
-        /* --- Экран блокировки / выкидывания --- */
+        /* --- Экран выкидывания (короткий) --- */
         #kick-screen {
             position: fixed;
             inset: 0;
-            background: #0d0d0d;
+            background: rgba(0, 0, 0, 0.95);
             display: none;
             flex-direction: column;
             justify-content: center;
@@ -139,21 +139,32 @@
             z-index: 99999;
             padding: 30px;
             text-align: center;
-            gap: 20px;
+            gap: 15px;
+            animation: fadeInKick 0.3s ease;
         }
         #kick-screen.active { display: flex; }
-        #kick-screen .kick-icon { font-size: 60px; }
-        #kick-screen h2 { color: #ff4444; font-size: 20px; font-weight: 800; }
-        #kick-screen p { color: #aaa; font-size: 14px; line-height: 1.5; }
+        #kick-screen .kick-icon { font-size: 55px; animation: shakeKick 0.5s ease; }
+        #kick-screen h2 { color: #ff4444; font-size: 18px; font-weight: 800; }
+        #kick-screen p { color: #aaa; font-size: 13px; line-height: 1.4; }
+
+        @keyframes fadeInKick {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes shakeKick {
+            0%, 100% { transform: rotate(0); }
+            25% { transform: rotate(-15deg); }
+            75% { transform: rotate(15deg); }
+        }
     </style>
 </head>
 <body>
 
-<!-- Экран, который показывается когда админ удалил пользователя -->
+<!-- Короткий экран выкидывания -->
 <div id="kick-screen">
     <div class="kick-icon">🚫</div>
-    <h2>Ваш аккаунт удалён</h2>
-    <p>Администратор удалил ваш аккаунт.<br>Перенаправление на страницу входа...</p>
+    <h2>Аккаунт удалён</h2>
+    <p>Перенаправление на страницу входа...</p>
 </div>
 
 <div id="global-modal">
@@ -223,40 +234,41 @@
     const database = firebase.database();
 
     // ============================================================
-    // ПРОВЕРКА АККАУНТА: ЕСЛИ АДМИН УДАЛИЛ — ВЫКИДЫВАЕМ ПОЛЬЗОВАТЕЛЯ
+    // ПРОВЕРКА УДАЛЕНИЯ АККАУНТА
+    // Если админ удалил пользователя — сразу выкидываем на index.html
     // ============================================================
     (function watchAccountDeletion() {
-        // Берём логин из localStorage (его записал файл логина при входе)
         const myLogin = localStorage.getItem('volt_master_login');
 
-        // Если логина нет — значит пользователь не авторизован, ничего не делаем
+        // Нет логина — пользователь и так не авторизован, ничего не делаем
         if (!myLogin) return;
 
         // Приводим логин к тому же виду, что и ключ в Firebase
         const safeLoginKey = String(myLogin).replace(/[.#$\[\]\/]/g, '_').toLowerCase();
 
-        // Подписываемся на изменения своей записи в vm_users
+        // Следим за записью пользователя в реальном времени
         database.ref('vm_users/' + safeLoginKey).on('value', snap => {
-            // Если запись исчезла — админ нас удалил
             if (!snap.exists()) {
-                // Очищаем ВСЮ сессию
+                // --- ПОЛЬЗОВАТЕЛЬ УДАЛЁН ---
+
+                // 1. Очищаем всю сессию
                 localStorage.removeItem('volt_master_uid');
                 localStorage.removeItem('volt_master_login');
                 localStorage.removeItem('volt_master_logged_in');
 
-                // Показываем экран блокировки
+                // 2. Показываем короткое уведомление
                 document.getElementById('kick-screen').classList.add('active');
 
-                // Через 2 секунды — на страницу логина (index.html)
+                // 3. Через 800 мс — переход на страницу входа
                 setTimeout(() => {
                     window.location.replace('index.html');
-                }, 2000);
+                }, 800);
             }
         });
     })();
 
     // ============================================================
-    // ОСТАЛЬНАЯ ЛОГИКА ПРИЛОЖЕНИЯ (без изменений)
+    // ОСТАЛЬНАЯ ЛОГИКА ПРИЛОЖЕНИЯ
     // ============================================================
     let userID = localStorage.getItem('volt_master_uid') || Math.floor(1000 + Math.random() * 9000).toString();
     localStorage.setItem('volt_master_uid', userID);
