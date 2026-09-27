@@ -53,6 +53,42 @@
 
         .header h1 span { color: #ff9900; }
 
+        /* --- Баннер статуса заявки --- */
+        #status-banner {
+            display: none;
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.4;
+            text-align: center;
+            animation: slideDown 0.4s ease;
+        }
+
+        #status-banner.accepted {
+            background: rgba(40, 167, 69, 0.15);
+            border: 1px solid #28a745;
+            color: #4dff88;
+        }
+
+        #status-banner.pending {
+            background: rgba(255, 153, 0, 0.12);
+            border: 1px solid #ff9900;
+            color: #ffb84d;
+        }
+
+        #status-banner.rejected {
+            background: rgba(255, 51, 51, 0.12);
+            border: 1px solid #ff3333;
+            color: #ff6666;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .tabs {
             display: flex;
             border-bottom: 1px solid #2a2a2a;
@@ -248,7 +284,6 @@
             user-select: none;
         }
 
-        /* --- Экран загрузки / автовхода --- */
         #splash-screen {
             position: fixed;
             inset: 0;
@@ -291,7 +326,7 @@
 </head>
 <body>
 
-<!-- Экран автовхода (виден только в момент проверки) -->
+<!-- Экран автовхода -->
 <div id="splash-screen">
     <div class="splash-logo">VOLT<span>MASTER</span></div>
     <div class="splash-spinner"></div>
@@ -303,6 +338,9 @@
     </div>
 
     <div id="user-view">
+        <!-- Баннер статуса заявки -->
+        <div id="status-banner"></div>
+
         <div class="tabs">
             <button class="tab active" id="tab-login" data-target="login-form">Вход</button>
             <button class="tab" id="tab-register" data-target="register-form">Подать заявку</button>
@@ -394,21 +432,119 @@
     const database = firebase.database();
 
     // ============ АВТОВХОД ============
-    // Если пользователь уже входил ранее — сразу перекидываем в menu.html.
-    // Проверяем и ID, и логин — если оба есть, значит сессия активна.
-    const savedUid = localStorage.getItem('volt_master_uid');
-    const savedLogin = localStorage.getItem('volt_master_login');
+    const urlParams = new URLSearchParams(window.location.search);
+    const wasKicked = urlParams.get('kicked') === '1';
 
-    if (savedUid && savedLogin) {
-        // Показываем экран загрузки и сразу уходим в menu.html
-        document.getElementById('splash-screen').classList.add('active');
-        window.location.replace('menu.html');
+    if (wasKicked) {
+        localStorage.removeItem('volt_master_uid');
+        localStorage.removeItem('volt_master_login');
+        localStorage.removeItem('volt_master_logged_in');
+        window.history.replaceState({}, '', 'index.html');
+    } else {
+        const savedUid = localStorage.getItem('volt_master_uid');
+        const savedLogin = localStorage.getItem('volt_master_login');
+
+        if (savedUid && savedLogin) {
+            document.getElementById('splash-screen').classList.add('active');
+            window.location.replace('menu.html');
+        }
     }
 
-    // Безопасный ключ для Firebase
     function safeKey(str) {
         return String(str).replace(/[.#$\[\]\/]/g, '_').toLowerCase();
     }
+
+    // ============ УВЕДОМЛЕНИЕ О СТАТУСЕ ЗАЯВКИ ============
+    function checkApplicationStatus() {
+        const pendingLogin = localStorage.getItem('volt_pending_login');
+        const pendingPassword = localStorage.getItem('volt_pending_password');
+        const banner = document.getElementById('status-banner');
+
+        if (!pendingLogin) {
+            banner.style.display = 'none';
+            return;
+        }
+
+        const key = safeKey(pendingLogin);
+
+        Promise.all([
+            database.ref('vm_users/' + key).once('value'),
+            database.ref('vm_applications/' + key).once('value')
+        ]).then(([userSnap, appSnap]) => {
+            if (userSnap.exists()) {
+                // ✅ Заявка принята
+                banner.className = 'accepted';
+                banner.innerHTML = `✅ <b>Ваша заявка принята!</b><br>Логин: <b>${pendingLogin}</b><br>Можете войти.`;
+                banner.style.display = 'block';
+
+                document.getElementById('login-username').value = pendingLogin;
+                if (pendingPassword) {
+                    document.getElementById('login-password').value = pendingPassword;
+                }
+
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+                document.getElementById('tab-login').classList.add('active');
+                document.getElementById('login-form').classList.add('active');
+
+                localStorage.removeItem('volt_pending_login');
+                localStorage.removeItem('volt_pending_password');
+
+            } else if (appSnap.exists()) {
+                // ⏳ Ещё на рассмотрении
+                banner.className = 'pending';
+                banner.innerHTML = `⏳ <b>Заявка на рассмотрении</b><br>Логин: <b>${pendingLogin}</b><br>Вашу заявку примут в течение 24 часа.`;
+                banner.style.display = 'block';
+
+            } else {
+                // ❌ Заявка отклонена
+                banner.className = 'rejected';
+                banner.innerHTML = `❌ <b>Заявка отклонена</b><br>Вы можете подать новую заявку.`;
+                banner.style.display = 'block';
+
+                localStorage.removeItem('volt_pending_login');
+                localStorage.removeItem('volt_pending_password');
+            }
+        }).catch(err => {
+            console.error('Ошибка проверки заявки:', err);
+        });
+    }
+
+    // Следим за изменением статуса в реальном времени
+    function watchApplicationStatus() {
+        const pendingLogin = localStorage.getItem('volt_pending_login');
+        if (!pendingLogin) return;
+
+        const key = safeKey(pendingLogin);
+
+        database.ref('vm_users/' + key).on('value', snap => {
+            if (snap.exists()) {
+                const banner = document.getElementById('status-banner');
+                const pendingPassword = localStorage.getItem('volt_pending_password');
+
+                banner.className = 'accepted';
+                banner.innerHTML = `✅ <b>Ваша заявка принята!</b><br>Логин: <b>${pendingLogin}</b><br>Можете войти.`;
+                banner.style.display = 'block';
+
+                document.getElementById('login-username').value = pendingLogin;
+                if (pendingPassword) {
+                    document.getElementById('login-password').value = pendingPassword;
+                }
+
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+                document.getElementById('tab-login').classList.add('active');
+                document.getElementById('login-form').classList.add('active');
+
+                localStorage.removeItem('volt_pending_login');
+                localStorage.removeItem('volt_pending_password');
+                database.ref('vm_users/' + key).off('value');
+            }
+        });
+    }
+
+    checkApplicationStatus();
+    watchApplicationStatus();
 
     // ============ ДАННЫЕ ============
     let applications = [];
@@ -435,7 +571,7 @@
         if (adminLoggedIn) renderUsers();
     });
 
-    // ============ ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ============
+    // ============ ВКЛАДКИ ============
     const tabs = document.querySelectorAll('.tab');
     const forms = document.querySelectorAll('.form');
 
@@ -469,7 +605,7 @@
         e.target.value = formatted;
     });
 
-    // ============ ВХОД ПОЛЬЗОВАТЕЛЯ ============
+    // ============ ВХОД ============
     function submitLogin(event) {
         event.preventDefault();
 
@@ -494,13 +630,13 @@
             const user = snap.val();
 
             if (user && user.password === passVal && user.id) {
-                // СОХРАНЯЕМ СЕССИЮ НАВСЕГДА
                 localStorage.setItem('volt_master_uid', user.id);
                 localStorage.setItem('volt_master_login', user.login);
-                // Дополнительный флаг — чтобы точно знать, что это "залогиненный" пользователь
                 localStorage.setItem('volt_master_logged_in', 'true');
 
-                // Переход в menu.html без возможности вернуться назад
+                localStorage.removeItem('volt_pending_login');
+                localStorage.removeItem('volt_pending_password');
+
                 window.location.replace('menu.html');
             } else {
                 btn.disabled = false;
@@ -562,11 +698,28 @@
                 comment: comment,
                 timestamp: Date.now()
             }).then(() => {
+                // Запоминаем заявку, чтобы показать статус
+                localStorage.setItem('volt_pending_login', login);
+                localStorage.setItem('volt_pending_password', password);
+
                 btn.disabled = false;
                 btn.textContent = 'Отправить заявку';
                 document.getElementById('register-form').reset();
                 phoneInput.value = '';
-                alert('Заявка успешно отправлена! Ожидайте одобрения администратора.');
+
+                // Показываем баннер с новым текстом
+                const banner = document.getElementById('status-banner');
+                banner.className = 'pending';
+                banner.innerHTML = `⏳ <b>Заявка на рассмотрении</b><br>Логин: <b>${login}</b><br>Вашу заявку примут в течение 24 часа.`;
+                banner.style.display = 'block';
+
+                // Переключаемся на "Вход"
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+                document.getElementById('tab-login').classList.add('active');
+                document.getElementById('login-form').classList.add('active');
+
+                watchApplicationStatus();
             });
         }).catch(err => {
             btn.disabled = false;
