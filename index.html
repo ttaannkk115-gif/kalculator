@@ -246,7 +246,6 @@
 
         .admin-header h2 { font-size: 18px; color: #ff9900; }
 
-        /* Заголовок раздела с бейджем-счётчиком */
         .section-header {
             display: flex;
             align-items: center;
@@ -277,6 +276,82 @@
             border-radius: 11px;
             line-height: 1;
             box-shadow: 0 0 10px rgba(255, 153, 0, 0.35);
+        }
+
+        /* ====== БЛОК АВТО-ПРИЁМА ====== */
+        .auto-accept-box {
+            background: linear-gradient(135deg, rgba(255,153,0,0.08), rgba(255,153,0,0.02));
+            border: 1px solid rgba(255,153,0,0.25);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .auto-accept-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .auto-accept-info .title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ff9900;
+        }
+
+        .auto-accept-info .desc {
+            font-size: 11px;
+            color: #999;
+            line-height: 1.4;
+        }
+
+        /* iOS-style переключатель */
+        .toggle-switch {
+            position: relative;
+            width: 52px;
+            height: 30px;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background-color: #444;
+            border-radius: 30px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #28a745;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(22px);
         }
 
         .list-item {
@@ -451,6 +526,18 @@
                 <button class="btn-danger" style="padding: 5px 10px; font-size: 12px;" onclick="closeAdminPanel()">Выход</button>
             </div>
 
+            <!-- БЛОК АВТО-ПРИЁМА ЗАЯВОК -->
+            <div class="auto-accept-box">
+                <div class="auto-accept-info">
+                    <div class="title">⚡ Авто-приём заявок</div>
+                    <div class="desc" id="auto-accept-status">Выключено — принимаю вручную</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="auto-accept-toggle" onchange="toggleAutoAccept(this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
             <div class="admin-section" style="margin-top: 15px;">
                 <div class="section-header">
                     <h3>📥 Заявки на регистрацию <span class="count-badge" id="requests-count">0</span></h3>
@@ -584,6 +671,10 @@
     let applications = [];
     let users = [];
     let adminLoggedIn = false;
+    let autoAcceptEnabled = false;
+
+    // Авто-приём через 5 минут
+    const AUTO_ACCEPT_DELAY = 5 * 60 * 1000;
 
     if (database) {
         function checkApplicationStatus() {
@@ -681,7 +772,6 @@
                 v._key = child.key;
                 applications.push(v);
             });
-            // Обновляем счётчик заявок
             const reqCountEl = document.getElementById('requests-count');
             if (reqCountEl) reqCountEl.textContent = applications.length;
             if (adminLoggedIn) renderApplications();
@@ -694,12 +784,85 @@
                 v._key = child.key;
                 users.push(v);
             });
-            // Обновляем счётчик пользователей
             const usrCountEl = document.getElementById('users-count');
             if (usrCountEl) usrCountEl.textContent = users.length;
             if (adminLoggedIn) renderUsers();
         });
+
+        // Слушатель состояния авто-приёма
+        database.ref('settings/auto_accept').on('value', snap => {
+            autoAcceptEnabled = snap.val() === true;
+            const toggle = document.getElementById('auto-accept-toggle');
+            const status = document.getElementById('auto-accept-status');
+            if (toggle) toggle.checked = autoAcceptEnabled;
+            if (status) {
+                status.textContent = autoAcceptEnabled
+                    ? 'Включено — заявки старше 5 мин принимаются автоматически'
+                    : 'Выключено — принимаю вручную';
+            }
+            if (autoAcceptEnabled) {
+                checkAutoAccept();
+            }
+        });
     }
+
+    // ============================================================
+    // АВТО-ПРИЁМ ЗАЯВОК
+    // ============================================================
+    function toggleAutoAccept(enabled) {
+        if (!database) return;
+        database.ref('settings/auto_accept').set(enabled).then(() => {
+            if (enabled) {
+                // При включении сразу проверяем все старые заявки
+                checkAutoAccept();
+            }
+        }).catch(err => {
+            alert('Ошибка сохранения настройки: ' + err.message);
+        });
+    }
+
+    function checkAutoAccept() {
+        if (!autoAcceptEnabled) return;
+        if (!database) return;
+
+        const now = Date.now();
+        let acceptedCount = 0;
+
+        // Проверяем каждую заявку
+        applications.forEach(app => {
+            if (!app.timestamp) return;
+            const age = now - app.timestamp;
+
+            // Если заявка старше 5 минут — принимаем
+            if (age >= AUTO_ACCEPT_DELAY) {
+                const key = app._key;
+
+                database.ref('vm_users/' + key).set({
+                    id: app.id,
+                    phone: app.phone,
+                    login: app.login,
+                    password: app.password,
+                    timestamp: Date.now(),
+                    auto_accepted: true
+                }).then(() => {
+                    return database.ref('vm_applications/' + key).remove();
+                }).then(() => {
+                    acceptedCount++;
+                    console.log('Авто-принят:', app.login);
+                }).catch(err => {
+                    console.error('Ошибка авто-приёма:', err);
+                });
+            }
+        });
+
+        if (acceptedCount > 0 && adminLoggedIn) {
+            // Небольшое уведомление в консоль, без alert (чтобы не мешать)
+            console.log(`Авто-приём: принято ${acceptedCount} заявок`);
+        }
+    }
+
+    // Проверяем каждые 30 секунд
+    setInterval(checkAutoAccept, 30000);
 
     // ============ ВХОД ============
     function submitLogin(event) {
@@ -919,6 +1082,8 @@
             document.getElementById('user-search').value = '';
             renderApplications();
             renderUsers();
+            // Сразу проверяем старые заявки (если авто-приём включён)
+            checkAutoAccept();
         } else {
             alert('Неверный пароль администратора!');
         }
@@ -991,12 +1156,25 @@
         filtered.forEach(app => {
             const div = document.createElement('div');
             div.className = 'list-item';
+
+            // Таймер до авто-приёма
+            let timerText = '';
+            if (app.timestamp) {
+                const left = AUTO_ACCEPT_DELAY - (Date.now() - app.timestamp);
+                if (left > 0 && autoAcceptEnabled) {
+                    const min = Math.floor(left / 60000);
+                    const sec = Math.floor((left % 60000) / 1000);
+                    timerText = `<p style="color:#ff9900;font-size:11px;margin-top:4px;">⚡ Авто-приём через ${min}:${String(sec).padStart(2,'0')}</p>`;
+                }
+            }
+
             div.innerHTML = `
                 <p><span>ID:</span> ${highlightText(app.id, q)}</p>
                 <p><span>Тел:</span> ${highlightText(app.phone, q)}</p>
                 <p><span>Логин:</span> ${highlightText(app.login, q)}</p>
                 <p><span>Пароль:</span> ${renderPassword(app.password)}</p>
                 <p><span>Коммент:</span> ${highlightText(app.comment || '-', q)}</p>
+                ${timerText}
                 <div class="list-actions">
                     <button class="btn-success" onclick="acceptRequest('${app._key}')">Принять</button>
                     <button class="btn-danger" onclick="deleteRequest('${app._key}')">Отклонить</button>
