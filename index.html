@@ -1,341 +1,152 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VOLTMASTER</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VOLTMASTER</title>
 
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
 
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+body { background: #0d0d0d; color: #fff; display: flex; justify-content: center; min-height: 100vh; padding: 20px 15px; }
+.app-container { width: 100%; max-width: 400px; background: #151515; border-radius: 16px; border: 1px solid #2a2a2a; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); height: fit-content; position: relative; }
+.header { text-align: center; margin-bottom: 25px; cursor: pointer; user-select: none; }
+.header h1 { font-size: 24px; font-weight: 900; letter-spacing: 0.5px; }
+.header h1 span { color: #ff9900; }
 
-        body {
-            background-color: #0d0d0d;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px 15px;
-        }
+#status-banner { display: none; padding: 18px 16px; border-radius: 14px; margin-bottom: 20px; font-size: 14px; font-weight: 600; line-height: 1.5; text-align: center; animation: bannerIn 0.4s ease; }
+#status-banner .icon { display: block; font-size: 32px; margin-bottom: 8px; }
+#status-banner .title { display: block; font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+#status-banner .desc { display: block; font-size: 13px; opacity: 0.95; }
+@keyframes bannerIn { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+#status-banner.accepted { background: rgba(40,167,69,0.2); border: 1px solid #28a745; color: #d4ffd9; box-shadow: 0 0 20px rgba(40,167,69,0.25); }
+#status-banner.accepted .title { color: #4dff88; }
+#status-banner.pending { background: rgba(255,153,0,0.2); border: 1px solid #ff9900; color: #ffe0b2; box-shadow: 0 0 20px rgba(255,153,0,0.25); }
+#status-banner.pending .title { color: #ffb84d; }
+#status-banner.rejected { background: rgba(255,51,51,0.2); border: 1px solid #ff3333; color: #ffd4d4; box-shadow: 0 0 20px rgba(255,51,51,0.25); }
+#status-banner.rejected .title { color: #ff6666; }
+#status-banner.reset { background: rgba(33,150,243,0.2); border: 1px solid #2196f3; color: #d4eaff; box-shadow: 0 0 20px rgba(33,150,243,0.25); }
+#status-banner.reset .title { color: #64b5f6; }
 
-        .app-container {
-            width: 100%;
-            max-width: 400px;
-            background-color: #151515;
-            border-radius: 16px;
-            border: 1px solid #2a2a2a;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            height: fit-content;
-            position: relative;
-        }
+.tabs { display: flex; border-bottom: 1px solid #2a2a2a; margin-bottom: 25px; }
+.tab { flex: 1; background: none; border: none; color: #888; font-size: 16px; font-weight: 600; padding: 10px 0 15px 0; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.3s ease; }
+.tab.active { color: #ff9900; border-bottom: 2px solid #ff9900; }
 
-        .header { text-align: center; margin-bottom: 25px; cursor: pointer; user-select: none; }
-        .header h1 { font-size: 24px; font-weight: 900; letter-spacing: 0.5px; }
-        .header h1 span { color: #ff9900; }
+.form { display: none; flex-direction: column; gap: 18px; }
+.form.active { display: flex; }
+.input-group { display: flex; flex-direction: column; gap: 8px; }
+.input-group label { font-size: 15px; color: #a0a0a0; }
+.input-group input, .input-group textarea { width: 100%; background: #1e1e1e; border: 1px solid #333; border-radius: 8px; padding: 14px 16px; color: #fff; font-size: 16px; outline: none; transition: border-color 0.2s; }
+.input-group input::placeholder, .input-group textarea::placeholder { color: #666; }
+.input-group input:focus, .input-group textarea:focus { border-color: #ff9900; }
+.input-group input.input-error { border-color: #ff3333 !important; }
+.input-group textarea { resize: none; min-height: 80px; }
 
-        #status-banner {
-            display: none;
-            padding: 14px 16px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            line-height: 1.4;
-            text-align: center;
-            animation: slideDown 0.4s ease;
-        }
-        #status-banner.accepted { background: rgba(40, 167, 69, 0.15); border: 1px solid #28a745; color: #4dff88; }
-        #status-banner.pending { background: rgba(255, 153, 0, 0.12); border: 1px solid #ff9900; color: #ffb84d; }
-        #status-banner.rejected { background: rgba(255, 51, 51, 0.12); border: 1px solid #ff3333; color: #ff6666; }
+.error-msg { color: #ff3333; font-size: 13px; display: none; margin-top: -4px; text-align: center; font-weight: 500; line-height: 1.3; }
 
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.btn-primary { background: #ff9900; color: #000; border: none; border-radius: 8px; padding: 16px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 5px; }
+.btn-primary:active { background: #e68a00; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .tabs { display: flex; border-bottom: 1px solid #2a2a2a; margin-bottom: 25px; }
-        .tab {
-            flex: 1; background: none; border: none; color: #888;
-            font-size: 16px; font-weight: 600; padding: 10px 0 15px 0;
-            cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.3s ease;
-        }
-        .tab.active { color: #ff9900; border-bottom: 2px solid #ff9900; }
+.btn-secondary { background: transparent; color: #ff9900; border: 1px solid #ff9900; border-radius: 8px; padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; width: 100%; }
 
-        .form { display: none; flex-direction: column; gap: 18px; }
-        .form.active { display: flex; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+.forgot-btn { display: block; width: 100%; text-align: center; color: #64b5f6; background: transparent; border: none; font-size: 13px; font-weight: 600; padding: 12px 0 4px; cursor: pointer; font-family: inherit; }
+.forgot-btn:active { color: #2196f3; }
 
-        .input-group { display: flex; flex-direction: column; gap: 8px; }
-        .input-group label { font-size: 15px; color: #a0a0a0; }
-        .input-group input,
-        .input-group textarea {
-            width: 100%; background-color: #1e1e1e;
-            border: 1px solid #333; border-radius: 8px;
-            padding: 14px 16px; color: #fff; font-size: 16px;
-            outline: none; transition: border-color 0.2s ease;
-        }
-        .input-group input::placeholder, .input-group textarea::placeholder { color: #666; }
-        .input-group input:focus, .input-group textarea:focus { border-color: #ff9900; }
-        .input-group input.input-error { border-color: #ff3333 !important; }
+.btn-danger { background: #ff3333; color: #fff; border: none; border-radius: 6px; padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-success { background: #28a745; color: #fff; border: none; border-radius: 6px; padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-warning { background: #ff9900; color: #000; border: none; border-radius: 6px; padding: 8px 12px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.btn-info { background: #2196f3; color: #fff; border: none; border-radius: 6px; padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
 
-        .error-msg {
-            color: #ff3333; font-size: 13px; display: none;
-            margin-top: -4px; text-align: center; font-weight: 500; line-height: 1.3;
-        }
+#admin-panel { display: none; flex-direction: column; gap: 20px; }
+#admin-panel.active { display: flex; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; }
+.admin-header h2 { font-size: 18px; color: #ff9900; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.section-header h3 { font-size: 16px; color: #ccc; margin: 0; display: flex; align-items: center; gap: 8px; }
+.count-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 22px; padding: 0 8px; background: #ff9900; color: #000; font-size: 12px; font-weight: 800; border-radius: 11px; }
+.count-badge.blue { background: #2196f3; color: #fff; }
 
-        .input-group textarea { resize: none; min-height: 80px; }
+/* ====== ПОИСК ====== */
+.search-wrap { position: relative; display: flex; align-items: center; width: 100%; }
+.search-input { padding: 10px 40px 10px 14px; font-size: 14px; border-radius: 20px; background: #1a1a1a; border: 1px solid #333; color: #fff; outline: none; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; }
+.search-input:focus { border-color: #ff9900; box-shadow: 0 0 0 2px rgba(255,153,0,0.2); }
+.search-input.has-value { border-color: #ff9900; }
+.search-clear { position: absolute; right: 8px; background: #333; color: #ff9900; border: none; width: 24px; height: 24px; border-radius: 50%; font-size: 14px; font-weight: 900; cursor: pointer; display: none; align-items: center; justify-content: center; }
+.search-clear.visible { display: flex; }
+.search-result-info { font-size: 11px; color: #ff9900; margin-bottom: 8px; padding-left: 6px; font-weight: 600; display: none; }
+.search-result-info.visible { display: block; }
 
-        .btn-primary {
-            background-color: #ff9900; color: #000; border: none;
-            border-radius: 8px; padding: 16px; font-size: 16px;
-            font-weight: 700; cursor: pointer; margin-top: 5px;
-            transition: background-color 0.2s ease;
-        }
-        .btn-primary:active { background-color: #e68a00; }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+/* ====== ЖЁЛТАЯ ПОДСВЕТКА НАЙДЕННОГО ====== */
+.highlight {
+    background: linear-gradient(180deg, #ffeb3b, #ffc107);
+    color: #000 !important;
+    font-weight: 800;
+    border-radius: 3px;
+    padding: 1px 3px;
+    box-shadow: 0 0 6px rgba(255,235,59,0.5);
+}
 
-        .btn-secondary {
-            background-color: transparent; color: #ff9900;
-            border: 1px solid #ff9900; border-radius: 8px;
-            padding: 12px; font-size: 14px; font-weight: 600;
-            cursor: pointer; margin-top: 10px; width: 100%;
-        }
+.auto-accept-box { background: rgba(255,153,0,0.06); border: 1px solid rgba(255,153,0,0.25); border-radius: 12px; padding: 14px 16px; margin-top: 15px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.auto-accept-info { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.auto-accept-info .title { font-size: 14px; font-weight: 700; color: #ff9900; }
+.auto-accept-info .desc { font-size: 11px; color: #999; line-height: 1.4; }
+.toggle-switch { position: relative; width: 52px; height: 30px; flex-shrink: 0; cursor: pointer; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #444; border-radius: 30px; transition: 0.3s; }
+.toggle-slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 4px; bottom: 4px; background: #fff; border-radius: 50%; transition: 0.3s; }
+.toggle-switch input:checked + .toggle-slider { background: #28a745; }
+.toggle-switch input:checked + .toggle-slider:before { transform: translateX(22px); }
 
-        .btn-danger { background-color: #ff3333; color: #fff; border: none; border-radius: 6px; padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
-        .btn-success { background-color: #28a745; color: #fff; border: none; border-radius: 6px; padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
-        .btn-warning { background-color: #ff9900; color: #000; border: none; border-radius: 6px; padding: 8px 12px; font-size: 13px; font-weight: 700; cursor: pointer; }
-        .btn-info { background-color: #2196f3; color: #fff; border: none; border-radius: 6px; padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.list-item { background: #1e1e1e; border: 1px solid #333; border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px; }
+.list-item.fresh { border-left: 3px solid #ff9900; background: linear-gradient(90deg, rgba(255,153,0,0.06), #1e1e1e 30%); }
+.list-item.reset-item { border-left: 3px solid #2196f3; background: linear-gradient(90deg, rgba(33,150,243,0.08), #1e1e1e 30%); }
+.list-item p { font-size: 13px; color: #ddd; word-break: break-word; }
+.list-item p span { color: #888; }
 
-        #admin-panel { display: none; flex-direction: column; gap: 20px; animation: fadeIn 0.3s ease; }
-        #admin-panel.active { display: flex; }
+.date-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #ff9900; background: rgba(255,153,0,0.08); border: 1px solid rgba(255,153,0,0.2); padding: 4px 10px; border-radius: 8px; margin-bottom: 4px; font-weight: 600; width: fit-content; }
+.date-row.old { color: #888; background: rgba(255,255,255,0.03); border-color: #333; }
+.date-row.blue { color: #64b5f6; background: rgba(33,150,243,0.1); border-color: rgba(33,150,243,0.3); }
 
-        .admin-header {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid #333; padding-bottom: 10px;
-        }
-        .admin-header h2 { font-size: 18px; color: #ff9900; }
+.list-actions { display: flex; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
+.empty-msg { color: #666; font-size: 14px; text-align: center; padding: 10px; background: #1a1a1a; border-radius: 8px; }
 
-        .section-header {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 10px;
-        }
-        .section-header h3 {
-            font-size: 16px; color: #ccc; margin: 0;
-            display: flex; align-items: center; gap: 8px;
-        }
+.password-hidden { color: #ff9900; cursor: pointer; letter-spacing: 2px; user-select: none; font-weight: bold; }
+.password-visible { color: #4dff88; cursor: pointer; font-weight: bold; user-select: none; }
 
-        .count-badge {
-            display: inline-flex; align-items: center; justify-content: center;
-            min-width: 26px; height: 22px; padding: 0 8px;
-            background-color: #ff9900; color: #000;
-            font-size: 12px; font-weight: 800;
-            border-radius: 11px; line-height: 1;
-            box-shadow: 0 0 10px rgba(255, 153, 0, 0.35);
-        }
+#splash-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0d0d0d; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; gap: 20px; }
+#splash-screen.active { display: flex; }
+.splash-logo { font-size: 28px; font-weight: 900; letter-spacing: 1px; }
+.splash-logo span { color: #ff9900; }
+.splash-spinner { width: 40px; height: 40px; border: 3px solid rgba(255,153,0,0.2); border-top-color: #ff9900; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-        /* === ПОИСК === */
-        .search-wrap {
-            position: relative;
-            display: flex;
-            align-items: center;
-            width: 100%;
-        }
-        .search-input {
-            padding: 10px 40px 10px 14px;
-            font-size: 14px;
-            border-radius: 20px;
-            background-color: #1a1a1a;
-            border: 1px solid #333;
-            color: #fff;
-            outline: none;
-            width: 100%;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .search-input:focus {
-            border-color: #ff9900;
-            box-shadow: 0 0 0 2px rgba(255,153,0,0.2);
-        }
-        .search-input.has-value {
-            border-color: #ff9900;
-        }
-        .search-clear {
-            position: absolute;
-            right: 8px;
-            background: #333;
-            color: #ff9900;
-            border: none;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            font-size: 14px;
-            font-weight: 900;
-            line-height: 1;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-        .search-clear.visible { display: flex; }
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 9998; padding: 20px; }
+.modal-overlay.active { display: flex; }
+.modal-content { background: #161616; border: 2px solid #ff9900; border-radius: 20px; padding: 24px 20px; width: 100%; max-width: 340px; text-align: center; }
+.modal-content.blue-border { border-color: #2196f3; }
+.modal-title { color: #ff9900; font-size: 16px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; }
+.modal-content.blue-border .modal-title { color: #64b5f6; }
+.modal-sub { color: #888; font-size: 12px; margin-bottom: 18px; line-height: 1.4; }
+.modal-input { width: 100%; padding: 16px; background: #0d0d0d; border: 2px solid #333; border-radius: 14px; color: #fff; font-size: 16px; outline: none; margin-bottom: 6px; text-align: center; font-family: inherit; }
+.modal-input:focus { border-color: #ff9900; }
+.modal-content.blue-border .modal-input:focus { border-color: #2196f3; }
+.modal-err { color: #ff3333; font-size: 12px; min-height: 16px; margin-bottom: 12px; font-weight: 600; text-align: center; }
+.modal-buttons { display: flex; gap: 10px; }
+.modal-buttons button { flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.modal-save { background: #ff9900; color: #000; }
+.modal-content.blue-border .modal-save { background: #2196f3; color: #fff; }
+.modal-cancel { background: #333; color: #fff; }
+.modal-info-text { color: #888; font-size: 12px; margin-bottom: 14px; line-height: 1.5; }
 
-        .search-result-info {
-            font-size: 11px;
-            color: #ff9900;
-            margin-bottom: 8px;
-            padding-left: 6px;
-            font-weight: 600;
-            display: none;
-        }
-        .search-result-info.visible { display: block; }
-
-        .auto-accept-box {
-            background: linear-gradient(135deg, rgba(255,153,0,0.08), rgba(255,153,0,0.02));
-            border: 1px solid rgba(255,153,0,0.25);
-            border-radius: 12px; padding: 14px 16px; margin-top: 15px;
-            display: flex; align-items: center; justify-content: space-between; gap: 12px;
-        }
-        .auto-accept-info { display: flex; flex-direction: column; gap: 4px; flex: 1; }
-        .auto-accept-info .title { font-size: 14px; font-weight: 700; color: #ff9900; }
-        .auto-accept-info .desc { font-size: 11px; color: #999; line-height: 1.4; }
-
-        .toggle-switch { position: relative; width: 52px; height: 30px; flex-shrink: 0; cursor: pointer; }
-        .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider { position: absolute; inset: 0; background-color: #444; border-radius: 30px; transition: 0.3s; }
-        .toggle-slider:before {
-            position: absolute; content: ""; height: 22px; width: 22px;
-            left: 4px; bottom: 4px; background-color: #fff; border-radius: 50%;
-            transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-        }
-        .toggle-switch input:checked + .toggle-slider { background-color: #28a745; }
-        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(22px); }
-
-        .list-item {
-            background-color: #1e1e1e; border: 1px solid #333;
-            border-radius: 8px; padding: 12px; margin-bottom: 10px;
-            display: flex; flex-direction: column; gap: 6px;
-        }
-        .list-item.fresh {
-            border-left: 3px solid #ff9900;
-            background: linear-gradient(90deg, rgba(255,153,0,0.06), #1e1e1e 30%);
-        }
-        .list-item p { font-size: 13px; color: #ddd; word-break: break-word; }
-        .list-item p span { color: #888; }
-
-        .date-row {
-            display: flex; align-items: center; gap: 6px;
-            font-size: 11px; color: #ff9900;
-            background: rgba(255, 153, 0, 0.08);
-            border: 1px solid rgba(255, 153, 0, 0.2);
-            padding: 4px 10px; border-radius: 8px;
-            margin-bottom: 4px; font-weight: 600;
-            width: fit-content;
-        }
-        .date-row.old {
-            color: #888;
-            background: rgba(255,255,255,0.03);
-            border-color: #333;
-        }
-
-        .list-actions { display: flex; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
-
-        .empty-msg {
-            color: #666; font-size: 14px; text-align: center;
-            padding: 10px; background: #1a1a1a; border-radius: 8px;
-        }
-
-        /* === ЖЁЛТАЯ ПОДСВЕТКА НАЙДЕННОГО === */
-        .highlight {
-            background: linear-gradient(180deg, #ffeb3b, #ffc107);
-            color: #000000 !important;
-            font-weight: 800;
-            border-radius: 3px;
-            padding: 1px 3px;
-            box-shadow: 0 0 6px rgba(255, 235, 59, 0.5);
-        }
-
-        .password-hidden {
-            color: #ff9900; cursor: pointer; letter-spacing: 2px;
-            user-select: none; font-weight: bold;
-        }
-        .password-visible {
-            color: #4dff88; cursor: pointer; font-weight: bold; user-select: none;
-        }
-
-        #splash-screen {
-            position: fixed; inset: 0; background: #0d0d0d;
-            display: none; flex-direction: column;
-            justify-content: center; align-items: center;
-            z-index: 9999; gap: 20px;
-        }
-        #splash-screen.active { display: flex; }
-        .splash-logo { font-size: 28px; font-weight: 900; letter-spacing: 1px; animation: pulseLogo 1.5s ease-in-out infinite; }
-        .splash-logo span { color: #ff9900; }
-        .splash-spinner {
-            width: 40px; height: 40px;
-            border: 3px solid rgba(255, 153, 0, 0.2);
-            border-top-color: #ff9900; border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulseLogo { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-
-        #id-modal {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.85); backdrop-filter: blur(6px);
-            display: none; justify-content: center; align-items: center;
-            z-index: 9998; padding: 20px;
-        }
-        #id-modal.active { display: flex; }
-
-        .id-modal-content {
-            background: #161616; border: 2px solid #ff9900;
-            border-radius: 20px; padding: 24px 20px;
-            width: 100%; max-width: 340px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(255,153,0,0.25);
-            text-align: center;
-        }
-        .id-modal-title { color: #ff9900; font-size: 16px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; }
-        .id-modal-sub { color: #888; font-size: 12px; margin-bottom: 18px; line-height: 1.4; }
-        .id-modal-input {
-            width: 100%; padding: 16px; background: #0d0d0d;
-            border: 2px solid #333; border-radius: 14px;
-            color: #fff; font-size: 22px; font-weight: 800;
-            text-align: center; letter-spacing: 4px;
-            outline: none; margin-bottom: 6px;
-            transition: border-color 0.2s;
-        }
-        .id-modal-input.login-mode { font-size: 16px; letter-spacing: 1px; }
-        .id-modal-input:focus { border-color: #ff9900; }
-        .id-modal-err { color: #ff3333; font-size: 12px; min-height: 16px; margin-bottom: 12px; font-weight: 600; }
-        .id-modal-buttons { display: flex; gap: 10px; }
-        .id-modal-buttons button {
-            flex: 1; padding: 14px; border: none; border-radius: 12px;
-            font-size: 14px; font-weight: 700; cursor: pointer;
-        }
-        .id-modal-save { background: #ff9900; color: #000; }
-        .id-modal-cancel { background: #333; color: #fff; }
-        .current-id-hint { color: #666; font-size: 11px; margin-bottom: 14px; }
-        .current-id-hint b { color: #ff9900; }
-
-        #toast {
-            position: fixed; bottom: 30px; left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background-color: #28a745; color: #fff;
-            padding: 14px 22px; border-radius: 12px;
-            font-size: 14px; font-weight: 600;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
-            z-index: 99999; transition: transform 0.3s ease;
-            max-width: 90%; text-align: center;
-        }
-        #toast.show { transform: translateX(-50%) translateY(0); }
-        #toast.error { background-color: #ff3333; }
-        #toast.info { background-color: #ff9900; color: #000; }
-    </style>
+#toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: #28a745; color: #fff; padding: 14px 22px; border-radius: 12px; font-size: 14px; font-weight: 600; z-index: 99999; transition: transform 0.3s ease; max-width: 90%; text-align: center; }
+#toast.show { transform: translateX(-50%) translateY(0); }
+#toast.error { background: #ff3333; }
+#toast.info { background: #ff9900; color: #000; }
+#toast.blue { background: #2196f3; }
+</style>
 </head>
 <body>
 
@@ -357,38 +168,39 @@
             <button type="button" class="tab" id="tab-register" data-target="register-form">Регистрация</button>
         </div>
 
-        <form id="login-form" class="form active" onsubmit="submitLogin(event)">
+        <form id="login-form" class="form active" onsubmit="submitLogin(event); return false;">
             <div class="input-group">
                 <label>Логин</label>
-                <input type="text" id="login-username" placeholder="Введите логин" required>
+                <input type="text" id="login-username" placeholder="Введите логин">
             </div>
             <div class="input-group">
                 <label>Пароль</label>
-                <input type="password" id="login-password" placeholder="Введите пароль" required>
+                <input type="password" id="login-password" placeholder="Введите пароль">
             </div>
             <div class="error-msg" id="login-error">Неверный логин или пароль</div>
             <button type="submit" class="btn-primary" id="login-btn">Войти</button>
+            <button type="button" class="forgot-btn" id="forgot-btn">🔑 Забыли пароль?</button>
         </form>
 
-        <form id="register-form" class="form" onsubmit="submitApplication(event)" novalidate>
+        <form id="register-form" class="form" onsubmit="submitApplication(event); return false;">
             <div class="input-group">
                 <label>Номер телефона</label>
-                <input type="tel" id="reg-phone" placeholder="+7 (___) ___-__-__" required>
-                <span class="error-msg" id="phone-error">Неверный формат номера. Используйте: +7 (999) 123-45-67</span>
+                <input type="tel" id="reg-phone" placeholder="+7 (___) ___-__-__">
+                <span class="error-msg" id="phone-error">Неверный формат номера</span>
             </div>
             <div class="input-group">
                 <label>Логин</label>
-                <input type="text" id="reg-login" placeholder="Придумайте логин" required>
-                <span class="error-msg" id="reg-login-error">Логин должен содержать минимум 6 букв или цифр</span>
+                <input type="text" id="reg-login" placeholder="Придумайте логин">
+                <span class="error-msg" id="reg-login-error">Логин минимум 6 символов</span>
             </div>
             <div class="input-group">
                 <label>Пароль</label>
-                <input type="text" id="reg-password" placeholder="Придумайте пароль" required>
-                <span class="error-msg" id="reg-password-error">Пароль должен содержать минимум 6 букв или цифр</span>
+                <input type="text" id="reg-password" placeholder="Придумайте пароль">
+                <span class="error-msg" id="reg-password-error">Пароль минимум 6 символов</span>
             </div>
             <div class="input-group">
                 <label>Комментарий к заявке</label>
-                <textarea id="reg-comment" placeholder="" rows="3"></textarea>
+                <textarea id="reg-comment" rows="3"></textarea>
             </div>
             <button type="submit" class="btn-primary" id="reg-btn">Отправить заявку</button>
         </form>
@@ -400,14 +212,14 @@
             <div class="input-group">
                 <input type="password" id="admin-pass" placeholder="Введите пароль администратора">
             </div>
-            <button class="btn-primary" onclick="loginAdmin()">Войти</button>
-            <button class="btn-secondary" onclick="closeAdminPanel()">Назад</button>
+            <button type="button" class="btn-primary" id="admin-login-btn">Войти</button>
+            <button type="button" class="btn-secondary" id="admin-back-btn">Назад</button>
         </div>
 
         <div id="admin-dashboard" style="display: none;">
             <div class="admin-header">
                 <h2>Панель Админа</h2>
-                <button class="btn-danger" style="padding: 5px 10px; font-size: 12px;" onclick="closeAdminPanel()">Выход</button>
+                <button type="button" class="btn-danger" style="padding: 5px 10px; font-size: 12px;" id="admin-close-btn">Выход</button>
             </div>
 
             <div class="auto-accept-box">
@@ -416,9 +228,16 @@
                     <div class="desc" id="auto-accept-status">Загрузка...</div>
                 </div>
                 <label class="toggle-switch">
-                    <input type="checkbox" id="auto-accept-toggle" onchange="toggleAutoAccept(this.checked)">
+                    <input type="checkbox" id="auto-accept-toggle">
                     <span class="toggle-slider"></span>
                 </label>
+            </div>
+
+            <div class="admin-section" style="margin-top: 15px;">
+                <div class="section-header">
+                    <h3>🔑 Заявки на сброс пароля <span class="count-badge blue" id="resets-count">0</span></h3>
+                </div>
+                <div id="resets-list"></div>
             </div>
 
             <div class="admin-section" style="margin-top: 15px;">
@@ -427,8 +246,8 @@
                 </div>
                 <div class="input-group" style="margin-bottom: 10px;">
                     <div class="search-wrap">
-                        <input type="text" id="request-search" class="search-input" placeholder="🔍 Поиск по заявкам..." autocomplete="off">
-                        <button type="button" class="search-clear" onclick="clearSearch('request')">✕</button>
+                        <input type="text" id="request-search" class="search-input" placeholder="🔍 Поиск по заявкам...">
+                        <button type="button" class="search-clear" id="request-clear">✕</button>
                     </div>
                     <div class="search-result-info" id="request-search-info"></div>
                 </div>
@@ -441,8 +260,8 @@
                 </div>
                 <div class="input-group" style="margin-bottom: 10px;">
                     <div class="search-wrap">
-                        <input type="text" id="user-search" class="search-input" placeholder="🔍 Поиск по пользователям..." autocomplete="off">
-                        <button type="button" class="search-clear" onclick="clearSearch('user')">✕</button>
+                        <input type="text" id="user-search" class="search-input" placeholder="🔍 Поиск по пользователям...">
+                        <button type="button" class="search-clear" id="user-clear">✕</button>
                     </div>
                     <div class="search-result-info" id="user-search-info"></div>
                 </div>
@@ -452,16 +271,42 @@
     </div>
 </div>
 
-<div id="id-modal">
-    <div class="id-modal-content">
-        <div class="id-modal-title" id="id-modal-title">✏️ Смена ID</div>
-        <div class="id-modal-sub" id="id-modal-user">Пользователь: —</div>
-        <div class="current-id-hint" id="id-modal-hint">Текущий ID: <b id="id-modal-old">—</b></div>
-        <input type="tel" id="id-modal-input" class="id-modal-input" placeholder="00" inputmode="numeric">
-        <div class="id-modal-err" id="id-modal-err"></div>
-        <div class="id-modal-buttons">
-            <button class="id-modal-cancel" onclick="closeIdModal()">Отмена</button>
-            <button class="id-modal-save" onclick="saveModalValue()">Сохранить</button>
+<div id="forgot-modal" class="modal-overlay">
+    <div class="modal-content blue-border">
+        <div class="modal-title">🔑 Восстановление пароля</div>
+        <div class="modal-sub">Введите номер телефона, указанный при регистрации</div>
+        <input type="tel" id="forgot-phone" class="modal-input" placeholder="+7 (___) ___-__-__">
+        <div class="modal-err" id="forgot-err"></div>
+        <div class="modal-buttons">
+            <button type="button" class="modal-cancel" id="forgot-cancel-btn">Отмена</button>
+            <button type="button" class="modal-save" id="forgot-send-btn">Оставить заявку</button>
+        </div>
+    </div>
+</div>
+
+<div id="newpass-modal" class="modal-overlay">
+    <div class="modal-content blue-border">
+        <div class="modal-title">🔑 Новый пароль</div>
+        <div class="modal-info-text">✅ Админ одобрил сброс пароля.<br>Придумайте новый пароль.</div>
+        <input type="text" id="newpass-input" class="modal-input" placeholder="Новый пароль">
+        <input type="text" id="newpass-confirm" class="modal-input" placeholder="Повторите пароль">
+        <div class="modal-err" id="newpass-err"></div>
+        <div class="modal-buttons">
+            <button type="button" class="modal-save" id="newpass-save-btn">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<div id="id-modal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-title" id="id-modal-title">✏️ Смена</div>
+        <div class="modal-sub" id="id-modal-user">—</div>
+        <div class="modal-info-text" id="id-modal-hint">—</div>
+        <input type="tel" id="id-modal-input" class="modal-input" placeholder="00">
+        <div class="modal-err" id="id-modal-err"></div>
+        <div class="modal-buttons">
+            <button type="button" class="modal-cancel" id="id-cancel-btn">Отмена</button>
+            <button type="button" class="modal-save" id="id-save-btn">Сохранить</button>
         </div>
     </div>
 </div>
@@ -469,570 +314,1015 @@
 <div id="toast"></div>
 
 <script>
-    // ============ ВКЛАДКИ + МАСКА ТЕЛЕФОНА ============
-    document.addEventListener('DOMContentLoaded', function() {
-        const tabs = document.querySelectorAll('.tab');
-        const forms = document.querySelectorAll('.form');
+// ============ ХЕЛПЕРЫ ============
+function $(id) { return document.getElementById(id); }
 
-        tabs.forEach(function(tab) {
-            tab.addEventListener('click', function() {
-                tabs.forEach(function(t) { t.classList.remove('active'); });
-                forms.forEach(function(f) { f.classList.remove('active'); });
-                this.classList.add('active');
-                document.getElementById(this.getAttribute('data-target')).classList.add('active');
+function safeKey(str) {
+    return String(str).replace(/[.#$\[\]\/]/g, '_').toLowerCase();
+}
 
-                var err1 = document.getElementById('login-error');
-                if (err1) err1.style.display = 'none';
-                document.querySelectorAll('#login-form input').forEach(function(i) { i.classList.remove('input-error'); });
-                var err2 = document.getElementById('phone-error');
-                if (err2) err2.style.display = 'none';
-                var regPhone = document.getElementById('reg-phone');
-                if (regPhone) regPhone.classList.remove('input-error');
-                var err3 = document.getElementById('reg-login-error');
-                if (err3) err3.style.display = 'none';
-                var regLogin = document.getElementById('reg-login');
-                if (regLogin) regLogin.classList.remove('input-error');
-                var err4 = document.getElementById('reg-password-error');
-                if (err4) err4.style.display = 'none';
-                var regPass = document.getElementById('reg-password');
-                if (regPass) regPass.classList.remove('input-error');
-            });
-        });
+function escapeHtml(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
 
-        var phoneInput = document.getElementById('reg-phone');
-        if (phoneInput) {
-            phoneInput.addEventListener('input', function(e) {
-                var input = e.target.value.replace(/\D/g, '');
-                var formatted = '';
-                if (input.length > 0) {
-                    if (input[0] === '7' || input[0] === '8') input = input.substring(1);
-                    formatted = '+7';
-                    if (input.length > 0) formatted += ' (' + input.substring(0, 3);
-                    if (input.length >= 4) formatted += ') ' + input.substring(3, 6);
-                    if (input.length >= 7) formatted += '-' + input.substring(6, 8);
-                    if (input.length >= 9) formatted += '-' + input.substring(8, 10);
-                }
-                e.target.value = formatted;
-            });
-        }
+function escapeRegExp(s) {
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
-        // ============ ПОДКЛЮЧЕНИЕ ПОИСКА ============
-        var reqSearch = document.getElementById('request-search');
-        var usrSearch = document.getElementById('user-search');
-
-        if (reqSearch) {
-            reqSearch.addEventListener('input', renderApplications);
-            reqSearch.addEventListener('keyup', renderApplications);
-        }
-        if (usrSearch) {
-            usrSearch.addEventListener('input', renderUsers);
-            usrSearch.addEventListener('keyup', renderUsers);
-        }
-    });
-
-    // ============ FIREBASE ============
-    let database = null;
+// ============ УМНЫЙ ПОИСК: ЖЁЛТАЯ ПОДСВЕТКА ============
+function highlightText(text, query) {
+    if (text === null || text === undefined) return '-';
+    var safe = escapeHtml(text);
+    if (!query || !query.trim()) return safe;
     try {
-        const firebaseConfig = {
-            apiKey: "AIzaSyD-dIC8bm8y4kaY7RXmMrys2wOMLA5o8vY",
-            authDomain: "voltmaster-332c0.firebaseapp.com",
-            databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com",
-            projectId: "voltmaster-332c0",
-            storageBucket: "voltmaster-332c0.firebasestorage.app",
-            messagingSenderId: "312337098429",
-            appId: "1:312337098429:web:663e0f6787bd62d19bf9d4"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        database = firebase.database();
+        var q = escapeHtml(query.trim());
+        var regex = new RegExp('(' + escapeRegExp(q) + ')', 'gi');
+        return safe.replace(regex, '<span class="highlight">$1</span>');
     } catch (e) {
-        console.error('Firebase init error:', e);
+        return safe;
     }
+}
 
-    function safeKey(str) {
-        return String(str).replace(/[.#$\[\]\/]/g, '_').toLowerCase();
+// Проверка, содержит ли объект запрос по любому полю
+function matchesQuery(obj, query) {
+    if (!query) return true;
+    var q = query.toLowerCase().trim();
+    var fields = ['id', 'phone', 'login', 'password', 'comment'];
+    for (var i = 0; i < fields.length; i++) {
+        var f = fields[i];
+        if (obj[f] !== undefined && obj[f] !== null) {
+            if (String(obj[f]).toLowerCase().indexOf(q) !== -1) return true;
+        }
     }
+    return false;
+}
 
-    // ============ АВТОВХОД ============
-    const urlParams = new URLSearchParams(window.location.search);
-    const wasKicked = urlParams.get('kicked') === '1';
+function formatDate(timestamp) {
+    if (!timestamp) return '—';
+    var d = new Date(timestamp);
+    var now = new Date();
+    function pad(n) { return String(n).length < 2 ? '0' + n : String(n); }
+    var timeStr = pad(d.getHours()) + ':' + pad(d.getMinutes());
+    var dDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    var nDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    var diffDays = Math.round((nDay - dDay) / 86400000);
+    if (diffDays === 0) return 'Сегодня, ' + timeStr;
+    if (diffDays === 1) return 'Вчера, ' + timeStr;
+    if (diffDays < 7) return diffDays + ' дн. назад, ' + timeStr;
+    return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear() + ', ' + timeStr;
+}
 
-    if (wasKicked) {
+function showToast(text, type) {
+    var t = $('toast');
+    if (!t) return;
+    t.textContent = text;
+    t.className = '';
+    if (type === 'error') t.className = 'error';
+    if (type === 'info') t.className = 'info';
+    if (type === 'blue') t.className = 'blue';
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+function showBanner(type, icon, title, desc) {
+    var banner = $('status-banner');
+    if (!banner) return;
+    banner.className = type;
+    banner.innerHTML = '<span class="icon">' + icon + '</span><span class="title">' + title + '</span><span class="desc">' + desc + '</span>';
+    banner.style.display = 'block';
+}
+
+function hideBanner() {
+    var b = $('status-banner');
+    if (b) b.style.display = 'none';
+}
+
+// ============ МАСКА ТЕЛЕФОНА ============
+function applyPhoneMask(input) {
+    if (!input) return;
+    input.addEventListener('input', function(e) {
+        var v = e.target.value.replace(/\D/g, '');
+        var formatted = '';
+        if (v.length > 0) {
+            if (v[0] === '7' || v[0] === '8') v = v.substring(1);
+            formatted = '+7';
+            if (v.length > 0) formatted += ' (' + v.substring(0, 3);
+            if (v.length >= 4) formatted += ') ' + v.substring(3, 6);
+            if (v.length >= 7) formatted += '-' + v.substring(6, 8);
+            if (v.length >= 9) formatted += '-' + v.substring(8, 10);
+        }
+        e.target.value = formatted;
+    });
+}
+
+// ============ FIREBASE ============
+var database = null;
+try {
+    var firebaseConfig = {
+        apiKey: "AIzaSyD-dIC8bm8y4kaY7RXmMrys2wOMLA5o8vY",
+        authDomain: "voltmaster-332c0.firebaseapp.com",
+        databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com",
+        projectId: "voltmaster-332c0",
+        storageBucket: "voltmaster-332c0.firebasestorage.app",
+        messagingSenderId: "312337098429",
+        appId: "1:312337098429:web:663e0f6787bd62d19bf9d4"
+    };
+    firebase.initializeApp(firebaseConfig);
+    database = firebase.database();
+} catch (e) {
+    console.error('Firebase init error:', e);
+}
+
+var ADMIN_PASS = 'gazik0303';
+var AUTO_ACCEPT_DELAY = 5 * 60 * 1000;
+
+var applications = [];
+var users = [];
+var resetRequests = [];
+var adminLoggedIn = false;
+var autoAcceptEnabled = false;
+
+var modalMode = null;
+var currentEditKey = null;
+var currentEditLogin = null;
+var currentEditOldId = null;
+var clientResetKey = null;
+var clientResetLogin = null;
+
+// ============ АВТОВХОД ============
+try {
+    var urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('kicked') === '1') {
         localStorage.removeItem('volt_master_uid');
         localStorage.removeItem('volt_master_login');
         localStorage.removeItem('volt_master_logged_in');
         window.history.replaceState({}, '', 'index.html');
     } else {
-        const savedUid = localStorage.getItem('volt_master_uid');
-        const savedLogin = localStorage.getItem('volt_master_login');
+        var savedUid = localStorage.getItem('volt_master_uid');
+        var savedLogin = localStorage.getItem('volt_master_login');
         if (savedUid && savedLogin) {
-            document.getElementById('splash-screen').classList.add('active');
+            $('splash-screen').classList.add('active');
             window.location.replace('menu.html');
         }
     }
+} catch (e) { console.error(e); }
 
-    // ============ ТОСТ ============
-    function showToast(text, type = 'success') {
-        const t = document.getElementById('toast');
-        t.textContent = text;
-        t.className = '';
-        if (type === 'error') t.className = 'error';
-        if (type === 'info') t.className = 'info';
-        t.classList.add('show');
-        clearTimeout(t._timer);
-        t._timer = setTimeout(() => t.classList.remove('show'), 2500);
-    }
-
-    // ============ ФОРМАТ ДАТЫ ============
-    function formatDate(timestamp) {
-        if (!timestamp) return '—';
-        const d = new Date(timestamp);
-        const now = new Date();
-        const pad = n => String(n).padStart(2, '0');
-        const timeStr = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-
-        const dDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-        const nDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-        const diffDays = Math.round((nDay - dDay) / (1000 * 60 * 60 * 24));
-
-        if (diffDays === 0) return `Сегодня, ${timeStr}`;
-        if (diffDays === 1) return `Вчера, ${timeStr}`;
-        if (diffDays < 7) return `${diffDays} дн. назад, ${timeStr}`;
-
-        return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}, ${timeStr}`;
-    }
-
-    // ============ ЭКРАНИРОВАНИЕ HTML И REGEX ============
-    function escapeHtml(s) {
-        return String(s)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-    }
-
-    function escapeRegExp(string) {
-        return String(string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-
-    // ============ ЖЁЛТАЯ ПОДСВЕТКА НАЙДЕННОГО ============
-    function highlightText(text, query) {
-        if (text === null || text === undefined) return '-';
-        const safeText = escapeHtml(text);
-
-        if (!query || !query.trim()) return safeText;
-
-        try {
-            const safeQuery = escapeHtml(query);
-            const escapedQuery = escapeRegExp(safeQuery);
-            const regex = new RegExp(`(${escapedQuery})`, 'gi');
-            return safeText.replace(regex, '<span class="highlight">$1</span>');
-        } catch (e) {
-            console.warn('highlightText error:', e);
-            return safeText;
-        }
-    }
-
-    // Проверка по всем полям
-    function matchesQuery(obj, query) {
-        if (!query) return true;
-        const q = query.toLowerCase().trim();
-        const fields = ['id', 'phone', 'login', 'password', 'comment'];
-        for (const f of fields) {
-            if (obj[f] !== undefined && obj[f] !== null) {
-                if (String(obj[f]).toLowerCase().includes(q)) return true;
-            }
-        }
-        return false;
-    }
-
-    // ============ МАСКА ПАРОЛЯ ============
-    function renderPassword(password) {
-        if (!password) return '-';
-        const masked = '•'.repeat(Math.min(String(password).length, 8));
-        const escapedPassword = String(password).replace(/"/g, '&quot;');
-        return `<span class="password-hidden" data-password="${escapedPassword}" onclick="togglePassword(this)">${masked}</span>`;
-    }
-
-    function togglePassword(element) {
-        const realPassword = element.getAttribute('data-password');
-        if (element.classList.contains('password-hidden')) {
-            element.textContent = realPassword;
-            element.classList.remove('password-hidden');
-            element.classList.add('password-visible');
+// ============ СТАТУС ЗАЯВОК ============
+function checkApplicationStatus() {
+    var pendingLogin = localStorage.getItem('volt_pending_login');
+    var pendingPassword = localStorage.getItem('volt_pending_password');
+    if (!pendingLogin) return;
+    var key = safeKey(pendingLogin);
+    Promise.all([
+        database.ref('vm_users/' + key).once('value'),
+        database.ref('vm_applications/' + key).once('value')
+    ]).then(function(results) {
+        var userSnap = results[0], appSnap = results[1];
+        if (userSnap.exists()) {
+            showBanner('accepted', '✅', 'Ваша заявка принята!', 'Логин: <b>' + pendingLogin + '</b><br>Можете войти в приложение.');
+            $('login-username').value = pendingLogin;
+            if (pendingPassword) $('login-password').value = pendingPassword;
+            switchTab('login');
+            localStorage.removeItem('volt_pending_login');
+            localStorage.removeItem('volt_pending_password');
+        } else if (appSnap.exists()) {
+            showBanner('pending', '⏳', 'Заявка на рассмотрении', 'Логин: <b>' + pendingLogin + '</b><br>Вашу заявку примут в течение 24 часов.');
         } else {
-            element.textContent = '•'.repeat(Math.min(realPassword.length, 8));
-            element.classList.remove('password-visible');
-            element.classList.add('password-hidden');
+            showBanner('rejected', '❌', 'Заявка отклонена', 'Вы можете подать новую заявку.');
+            localStorage.removeItem('volt_pending_login');
+            localStorage.removeItem('volt_pending_password');
         }
-    }
+    }).catch(function(err) { console.error(err); });
+}
 
-    // ============ ЛОГИКА FIREBASE ============
-    let applications = [];
-    let users = [];
-    let adminLoggedIn = false;
-    let autoAcceptEnabled = false;
-
-    const AUTO_ACCEPT_DELAY = 5 * 60 * 1000;
-    const ADMIN_PASS = 'gazik0303';
-
-    let modalMode = null;
-    let currentEditKey = null;
-    let currentEditLogin = null;
-    let currentEditOldId = null;
-
-    if (database) {
-        function checkApplicationStatus() {
-            const pendingLogin = localStorage.getItem('volt_pending_login');
-            const pendingPassword = localStorage.getItem('volt_pending_password');
-            const banner = document.getElementById('status-banner');
-
-            if (!pendingLogin) {
-                banner.style.display = 'none';
-                return;
-            }
-
-            const key = safeKey(pendingLogin);
-
-            Promise.all([
-                database.ref('vm_users/' + key).once('value'),
-                database.ref('vm_applications/' + key).once('value')
-            ]).then(([userSnap, appSnap]) => {
-                if (userSnap.exists()) {
-                    banner.className = 'accepted';
-                    banner.innerHTML = `✅ <b>Ваша заявка принята!</b><br>Логин: <b>${pendingLogin}</b><br>Можете войти.`;
-                    banner.style.display = 'block';
-
-                    document.getElementById('login-username').value = pendingLogin;
-                    if (pendingPassword) {
-                        document.getElementById('login-password').value = pendingPassword;
-                    }
-
-                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                    document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
-                    document.getElementById('tab-login').classList.add('active');
-                    document.getElementById('login-form').classList.add('active');
-
-                    localStorage.removeItem('volt_pending_login');
-                    localStorage.removeItem('volt_pending_password');
-                } else if (appSnap.exists()) {
-                    banner.className = 'pending';
-                    banner.innerHTML = `⏳ <b>Заявка на рассмотрении</b><br>Логин: <b>${pendingLogin}</b><br>Вашу заявку примут в течение 24 часа.`;
-                    banner.style.display = 'block';
-                } else {
-                    banner.className = 'rejected';
-                    banner.innerHTML = `❌ <b>Заявка отклонена</b><br>Вы можете подать новую заявку.`;
-                    banner.style.display = 'block';
-
-                    localStorage.removeItem('volt_pending_login');
-                    localStorage.removeItem('volt_pending_password');
-                }
-            }).catch(err => console.error(err));
+function watchApplicationStatus() {
+    var pendingLogin = localStorage.getItem('volt_pending_login');
+    if (!pendingLogin || !database) return;
+    var key = safeKey(pendingLogin);
+    database.ref('vm_users/' + key).on('value', function(snap) {
+        if (snap.exists()) {
+            var pendingPassword = localStorage.getItem('volt_pending_password');
+            showBanner('accepted', '✅', 'Ваша заявка принята!', 'Логин: <b>' + pendingLogin + '</b><br>Можете войти в приложение.');
+            $('login-username').value = pendingLogin;
+            if (pendingPassword) $('login-password').value = pendingPassword;
+            switchTab('login');
+            localStorage.removeItem('volt_pending_login');
+            localStorage.removeItem('volt_pending_password');
+            database.ref('vm_users/' + key).off('value');
         }
+    });
+}
 
-        function watchApplicationStatus() {
-            const pendingLogin = localStorage.getItem('volt_pending_login');
-            if (!pendingLogin) return;
-            const key = safeKey(pendingLogin);
+function checkResetStatus() {
+    clientResetKey = localStorage.getItem('volt_reset_key');
+    clientResetLogin = localStorage.getItem('volt_reset_login');
+    if (!clientResetKey || !clientResetLogin || !database) return;
 
-            database.ref('vm_users/' + key).on('value', snap => {
-                if (snap.exists()) {
-                    const banner = document.getElementById('status-banner');
-                    const pendingPassword = localStorage.getItem('volt_pending_password');
+    showBanner('reset', '🔑', 'Заявка на сброс пароля отправлена', 'Логин: <b>' + clientResetLogin + '</b><br>Ожидайте одобрения админа.');
 
-                    banner.className = 'accepted';
-                    banner.innerHTML = `✅ <b>Ваша заявка принята!</b><br>Логин: <b>${pendingLogin}</b><br>Можете войти.`;
-                    banner.style.display = 'block';
-
-                    document.getElementById('login-username').value = pendingLogin;
-                    if (pendingPassword) {
-                        document.getElementById('login-password').value = pendingPassword;
-                    }
-
-                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                    document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
-                    document.getElementById('tab-login').classList.add('active');
-                    document.getElementById('login-form').classList.add('active');
-
-                    localStorage.removeItem('volt_pending_login');
-                    localStorage.removeItem('volt_pending_password');
-                    database.ref('vm_users/' + key).off('value');
-                }
-            });
+    database.ref('password_reset_requests/' + clientResetKey).on('value', function(snap) {
+        var req = snap.val();
+        if (!req) {
+            localStorage.removeItem('volt_reset_key');
+            localStorage.removeItem('volt_reset_login');
+            showBanner('rejected', '❌', 'Заявка на сброс отклонена', 'Обратитесь к администратору.');
+            return;
         }
-
-        checkApplicationStatus();
-        watchApplicationStatus();
-
-        database.ref('vm_applications').on('value', snap => {
-            applications = [];
-            snap.forEach(child => {
-                const v = child.val() || {};
-                v._key = child.key;
-                applications.push(v);
-            });
-            applications.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-            const el = document.getElementById('requests-count');
-            if (el) el.textContent = applications.length;
-            if (adminLoggedIn) renderApplications();
-        });
-
-        database.ref('vm_users').on('value', snap => {
-            users = [];
-            snap.forEach(child => {
-                const v = child.val() || {};
-                v._key = child.key;
-                users.push(v);
-            });
-            users.sort((a, b) => {
-                const aTime = a.submitted_at || a.timestamp || 0;
-                const bTime = b.submitted_at || b.timestamp || 0;
-                return bTime - aTime;
-            });
-            const el = document.getElementById('users-count');
-            if (el) el.textContent = users.length;
-            if (adminLoggedIn) renderUsers();
-        });
-
-        database.ref('settings/auto_accept').on('value', snap => {
-            autoAcceptEnabled = snap.val() === true;
-            const toggle = document.getElementById('auto-accept-toggle');
-            const status = document.getElementById('auto-accept-status');
-            if (toggle) toggle.checked = autoAcceptEnabled;
-            if (status) {
-                status.textContent = autoAcceptEnabled
-                    ? 'Включено — заявки старше 5 мин принимаются автоматически'
-                    : 'Выключено — принимаю вручную';
-            }
-            if (autoAcceptEnabled) checkAutoAccept();
-        });
-    }
-
-    // ============ АВТО-ПРИЁМ ============
-    function toggleAutoAccept(enabled) {
-        if (!database) return;
-        database.ref('settings/auto_accept').set(enabled).then(() => {
-            showToast(enabled ? '⚡ Авто-приём включён' : '⏸ Авто-приём выключен', enabled ? 'success' : 'info');
-            if (enabled) checkAutoAccept();
-        }).catch(err => showToast('Ошибка: ' + err.message, 'error'));
-    }
-
-    function checkAutoAccept() {
-        if (!autoAcceptEnabled || !database) return;
-        const now = Date.now();
-        let count = 0;
-
-        applications.forEach(app => {
-            if (!app.timestamp) return;
-            const age = now - app.timestamp;
-            if (age >= AUTO_ACCEPT_DELAY) {
-                const key = app._key;
-                database.ref('vm_users/' + key).set({
-                    id: app.id,
-                    phone: app.phone,
-                    login: app.login,
-                    password: app.password,
-                    submitted_at: app.timestamp,
-                    timestamp: Date.now(),
-                    auto_accepted: true
-                }).then(() => database.ref('vm_applications/' + key).remove())
-                  .then(() => { count++; })
-                  .catch(err => console.error(err));
-            }
-        });
-
-        if (count > 0) {
-            setTimeout(() => showToast(`⚡ Авто-принято заявок: ${count}`, 'success'), 500);
+        if (req.status === 'approved') {
+            $('newpass-input').value = '';
+            $('newpass-confirm').value = '';
+            $('newpass-err').textContent = '';
+            $('newpass-modal').classList.add('active');
+            hideBanner();
         }
+    });
+}
+
+// ============ ВКЛАДКИ ============
+function switchTab(name) {
+    var tabs = document.querySelectorAll('.tab');
+    var forms = document.querySelectorAll('.form');
+    for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+    for (var j = 0; j < forms.length; j++) forms[j].classList.remove('active');
+    if (name === 'login') {
+        $('tab-login').classList.add('active');
+        $('login-form').classList.add('active');
+    } else {
+        $('tab-register').classList.add('active');
+        $('register-form').classList.add('active');
     }
+}
 
-    setInterval(checkAutoAccept, 30000);
+function clearAllErrors() {
+    var ids = ['login-error','phone-error','reg-login-error','reg-password-error'];
+    for (var i = 0; i < ids.length; i++) {
+        var el = $(ids[i]);
+        if (el) el.style.display = 'none';
+    }
+    var inputs = document.querySelectorAll('input');
+    for (var k = 0; k < inputs.length; k++) inputs[k].classList.remove('input-error');
+}
 
-    // ============ ВХОД ============
-    function submitLogin(event) {
-        event.preventDefault();
+// ============ ВХОД ============
+function submitLogin(event) {
+    if (event) event.preventDefault();
+    var loginInput = $('login-username');
+    var passInput = $('login-password');
+    var errorMsg = $('login-error');
+    var btn = $('login-btn');
+    var loginVal = loginInput.value.trim();
+    var passVal = passInput.value;
 
-        const loginInput = document.getElementById('login-username');
-        const passInput = document.getElementById('login-password');
-        const errorMsg = document.getElementById('login-error');
-        const btn = document.getElementById('login-btn');
+    loginInput.classList.remove('input-error');
+    passInput.classList.remove('input-error');
+    errorMsg.style.display = 'none';
 
-        const loginVal = loginInput.value.trim();
-        const passVal = passInput.value;
+    if (!loginVal || !passVal) { errorMsg.textContent = 'Введите логин и пароль'; errorMsg.style.display = 'block'; return; }
+    if (!database) { alert('Нет соединения с базой'); return; }
 
-        loginInput.classList.remove('input-error');
-        passInput.classList.remove('input-error');
-        errorMsg.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Проверка...';
 
-        if (!loginVal || !passVal) return;
-
-        if (!database) { alert('Ошибка подключения к базе данных'); return; }
-
-        btn.disabled = true;
-        btn.textContent = 'Проверка...';
-
-        database.ref('vm_users/' + safeKey(loginVal)).once('value').then(snap => {
-            const user = snap.val();
-
-            if (user && user.password === passVal && user.id) {
-                localStorage.setItem('volt_master_uid', user.id);
-                localStorage.setItem('volt_master_login', user.login);
-                localStorage.setItem('volt_master_logged_in', 'true');
-                localStorage.removeItem('volt_pending_login');
-                localStorage.removeItem('volt_pending_password');
-                window.location.replace('menu.html');
-            } else {
-                btn.disabled = false;
-                btn.textContent = 'Войти';
-                loginInput.classList.add('input-error');
-                passInput.classList.add('input-error');
-                errorMsg.style.display = 'block';
-            }
-        }).catch(err => {
+    database.ref('vm_users/' + safeKey(loginVal)).once('value').then(function(snap) {
+        var user = snap.val();
+        if (user && user.password === passVal && user.id) {
+            localStorage.setItem('volt_master_uid', user.id);
+            localStorage.setItem('volt_master_login', user.login);
+            localStorage.setItem('volt_master_logged_in', 'true');
+            localStorage.removeItem('volt_pending_login');
+            localStorage.removeItem('volt_pending_password');
+            window.location.replace('menu.html');
+        } else {
             btn.disabled = false;
             btn.textContent = 'Войти';
-            alert('Ошибка подключения: ' + err.message);
-        });
+            loginInput.classList.add('input-error');
+            passInput.classList.add('input-error');
+            errorMsg.textContent = 'Неверный логин или пароль';
+            errorMsg.style.display = 'block';
+        }
+    }).catch(function(err) {
+        btn.disabled = false;
+        btn.textContent = 'Войти';
+        alert('Ошибка: ' + err.message);
+    });
+}
+
+// ============ РЕГИСТРАЦИЯ ============
+function submitApplication(event) {
+    if (event) event.preventDefault();
+    var phone = $('reg-phone').value.trim();
+    var login = $('reg-login').value.trim();
+    var password = $('reg-password').value;
+    var comment = $('reg-comment').value;
+    var btn = $('reg-btn');
+
+    clearAllErrors();
+
+    var phoneRegex = /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
+    if (!phoneRegex.test(phone)) {
+        $('reg-phone').classList.add('input-error');
+        $('phone-error').style.display = 'block';
+        return;
+    }
+    var credRegex = /^[A-Za-zА-Яа-я0-9]+$/;
+    if (login.length < 6) {
+        $('reg-login').classList.add('input-error');
+        $('reg-login-error').textContent = 'Логин минимум 6 символов';
+        $('reg-login-error').style.display = 'block';
+        return;
+    }
+    if (!credRegex.test(login)) {
+        $('reg-login').classList.add('input-error');
+        $('reg-login-error').textContent = 'Только буквы и цифры';
+        $('reg-login-error').style.display = 'block';
+        return;
+    }
+    if (password.length < 6) {
+        $('reg-password').classList.add('input-error');
+        $('reg-password-error').textContent = 'Пароль минимум 6 символов';
+        $('reg-password-error').style.display = 'block';
+        return;
+    }
+    if (!credRegex.test(password)) {
+        $('reg-password').classList.add('input-error');
+        $('reg-password-error').textContent = 'Только буквы и цифры';
+        $('reg-password-error').style.display = 'block';
+        return;
     }
 
-    // ============ ОТПРАВКА ЗАЯВКИ ============
-    function submitApplication(event) {
-        event.preventDefault();
+    if (!database) { alert('Нет соединения'); return; }
+    var newId = Math.floor(1000 + Math.random() * 9000).toString();
+    btn.disabled = true;
+    btn.textContent = 'Отправка...';
 
-        const phone = document.getElementById('reg-phone').value.trim();
-        const loginInput = document.getElementById('reg-login');
-        const passwordInput = document.getElementById('reg-password');
-        const login = loginInput.value.trim();
-        const password = passwordInput.value;
-        const comment = document.getElementById('reg-comment').value;
-        const phoneError = document.getElementById('phone-error');
-        const loginError = document.getElementById('reg-login-error');
-        const passwordError = document.getElementById('reg-password-error');
-        const btn = document.getElementById('reg-btn');
-
-        const phoneRegex = /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
-        if (!phoneRegex.test(phone)) {
-            document.getElementById('reg-phone').classList.add('input-error');
-            phoneError.style.display = 'block';
-            document.getElementById('reg-phone').scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        } else {
-            document.getElementById('reg-phone').classList.remove('input-error');
-            phoneError.style.display = 'none';
-        }
-
-        loginInput.classList.remove('input-error');
-        passwordInput.classList.remove('input-error');
-        loginError.style.display = 'none';
-        passwordError.style.display = 'none';
-
-        const credentialsRegex = /^[A-Za-zА-Яа-я0-9]+$/;
-
-        if (login.length < 6) {
-            loginInput.classList.add('input-error');
-            loginError.textContent = 'Логин должен содержать минимум 6 символов';
-            loginError.style.display = 'block';
-            loginInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
-        if (!credentialsRegex.test(login)) {
-            loginInput.classList.add('input-error');
-            loginError.textContent = 'Логин может содержать только буквы и цифры';
-            loginError.style.display = 'block';
-            loginInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
-        if (password.length < 6) {
-            passwordInput.classList.add('input-error');
-            passwordError.textContent = 'Пароль должен содержать минимум 6 символов';
-            passwordError.style.display = 'block';
-            passwordInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
-        if (!credentialsRegex.test(password)) {
-            passwordInput.classList.add('input-error');
-            passwordError.textContent = 'Пароль может содержать только буквы и цифры';
-            passwordError.style.display = 'block';
-            passwordInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
-
-        if (!database) { alert('Ошибка подключения к базе данных'); return; }
-
-        const newId = Math.floor(1000 + Math.random() * 9000).toString();
-
-        btn.disabled = true;
-        btn.textContent = 'Отправка...';
-
-        database.ref('vm_users/' + safeKey(login)).once('value').then(userSnap => {
-            if (userSnap.exists()) {
-                btn.disabled = false;
-                btn.textContent = 'Отправить заявку';
-                alert('Такой логин уже зарегистрирован. Выберите другой.');
-                return;
-            }
-
-            return database.ref('vm_applications/' + safeKey(login)).set({
-                id: newId,
-                phone: phone,
-                login: login,
-                password: password,
-                comment: comment,
-                timestamp: Date.now()
-            }).then(() => {
-                localStorage.setItem('volt_pending_login', login);
-                localStorage.setItem('volt_pending_password', password);
-
-                btn.disabled = false;
-                btn.textContent = 'Отправить заявку';
-                document.getElementById('register-form').reset();
-                document.getElementById('reg-phone').value = '';
-
-                const banner = document.getElementById('status-banner');
-                banner.className = 'pending';
-                banner.innerHTML = `⏳ <b>Заявка на рассмотрении</b><br>Логин: <b>${login}</b><br>Вашу заявку примут в течение 24 часа.`;
-                banner.style.display = 'block';
-
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
-                document.getElementById('tab-login').classList.add('active');
-                document.getElementById('login-form').classList.add('active');
-
-                watchApplicationStatus();
-            });
-        }).catch(err => {
+    database.ref('vm_users/' + safeKey(login)).once('value').then(function(userSnap) {
+        if (userSnap.exists()) {
             btn.disabled = false;
             btn.textContent = 'Отправить заявку';
-            alert('Ошибка: ' + err.message);
+            alert('Такой логин уже зарегистрирован.');
+            return;
+        }
+        return database.ref('vm_applications/' + safeKey(login)).set({
+            id: newId, phone: phone, login: login, password: password, comment: comment, timestamp: Date.now()
+        }).then(function() {
+            localStorage.setItem('volt_pending_login', login);
+            localStorage.setItem('volt_pending_password', password);
+            btn.disabled = false;
+            btn.textContent = 'Отправить заявку';
+            $('register-form').reset();
+            $('reg-phone').value = '';
+            showBanner('pending', '⏳', 'Заявка отправлена!', 'Логин: <b>' + login + '</b><br>Вашу заявку примут в течение 24 часов.');
+            switchTab('login');
+            watchApplicationStatus();
+        });
+    }).catch(function(err) {
+        btn.disabled = false;
+        btn.textContent = 'Отправить заявку';
+        alert('Ошибка: ' + err.message);
+    });
+}
+
+// ============ ВОССТАНОВЛЕНИЕ ПАРОЛЯ ============
+function openForgotModal() {
+    $('forgot-phone').value = '';
+    $('forgot-err').textContent = '';
+    $('forgot-modal').classList.add('active');
+}
+function closeForgotModal() {
+    $('forgot-modal').classList.remove('active');
+}
+
+function sendResetRequest() {
+    var phone = $('forgot-phone').value.trim();
+    var errEl = $('forgot-err');
+    errEl.textContent = '';
+
+    if (!phone) { errEl.textContent = 'Введите номер телефона'; return; }
+    if (!/^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/.test(phone)) {
+        errEl.textContent = 'Неверный формат номера';
+        return;
+    }
+    if (!database) { errEl.textContent = 'Нет соединения'; return; }
+
+    errEl.textContent = '⏳ Проверяю...';
+
+    database.ref('vm_users').once('value').then(function(snap) {
+        var all = snap.val() || {};
+        var foundKey = null, foundUser = null;
+        for (var k in all) {
+            if (all[k] && String(all[k].phone) === phone) {
+                foundKey = k;
+                foundUser = all[k];
+                break;
+            }
+        }
+        if (!foundUser) {
+            errEl.textContent = 'Пользователь с таким номером не найден';
+            return;
+        }
+        return database.ref('password_reset_requests/' + foundKey).once('value').then(function(existing) {
+            if (existing.exists()) {
+                var ex = existing.val();
+                if (ex.status === 'pending') {
+                    errEl.textContent = 'Заявка уже отправлена. Ожидайте.';
+                    return;
+                }
+                if (ex.status === 'approved') {
+                    clientResetKey = foundKey;
+                    clientResetLogin = foundUser.login;
+                    localStorage.setItem('volt_reset_key', foundKey);
+                    localStorage.setItem('volt_reset_login', foundUser.login);
+                    closeForgotModal();
+                    $('newpass-input').value = '';
+                    $('newpass-confirm').value = '';
+                    $('newpass-err').textContent = '';
+                    $('newpass-modal').classList.add('active');
+                    return;
+                }
+            }
+            return database.ref('password_reset_requests/' + foundKey).set({
+                login: foundUser.login,
+                id: foundUser.id || '—',
+                phone: phone,
+                status: 'pending',
+                timestamp: Date.now()
+            }).then(function() {
+                localStorage.setItem('volt_reset_key', foundKey);
+                localStorage.setItem('volt_reset_login', foundUser.login);
+                clientResetKey = foundKey;
+                clientResetLogin = foundUser.login;
+                closeForgotModal();
+                showBanner('reset', '🔑', 'Заявка на сброс пароля отправлена', 'Логин: <b>' + foundUser.login + '</b><br>Ваша заявка будет рассмотрена в течение 24 часов.');
+                showToast('🔑 Заявка отправлена админу', 'blue');
+
+                database.ref('password_reset_requests/' + foundKey).on('value', function(snap2) {
+                    var req = snap2.val();
+                    if (!req) {
+                        showBanner('rejected', '❌', 'Заявка отклонена', 'Обратитесь к администратору.');
+                        localStorage.removeItem('volt_reset_key');
+                        localStorage.removeItem('volt_reset_login');
+                        return;
+                    }
+                    if (req.status === 'approved') {
+                        $('newpass-input').value = '';
+                        $('newpass-confirm').value = '';
+                        $('newpass-err').textContent = '';
+                        $('newpass-modal').classList.add('active');
+                        hideBanner();
+                    }
+                });
+            });
+        });
+    }).catch(function(err) {
+        errEl.textContent = 'Ошибка: ' + err.message;
+    });
+}
+
+function saveNewPassword() {
+    var p1 = $('newpass-input').value;
+    var p2 = $('newpass-confirm').value;
+    var errEl = $('newpass-err');
+    errEl.textContent = '';
+
+    if (!clientResetKey || !clientResetLogin) { errEl.textContent = 'Сессия потеряна'; return; }
+    if (p1.length < 6) { errEl.textContent = 'Минимум 6 символов'; return; }
+    if (!/^[A-Za-zА-Яа-я0-9]+$/.test(p1)) { errEl.textContent = 'Только буквы и цифры'; return; }
+    if (p1 !== p2) { errEl.textContent = 'Пароли не совпадают'; return; }
+
+    errEl.textContent = '⏳ Сохраняю...';
+
+    database.ref('vm_users/' + clientResetKey + '/password').set(p1).then(function() {
+        return database.ref('password_reset_requests/' + clientResetKey).remove();
+    }).then(function() {
+        localStorage.removeItem('volt_reset_key');
+        localStorage.removeItem('volt_reset_login');
+        $('newpass-modal').classList.remove('active');
+        $('login-username').value = clientResetLogin;
+        $('login-password').value = p1;
+        showBanner('accepted', '✅', 'Пароль изменён!', 'Логин: <b>' + clientResetLogin + '</b><br>Теперь можете войти.');
+        showToast('✅ Пароль успешно изменён');
+    }).catch(function(err) {
+        errEl.textContent = 'Ошибка: ' + err.message;
+    });
+}
+
+// ============ АВТО-ПРИЁМ ============
+function toggleAutoAccept(enabled) {
+    if (!database) return;
+    database.ref('settings/auto_accept').set(enabled).then(function() {
+        showToast(enabled ? '⚡ Авто-приём включён' : '⏸ Авто-приём выключен', enabled ? 'success' : 'info');
+        if (enabled) checkAutoAccept();
+    });
+}
+
+function checkAutoAccept() {
+    if (!autoAcceptEnabled || !database) return;
+    var now = Date.now();
+    var count = 0;
+    for (var i = 0; i < applications.length; i++) {
+        var app = applications[i];
+        if (!app.timestamp) continue;
+        if (now - app.timestamp >= AUTO_ACCEPT_DELAY) {
+            var key = app._key;
+            (function(k, a) {
+                database.ref('vm_users/' + k).set({
+                    id: a.id, phone: a.phone, login: a.login, password: a.password,
+                    submitted_at: a.timestamp, timestamp: Date.now(), auto_accepted: true
+                }).then(function() {
+                    return database.ref('vm_applications/' + k).remove();
+                }).then(function() { count++; }).catch(function(e) { console.error(e); });
+            })(key, app);
+        }
+    }
+    if (count > 0) setTimeout(function() { showToast('⚡ Авто-принято: ' + count, 'success'); }, 500);
+}
+
+// ============ АДМИН ============
+function loginAdmin() {
+    var pass = $('admin-pass').value;
+    if (pass === ADMIN_PASS) {
+        adminLoggedIn = true;
+        $('admin-login-section').style.display = 'none';
+        $('admin-dashboard').style.display = 'block';
+        $('request-search').value = '';
+        $('user-search').value = '';
+        renderApplications();
+        renderUsers();
+        renderResets();
+        checkAutoAccept();
+    } else {
+        alert('Неверный пароль администратора!');
+    }
+}
+
+function closeAdminPanel() {
+    adminLoggedIn = false;
+    $('admin-panel').classList.remove('active');
+    $('admin-panel').style.display = 'none';
+    $('user-view').style.display = 'block';
+}
+
+// ============ РЕНДЕР ЗАЯВОК НА СБРОС ============
+function renderResets() {
+    var container = $('resets-list');
+    if (!container) return;
+    container.innerHTML = '';
+    if (resetRequests.length === 0) {
+        container.innerHTML = '<div class="empty-msg">Нет активных заявок на сброс</div>';
+        return;
+    }
+    for (var i = 0; i < resetRequests.length; i++) {
+        var req = resetRequests[i];
+        var div = document.createElement('div');
+        div.className = 'list-item reset-item';
+        var statusText = '', statusColor = '#ffb84d';
+        if (req.status === 'approved') { statusText = '✅ Одобрено (ждём новый пароль)'; statusColor = '#4dff88'; }
+        var approveBtn = req.status !== 'approved' ? '<button type="button" class="btn-success" data-approve="' + req._key + '">✅ Одобрить</button>' : '';
+        div.innerHTML =
+            '<div class="date-row blue">🕐 ' + formatDate(req.timestamp) + '</div>' +
+            '<p><span>Логин:</span> <b>' + escapeHtml(req.login) + '</b></p>' +
+            '<p><span>ID:</span> ' + escapeHtml(req.id || '—') + '</p>' +
+            '<p><span>Тел:</span> ' + escapeHtml(req.phone || '—') + '</p>' +
+            '<p style="color:' + statusColor + ';font-size:12px;font-weight:700;">' + statusText + '</p>' +
+            '<div class="list-actions">' + approveBtn +
+            '<button type="button" class="btn-danger" data-reject="' + req._key + '">❌ Отклонить</button>' +
+            '</div>';
+        container.appendChild(div);
+    }
+    var approveBtns = container.querySelectorAll('[data-approve]');
+    for (var a = 0; a < approveBtns.length; a++) {
+        approveBtns[a].addEventListener('click', function() { approveReset(this.getAttribute('data-approve')); });
+    }
+    var rejectBtns = container.querySelectorAll('[data-reject]');
+    for (var r = 0; r < rejectBtns.length; r++) {
+        rejectBtns[r].addEventListener('click', function() { rejectReset(this.getAttribute('data-reject')); });
+    }
+}
+
+function approveReset(key) {
+    if (!database) return;
+    var req = null;
+    for (var i = 0; i < resetRequests.length; i++) if (resetRequests[i]._key === key) req = resetRequests[i];
+    if (!req) return;
+    database.ref('password_reset_requests/' + key + '/status').set('approved').then(function() {
+        showToast('✅ Сброс для "' + req.login + '" одобрен', 'success');
+    }).catch(function(err) {
+        showToast('Ошибка: ' + err.message, 'error');
+    });
+}
+
+function rejectReset(key) {
+    if (!database) return;
+    var req = null;
+    for (var i = 0; i < resetRequests.length; i++) if (resetRequests[i]._key === key) req = resetRequests[i];
+    if (!req) return;
+    if (confirm('Отклонить сброс пароля для "' + req.login + '"?')) {
+        database.ref('password_reset_requests/' + key).remove().then(function() {
+            showToast('❌ Сброс "' + req.login + '" отклонён', 'info');
+        }).catch(function(err) {
+            showToast('Ошибка: ' + err.message, 'error');
         });
     }
+}
 
-    // ============ СЕКРЕТНАЯ КОМБИНАЦИЯ ============
-    let loginClickCount = 0;
-    let logoClickCount = 0;
-    let clickTimer;
+// ============ РЕНДЕР ЗАЯВОК ============
+function renderApplications() {
+    var container = $('requests-list');
+    if (!container) return;
+    var input = $('request-search');
+    var q = input.value.trim();
+    var info = $('request-search-info');
+    var clearBtn = $('request-clear');
 
-    document.getElementById('tab-login').addEventListener('click', () => {
-        loginClickCount++;
-        clearTimeout(clickTimer);
-        clickTimer = setTimeout(() => { loginClickCount = 0; logoClickCount = 0; }, 3000);
+    // Обновляем вид поиска
+    if (q) { input.classList.add('has-value'); clearBtn.classList.add('visible'); }
+    else { input.classList.remove('has-value'); clearBtn.classList.remove('visible'); }
+
+    // Фильтруем по всем полям
+    var filtered = [];
+    for (var i = 0; i < applications.length; i++) {
+        if (matchesQuery(applications[i], q)) filtered.push(applications[i]);
+    }
+
+    // Информация о количестве
+    if (q) {
+        info.textContent = '🔍 Найдено: ' + filtered.length + ' из ' + applications.length;
+        info.classList.add('visible');
+    } else {
+        info.classList.remove('visible');
+    }
+
+    container.innerHTML = '';
+    if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-msg">' + (q ? '🔍 Ничего не найдено' : 'Нет новых заявок') + '</div>';
+        return;
+    }
+    for (var j = 0; j < filtered.length; j++) {
+        var app = filtered[j];
+        var div = document.createElement('div');
+        div.className = 'list-item' + (j === 0 && !q ? ' fresh' : '');
+        var timerText = '';
+        if (app.timestamp && autoAcceptEnabled) {
+            var left = AUTO_ACCEPT_DELAY - (Date.now() - app.timestamp);
+            if (left > 0) {
+                var min = Math.floor(left / 60000);
+                var sec = Math.floor((left % 60000) / 1000);
+                timerText = '<p style="color:#ff9900;font-size:11px;">⚡ Авто-приём через ' + min + ':' + (sec < 10 ? '0' + sec : sec) + '</p>';
+            } else {
+                timerText = '<p style="color:#4dff88;font-size:11px;">⚡ Готово к авто-приёму</p>';
+            }
+        }
+        div.innerHTML =
+            '<div class="date-row ' + (j > 0 ? 'old' : '') + '">🕐 Подана: ' + formatDate(app.timestamp) + '</div>' +
+            '<p><span>ID:</span> ' + highlightText(app.id, q) + '</p>' +
+            '<p><span>Тел:</span> ' + highlightText(app.phone, q) + '</p>' +
+            '<p><span>Логин:</span> ' + highlightText(app.login, q) + '</p>' +
+            '<p><span>Пароль:</span> ' + renderPassword(app.password) + '</p>' +
+            '<p><span>Коммент:</span> ' + highlightText(app.comment || '-', q) + '</p>' +
+            timerText +
+            '<div class="list-actions">' +
+                '<button type="button" class="btn-success" data-accept="' + app._key + '">✅ Принять</button>' +
+                '<button type="button" class="btn-danger" data-del-req="' + app._key + '">❌ Отклонить</button>' +
+            '</div>';
+        container.appendChild(div);
+    }
+    var acceptBtns = container.querySelectorAll('[data-accept]');
+    for (var a = 0; a < acceptBtns.length; a++) {
+        acceptBtns[a].addEventListener('click', function() { acceptRequest(this.getAttribute('data-accept')); });
+    }
+    var delBtns = container.querySelectorAll('[data-del-req]');
+    for (var d = 0; d < delBtns.length; d++) {
+        delBtns[d].addEventListener('click', function() { deleteRequest(this.getAttribute('data-del-req')); });
+    }
+}
+
+// ============ РЕНДЕР ПОЛЬЗОВАТЕЛЕЙ ============
+function renderUsers() {
+    var container = $('users-list');
+    if (!container) return;
+    var input = $('user-search');
+    var q = input.value.trim();
+    var info = $('user-search-info');
+    var clearBtn = $('user-clear');
+
+    if (q) { input.classList.add('has-value'); clearBtn.classList.add('visible'); }
+    else { input.classList.remove('has-value'); clearBtn.classList.remove('visible'); }
+
+    var filtered = [];
+    for (var i = 0; i < users.length; i++) {
+        if (matchesQuery(users[i], q)) filtered.push(users[i]);
+    }
+
+    if (q) {
+        info.textContent = '🔍 Найдено: ' + filtered.length + ' из ' + users.length;
+        info.classList.add('visible');
+    } else {
+        info.classList.remove('visible');
+    }
+
+    container.innerHTML = '';
+    if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-msg">' + (q ? '🔍 Ничего не найдено' : 'Нет зарегистрированных пользователей') + '</div>';
+        return;
+    }
+    for (var j = 0; j < filtered.length; j++) {
+        var u = filtered[j];
+        var div = document.createElement('div');
+        div.className = 'list-item' + (j === 0 && !q ? ' fresh' : '');
+        var autoTag = u.auto_accepted ? ' <span style="color:#ff9900;font-size:10px;">⚡ авто</span>' : '';
+        var submitDate = u.submitted_at || u.timestamp;
+        var submittedRow = submitDate ? '<div class="date-row ' + (j > 0 ? 'old' : '') + '">🕐 Подана: ' + formatDate(submitDate) + '</div>' : '';
+        var acceptedRow = (u.auto_accepted && u.timestamp && u.submitted_at && u.timestamp !== u.submitted_at) ?
+            '<p style="font-size:11px;color:#4dff88;">✅ Принята: ' + formatDate(u.timestamp) + '</p>' : '';
+
+        div.innerHTML = submittedRow +
+            '<p><span>ID:</span> ' + highlightText(u.id, q) + autoTag + '</p>' +
+            '<p><span>Тел:</span> ' + highlightText(u.phone, q) + '</p>' +
+            '<p><span>Логин:</span> ' + highlightText(u.login, q) + '</p>' +
+            '<p><span>Пароль:</span> ' + renderPassword(u.password) + '</p>' +
+            acceptedRow +
+            '<div class="list-actions">' +
+                '<button type="button" class="btn-info" data-chlogin="' + u._key + '">📝 Логин</button>' +
+                '<button type="button" class="btn-warning" data-chid="' + u._key + '">✏️ ID</button>' +
+                '<button type="button" class="btn-danger" data-delusr="' + u._key + '">🗑 Удалить</button>' +
+            '</div>';
+        container.appendChild(div);
+    }
+    var loginBtns = container.querySelectorAll('[data-chlogin]');
+    for (var a = 0; a < loginBtns.length; a++) {
+        loginBtns[a].addEventListener('click', function() { openLoginModal(this.getAttribute('data-chlogin')); });
+    }
+    var idBtns = container.querySelectorAll('[data-chid]');
+    for (var b = 0; b < idBtns.length; b++) {
+        idBtns[b].addEventListener('click', function() { openIdModal(this.getAttribute('data-chid')); });
+    }
+    var delBtns = container.querySelectorAll('[data-delusr]');
+    for (var c = 0; c < delBtns.length; c++) {
+        delBtns[c].addEventListener('click', function() { deleteUser(this.getAttribute('data-delusr')); });
+    }
+}
+
+function renderPassword(password) {
+    if (!password) return '-';
+    var masked = '';
+    var len = Math.min(String(password).length, 8);
+    for (var i = 0; i < len; i++) masked += '•';
+    var escaped = String(password).replace(/"/g, '&quot;');
+    return '<span class="password-hidden" data-password="' + escaped + '" data-toggle="pwd">' + masked + '</span>';
+}
+
+// ============ ДЕЙСТВИЯ АДМИНА ============
+function acceptRequest(key) {
+    if (!database) return;
+    var app = null;
+    for (var i = 0; i < applications.length; i++) if (applications[i]._key === key) app = applications[i];
+    if (!app) return;
+    database.ref('vm_users/' + key).set({
+        id: app.id, phone: app.phone, login: app.login, password: app.password,
+        submitted_at: app.timestamp, timestamp: Date.now()
+    }).then(function() {
+        return database.ref('vm_applications/' + key).remove();
+    }).then(function() {
+        showToast('✅ ' + app.login + ' принят (ID: ' + app.id + ')');
+    }).catch(function(err) {
+        showToast('Ошибка: ' + err.message, 'error');
+    });
+}
+
+function deleteRequest(key) {
+    if (!database) return;
+    var app = null;
+    for (var i = 0; i < applications.length; i++) if (applications[i]._key === key) app = applications[i];
+    if (!app) return;
+    if (confirm('Отклонить заявку "' + app.login + '"?')) {
+        database.ref('vm_applications/' + key).remove().then(function() {
+            showToast('❌ Заявка "' + app.login + '" отклонена', 'info');
+        });
+    }
+}
+
+function deleteUser(key) {
+    if (!database) return;
+    var u = null;
+    for (var i = 0; i < users.length; i++) if (users[i]._key === key) u = users[i];
+    if (!u) return;
+    if (confirm('Удалить пользователя "' + u.login + '"?')) {
+        database.ref('vm_users/' + key).remove().then(function() {
+            showToast('🗑 "' + u.login + '" удалён', 'info');
+        });
+    }
+}
+
+// ============ СМЕНА ID / ЛОГИНА ============
+function openIdModal(key) {
+    var u = null;
+    for (var i = 0; i < users.length; i++) if (users[i]._key === key) u = users[i];
+    if (!u) return;
+    modalMode = 'id'; currentEditKey = key; currentEditLogin = u.login; currentEditOldId = u.id;
+    $('id-modal-title').textContent = '✏️ Смена ID';
+    $('id-modal-user').textContent = 'Пользователь: ' + u.login;
+    $('id-modal-hint').innerHTML = 'Текущий ID: <b>' + (u.id || '—') + '</b>';
+    var input = $('id-modal-input');
+    input.placeholder = '00';
+    input.setAttribute('inputmode', 'numeric');
+    input.setAttribute('type', 'tel');
+    input.value = '';
+    $('id-modal-err').textContent = '';
+    $('id-modal').classList.add('active');
+}
+
+function openLoginModal(key) {
+    var u = null;
+    for (var i = 0; i < users.length; i++) if (users[i]._key === key) u = users[i];
+    if (!u) return;
+    modalMode = 'login'; currentEditKey = key; currentEditLogin = u.login; currentEditOldId = u.id;
+    $('id-modal-title').textContent = '📝 Смена логина';
+    $('id-modal-user').textContent = 'Текущий логин: ' + u.login;
+    $('id-modal-hint').innerHTML = 'ID пользователя: <b>' + (u.id || '—') + '</b>';
+    var input = $('id-modal-input');
+    input.placeholder = 'Новый логин';
+    input.setAttribute('inputmode', 'text');
+    input.setAttribute('type', 'text');
+    input.value = '';
+    $('id-modal-err').textContent = '';
+    $('id-modal').classList.add('active');
+}
+
+function closeIdModal() {
+    $('id-modal').classList.remove('active');
+    modalMode = null; currentEditKey = null; currentEditLogin = null; currentEditOldId = null;
+}
+
+function saveModalValue() {
+    if (modalMode === 'id') return saveNewId();
+    if (modalMode === 'login') return saveNewLogin();
+}
+
+function saveNewId() {
+    var newId = $('id-modal-input').value.trim();
+    var errEl = $('id-modal-err');
+    if (!/^\d{2,}$/.test(newId)) { errEl.textContent = 'ID минимум 2 цифры'; return; }
+    if (String(newId) === String(currentEditOldId)) { errEl.textContent = 'Это текущий ID'; return; }
+    var conflict = null;
+    for (var i = 0; i < users.length; i++) {
+        if (users[i]._key !== currentEditKey && String(users[i].id) === String(newId)) conflict = users[i].login;
+    }
+    if (conflict) { errEl.textContent = 'ID занят: "' + conflict + '"'; return; }
+    errEl.textContent = '⏳ Сохраняю...';
+
+    var oldId = String(currentEditOldId);
+    var key = currentEditKey;
+
+    database.ref('vm_users/' + key + '/id').set(newId).then(function() {
+        return database.ref('shabashki/active').once('value');
+    }).then(function(activeSnap) {
+        var active = activeSnap.val() || {};
+        var promises = [];
+        for (var k in active) {
+            var order = active[k]; var upds = {};
+            if (String(order.ownerID) === oldId) upds.ownerID = newId;
+            if (String(order.workerID) === oldId) upds.workerID = newId;
+            if (order.rejections) {
+                for (var rK in order.rejections) {
+                    var txt = order.rejections[rK].text || '';
+                    if (txt.indexOf('ID-' + oldId) !== -1) upds['rejections/' + rK + '/text'] = txt.split('ID-' + oldId).join('ID-' + newId);
+                }
+            }
+            if (Object.keys(upds).length > 0) promises.push(database.ref('shabashki/active/' + k).update(upds));
+        }
+        return Promise.all(promises);
+    }).then(function() {
+        return database.ref('shabashki/archive').once('value');
+    }).then(function(archiveSnap) {
+        var archive = archiveSnap.val() || {};
+        var promises = [];
+        for (var k in archive) {
+            var item = archive[k]; var upds = {};
+            if (String(item.ownerID) === oldId) upds.ownerID = newId;
+            if (String(item.finisherID) === oldId) upds.finisherID = newId;
+            if (Object.keys(upds).length > 0) promises.push(database.ref('shabashki/archive/' + k).update(upds));
+        }
+        return Promise.all(promises);
+    }).then(function() {
+        return database.ref('system_updates/' + oldId).set({
+            action: 'CHANGE_LOCAL_ID', newID: newId, admin_pass: ADMIN_PASS,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+    }).then(function() {
+        var savedLogin = currentEditLogin;
+        closeIdModal();
+        showToast('✏️ ' + savedLogin + ': ID ' + oldId + ' → ' + newId);
+    }).catch(function(err) {
+        errEl.textContent = 'Ошибка: ' + err.message;
+    });
+}
+
+function saveNewLogin() {
+    var newLogin = $('id-modal-input').value.trim();
+    var errEl = $('id-modal-err');
+    if (newLogin.length < 6) { errEl.textContent = 'Логин минимум 6 символов'; return; }
+    if (!/^[A-Za-zА-Яа-я0-9]+$/.test(newLogin)) { errEl.textContent = 'Только буквы и цифры'; return; }
+    if (newLogin.toLowerCase() === String(currentEditLogin).toLowerCase()) { errEl.textContent = 'Это текущий логин'; return; }
+    var newKey = safeKey(newLogin);
+    var conflict = null;
+    for (var i = 0; i < users.length; i++) {
+        if (users[i]._key !== currentEditKey && safeKey(users[i].login) === newKey) conflict = users[i].login;
+    }
+    if (conflict) { errEl.textContent = 'Логин "' + newLogin + '" занят'; return; }
+    errEl.textContent = '⏳ Сохраняю...';
+
+    var oldKey = currentEditKey;
+    var oldLogin = currentEditLogin;
+    var userData = null;
+    for (var j = 0; j < users.length; j++) if (users[j]._key === oldKey) userData = users[j];
+    if (!userData) { errEl.textContent = 'Пользователь не найден'; return; }
+
+    database.ref('vm_applications/' + newKey).once('value').then(function(appsSnap) {
+        if (appsSnap.exists()) {
+            errEl.textContent = 'Логин занят (есть заявка)';
+            throw new Error('exists');
+        }
+        return database.ref('vm_users/' + newKey).set({
+            id: userData.id, phone: userData.phone, login: newLogin, password: userData.password,
+            submitted_at: userData.submitted_at || userData.timestamp || Date.now(),
+            timestamp: Date.now()
+        });
+    }).then(function() {
+        return database.ref('vm_users/' + oldKey).remove();
+    }).then(function() {
+        return database.ref('system_updates/' + userData.id).set({
+            action: 'CHANGE_LOCAL_LOGIN', newLogin: newLogin, oldLogin: oldLogin,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+    }).then(function() {
+        closeIdModal();
+        showToast('📝 Логин "' + oldLogin + '" → "' + newLogin + '"');
+    }).catch(function(err) {
+        if (err.message !== 'exists') errEl.textContent = 'Ошибка: ' + err.message;
+    });
+}
+
+// ============ ПОДКЛЮЧЕНИЕ ОБРАБОТЧИКОВ ============
+function attachHandlers() {
+    $('tab-login').addEventListener('click', function() { clearAllErrors(); switchTab('login'); });
+    $('tab-register').addEventListener('click', function() { clearAllErrors(); switchTab('register'); });
+
+    $('forgot-btn').addEventListener('click', function(e) { e.preventDefault(); openForgotModal(); });
+    $('forgot-cancel-btn').addEventListener('click', closeForgotModal);
+    $('forgot-send-btn').addEventListener('click', sendResetRequest);
+
+    $('newpass-save-btn').addEventListener('click', saveNewPassword);
+
+    $('id-cancel-btn').addEventListener('click', closeIdModal);
+    $('id-save-btn').addEventListener('click', saveModalValue);
+    $('id-modal-input').addEventListener('input', function() {
+        if (modalMode === 'id') this.value = this.value.replace(/\D/g, '');
+        else this.value = this.value.replace(/[^A-Za-zА-Яа-я0-9]/g, '');
+        $('id-modal-err').textContent = '';
     });
 
-    document.getElementById('logo-trigger').addEventListener('click', () => {
+    $('forgot-modal').addEventListener('click', function(e) { if (e.target === this) closeForgotModal(); });
+    $('id-modal').addEventListener('click', function(e) { if (e.target === this) closeIdModal(); });
+
+    $('admin-login-btn').addEventListener('click', loginAdmin);
+    $('admin-back-btn').addEventListener('click', closeAdminPanel);
+    $('admin-close-btn').addEventListener('click', closeAdminPanel);
+    $('auto-accept-toggle').addEventListener('change', function() { toggleAutoAccept(this.checked); });
+
+    applyPhoneMask($('reg-phone'));
+    applyPhoneMask($('forgot-phone'));
+
+    // ===== ПОИСК =====
+    $('request-search').addEventListener('input', renderApplications);
+    $('request-search').addEventListener('keyup', renderApplications);
+    $('user-search').addEventListener('input', renderUsers);
+    $('user-search').addEventListener('keyup', renderUsers);
+
+    $('request-clear').addEventListener('click', function() { $('request-search').value = ''; renderApplications(); });
+    $('user-clear').addEventListener('click', function() { $('user-search').value = ''; renderUsers(); });
+
+    // Секретная комбинация
+    var loginClickCount = 0, logoClickCount = 0, clickTimer;
+    $('tab-login').addEventListener('click', function() {
+        loginClickCount++;
+        clearTimeout(clickTimer);
+        clickTimer = setTimeout(function() { loginClickCount = 0; logoClickCount = 0; }, 3000);
+    });
+    $('logo-trigger').addEventListener('click', function() {
         if (loginClickCount >= 3) {
             logoClickCount++;
             clearTimeout(clickTimer);
-            clickTimer = setTimeout(() => { loginClickCount = 0; logoClickCount = 0; }, 3000);
+            clickTimer = setTimeout(function() { loginClickCount = 0; logoClickCount = 0; }, 3000);
             if (logoClickCount >= 3) {
-                document.getElementById('user-view').style.display = 'none';
-                document.getElementById('admin-panel').classList.add('active');
-                document.getElementById('admin-panel').style.display = 'flex';
-                document.getElementById('admin-login-section').style.display = 'flex';
-                document.getElementById('admin-dashboard').style.display = 'none';
-                document.getElementById('admin-pass').value = '';
-                loginClickCount = 0;
-                logoClickCount = 0;
+                $('user-view').style.display = 'none';
+                $('admin-panel').classList.add('active');
+                $('admin-panel').style.display = 'flex';
+                $('admin-login-section').style.display = 'flex';
+                $('admin-dashboard').style.display = 'none';
+                $('admin-pass').value = '';
+                loginClickCount = 0; logoClickCount = 0;
             }
         } else {
             loginClickCount = 0;
@@ -1040,412 +1330,99 @@
         }
     });
 
-    // ============ АДМИН ============
-    function loginAdmin() {
-        const pass = document.getElementById('admin-pass').value;
-        if (pass === ADMIN_PASS) {
-            adminLoggedIn = true;
-            document.getElementById('admin-login-section').style.display = 'none';
-            document.getElementById('admin-dashboard').style.display = 'block';
-            document.getElementById('request-search').value = '';
-            document.getElementById('user-search').value = '';
-            renderApplications();
-            renderUsers();
-            checkAutoAccept();
-        } else {
-            alert('Неверный пароль администратора!');
-        }
-    }
-
-    function closeAdminPanel() {
-        adminLoggedIn = false;
-        document.getElementById('admin-panel').classList.remove('active');
-        document.getElementById('admin-panel').style.display = 'none';
-        document.getElementById('user-view').style.display = 'block';
-    }
-
-    // ============ РЕНДЕР ЗАЯВОК ============
-    function renderApplications() {
-        const container = document.getElementById('requests-list');
-        const input = document.getElementById('request-search');
-        const q = input.value.trim();
-        const info = document.getElementById('request-search-info');
-        const clearBtn = input.parentElement.querySelector('.search-clear');
-
-        if (q) {
-            input.classList.add('has-value');
-            clearBtn.classList.add('visible');
-        } else {
-            input.classList.remove('has-value');
-            clearBtn.classList.remove('visible');
-        }
-
-        const filtered = applications.filter(app => matchesQuery(app, q));
-
-        if (q) {
-            info.textContent = `🔍 Найдено: ${filtered.length} из ${applications.length}`;
-            info.classList.add('visible');
-        } else {
-            info.classList.remove('visible');
-        }
-
-        container.innerHTML = '';
-
-        if (filtered.length === 0) {
-            container.innerHTML = `<div class="empty-msg">${q ? '🔍 Ничего не найдено' : 'Нет новых заявок'}</div>`;
-            return;
-        }
-
-        filtered.forEach((app, idx) => {
-            const div = document.createElement('div');
-            div.className = 'list-item' + (idx === 0 && !q ? ' fresh' : '');
-
-            let timerText = '';
-            if (app.timestamp && autoAcceptEnabled) {
-                const left = AUTO_ACCEPT_DELAY - (Date.now() - app.timestamp);
-                if (left > 0) {
-                    const min = Math.floor(left / 60000);
-                    const sec = Math.floor((left % 60000) / 1000);
-                    timerText = `<p style="color:#ff9900;font-size:11px;">⚡ Авто-приём через ${min}:${String(sec).padStart(2,'0')}</p>`;
-                } else {
-                    timerText = `<p style="color:#4dff88;font-size:11px;">⚡ Готово к авто-приёму</p>`;
-                }
+    // Тоггл пароля
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.getAttribute && e.target.getAttribute('data-toggle') === 'pwd') {
+            var el = e.target;
+            var real = el.getAttribute('data-password');
+            if (el.classList.contains('password-hidden')) {
+                el.textContent = real;
+                el.classList.remove('password-hidden');
+                el.classList.add('password-visible');
+            } else {
+                var m = ''; var l = Math.min(real.length, 8); for (var i = 0; i < l; i++) m += '•';
+                el.textContent = m;
+                el.classList.remove('password-visible');
+                el.classList.add('password-hidden');
             }
+        }
+    });
+}
 
-            div.innerHTML = `
-                <div class="date-row ${idx > 0 ? 'old' : ''}">🕐 Подана: ${formatDate(app.timestamp)}</div>
-                <p><span>ID:</span> ${highlightText(app.id, q)}</p>
-                <p><span>Тел:</span> ${highlightText(app.phone, q)}</p>
-                <p><span>Логин:</span> ${highlightText(app.login, q)}</p>
-                <p><span>Пароль:</span> ${renderPassword(app.password)}</p>
-                <p><span>Коммент:</span> ${highlightText(app.comment || '-', q)}</p>
-                ${timerText}
-                <div class="list-actions">
-                    <button class="btn-success" onclick="acceptRequest('${app._key}')">✅ Принять</button>
-                    <button class="btn-danger" onclick="deleteRequest('${app._key}')">❌ Отклонить</button>
-                </div>
-            `;
-            container.appendChild(div);
+// ============ FIREBASE СЛУШАТЕЛИ ============
+function attachFirebaseListeners() {
+    if (!database) return;
+
+    database.ref('vm_applications').on('value', function(snap) {
+        applications = [];
+        snap.forEach(function(child) {
+            var v = child.val() || {};
+            v._key = child.key;
+            applications.push(v);
         });
-    }
-
-    // ============ РЕНДЕР ПОЛЬЗОВАТЕЛЕЙ ============
-    function renderUsers() {
-        const container = document.getElementById('users-list');
-        const input = document.getElementById('user-search');
-        const q = input.value.trim();
-        const info = document.getElementById('user-search-info');
-        const clearBtn = input.parentElement.querySelector('.search-clear');
-
-        if (q) {
-            input.classList.add('has-value');
-            clearBtn.classList.add('visible');
-        } else {
-            input.classList.remove('has-value');
-            clearBtn.classList.remove('visible');
-        }
-
-        const filtered = users.filter(u => matchesQuery(u, q));
-
-        if (q) {
-            info.textContent = `🔍 Найдено: ${filtered.length} из ${users.length}`;
-            info.classList.add('visible');
-        } else {
-            info.classList.remove('visible');
-        }
-
-        container.innerHTML = '';
-
-        if (filtered.length === 0) {
-            container.innerHTML = `<div class="empty-msg">${q ? '🔍 Ничего не найдено' : 'Нет зарегистрированных пользователей'}</div>`;
-            return;
-        }
-
-        filtered.forEach((u, idx) => {
-            const div = document.createElement('div');
-            div.className = 'list-item' + (idx === 0 && !q ? ' fresh' : '');
-
-            const autoTag = u.auto_accepted
-                ? ' <span style="color:#ff9900;font-size:10px;">⚡ авто</span>'
-                : '';
-
-            const submitDate = u.submitted_at || u.timestamp;
-            const submittedRow = submitDate
-                ? `<div class="date-row ${idx > 0 ? 'old' : ''}">🕐 Подана: ${formatDate(submitDate)}</div>`
-                : '';
-
-            const acceptedRow = (u.auto_accepted && u.timestamp && u.submitted_at && u.timestamp !== u.submitted_at)
-                ? `<p style="font-size:11px;color:#4dff88;">✅ Принята: ${formatDate(u.timestamp)}</p>`
-                : '';
-
-            div.innerHTML = `
-                ${submittedRow}
-                <p><span>ID:</span> ${highlightText(u.id, q)}${autoTag}</p>
-                <p><span>Тел:</span> ${highlightText(u.phone, q)}</p>
-                <p><span>Логин:</span> ${highlightText(u.login, q)}</p>
-                <p><span>Пароль:</span> ${renderPassword(u.password)}</p>
-                ${acceptedRow}
-                <div class="list-actions">
-                    <button class="btn-info" onclick="openLoginModal('${u._key}')">📝 Логин</button>
-                    <button class="btn-warning" onclick="openIdModal('${u._key}')">✏️ ID</button>
-                    <button class="btn-danger" onclick="deleteUser('${u._key}')">🗑 Удалить</button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    // ============ ОЧИСТКА ПОИСКА ============
-    function clearSearch(type) {
-        if (type === 'request') {
-            document.getElementById('request-search').value = '';
-            renderApplications();
-        } else {
-            document.getElementById('user-search').value = '';
-            renderUsers();
-        }
-    }
-
-    // ============ ДЕЙСТВИЯ ============
-    function acceptRequest(key) {
-        const app = applications.find(a => a._key === key);
-        if (!app) return;
-
-        database.ref('vm_users/' + key).set({
-            id: app.id,
-            phone: app.phone,
-            login: app.login,
-            password: app.password,
-            submitted_at: app.timestamp,
-            timestamp: Date.now()
-        }).then(() => database.ref('vm_applications/' + key).remove())
-          .then(() => showToast(`✅ ${app.login} принят (ID: ${app.id})`))
-          .catch(err => showToast('Ошибка: ' + err.message, 'error'));
-    }
-
-    function deleteRequest(key) {
-        const app = applications.find(a => a._key === key);
-        if (!app) return;
-        if (confirm(`Отклонить заявку "${app.login}"?`)) {
-            database.ref('vm_applications/' + key).remove()
-                .then(() => showToast(`❌ Заявка "${app.login}" отклонена`, 'info'))
-                .catch(err => showToast('Ошибка: ' + err.message, 'error'));
-        }
-    }
-
-    function deleteUser(key) {
-        const u = users.find(x => x._key === key);
-        if (!u) return;
-        if (confirm(`Удалить пользователя "${u.login}"? Он вылетит из приложения.`)) {
-            database.ref('vm_users/' + key).remove()
-                .then(() => showToast(`🗑 Пользователь "${u.login}" удалён`, 'info'))
-                .catch(err => showToast('Ошибка: ' + err.message, 'error'));
-        }
-    }
-
-    // ============ МОДАЛЬНОЕ ОКНО: ID ============
-    function openIdModal(key) {
-        const u = users.find(x => x._key === key);
-        if (!u) return;
-
-        modalMode = 'id';
-        currentEditKey = key;
-        currentEditLogin = u.login;
-        currentEditOldId = u.id;
-
-        document.getElementById('id-modal-title').textContent = '✏️ Смена ID';
-        document.getElementById('id-modal-user').textContent = `Пользователь: ${u.login}`;
-        document.getElementById('id-modal-hint').innerHTML = `Текущий ID: <b>${u.id || '—'}</b>`;
-
-        const input = document.getElementById('id-modal-input');
-        input.className = 'id-modal-input';
-        input.placeholder = '00';
-        input.setAttribute('inputmode', 'numeric');
-        input.setAttribute('type', 'tel');
-        input.value = '';
-        document.getElementById('id-modal-err').textContent = '';
-
-        document.getElementById('id-modal').classList.add('active');
-        setTimeout(() => input.focus(), 200);
-    }
-
-    // ============ МОДАЛЬНОЕ ОКНО: ЛОГИН ============
-    function openLoginModal(key) {
-        const u = users.find(x => x._key === key);
-        if (!u) return;
-
-        modalMode = 'login';
-        currentEditKey = key;
-        currentEditLogin = u.login;
-        currentEditOldId = u.id;
-
-        document.getElementById('id-modal-title').textContent = '📝 Смена логина';
-        document.getElementById('id-modal-user').textContent = `Текущий логин: ${u.login}`;
-        document.getElementById('id-modal-hint').innerHTML = `ID пользователя: <b>${u.id || '—'}</b>`;
-
-        const input = document.getElementById('id-modal-input');
-        input.className = 'id-modal-input login-mode';
-        input.placeholder = 'Новый логин';
-        input.setAttribute('inputmode', 'text');
-        input.setAttribute('type', 'text');
-        input.value = '';
-        document.getElementById('id-modal-err').textContent = '';
-
-        document.getElementById('id-modal').classList.add('active');
-        setTimeout(() => input.focus(), 200);
-    }
-
-    function closeIdModal() {
-        document.getElementById('id-modal').classList.remove('active');
-        modalMode = null;
-        currentEditKey = null;
-        currentEditLogin = null;
-        currentEditOldId = null;
-    }
-
-    document.getElementById('id-modal-input').addEventListener('input', function() {
-        if (modalMode === 'id') {
-            this.value = this.value.replace(/\D/g, '');
-        } else {
-            this.value = this.value.replace(/[^A-Za-zА-Яа-я0-9]/g, '');
-        }
-        document.getElementById('id-modal-err').textContent = '';
+        applications.sort(function(a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
+        if ($('requests-count')) $('requests-count').textContent = applications.length;
+        if (adminLoggedIn) renderApplications();
     });
 
-    document.getElementById('id-modal-input').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') saveModalValue();
+    database.ref('vm_users').on('value', function(snap) {
+        users = [];
+        snap.forEach(function(child) {
+            var v = child.val() || {};
+            v._key = child.key;
+            users.push(v);
+        });
+        users.sort(function(a, b) {
+            var aT = a.submitted_at || a.timestamp || 0;
+            var bT = b.submitted_at || b.timestamp || 0;
+            return bT - aT;
+        });
+        if ($('users-count')) $('users-count').textContent = users.length;
+        if (adminLoggedIn) renderUsers();
     });
 
-    function saveModalValue() {
-        if (modalMode === 'id') return saveNewId();
-        if (modalMode === 'login') return saveNewLogin();
-    }
-
-    // ============ СОХРАНЕНИЕ ID ============
-    async function saveNewId() {
-        const newId = document.getElementById('id-modal-input').value.trim();
-        const errEl = document.getElementById('id-modal-err');
-
-        if (!/^\d{2,}$/.test(newId)) { errEl.textContent = 'ID минимум 2 цифры'; return; }
-        if (String(newId) === String(currentEditOldId)) { errEl.textContent = 'Это текущий ID'; return; }
-
-        let conflict = null;
-        users.forEach(u => {
-            if (u._key !== currentEditKey && String(u.id) === String(newId)) conflict = u.login;
+    database.ref('password_reset_requests').on('value', function(snap) {
+        resetRequests = [];
+        snap.forEach(function(child) {
+            var v = child.val() || {};
+            v._key = child.key;
+            resetRequests.push(v);
         });
-        if (conflict) { errEl.textContent = `ID занят: "${conflict}"`; return; }
-
-        errEl.textContent = '⏳ Сохраняю...';
-
-        try {
-            const oldId = String(currentEditOldId);
-            const key = currentEditKey;
-
-            await database.ref('vm_users/' + key + '/id').set(newId);
-
-            const activeSnap = await database.ref('shabashki/active').once('value');
-            const active = activeSnap.val() || {};
-            for (const k in active) {
-                const order = active[k];
-                const upds = {};
-                if (String(order.ownerID) === oldId) upds.ownerID = newId;
-                if (String(order.workerID) === oldId) upds.workerID = newId;
-                if (order.rejections) {
-                    for (const rK in order.rejections) {
-                        const txt = order.rejections[rK].text || '';
-                        if (txt.includes(`ID-${oldId}`)) {
-                            upds[`rejections/${rK}/text`] = txt.replace(new RegExp(`ID-${oldId}`, 'g'), `ID-${newId}`);
-                        }
-                    }
-                }
-                if (Object.keys(upds).length > 0) await database.ref('shabashki/active/' + k).update(upds);
-            }
-
-            const archiveSnap = await database.ref('shabashki/archive').once('value');
-            const archive = archiveSnap.val() || {};
-            for (const k in archive) {
-                const item = archive[k];
-                const upds = {};
-                if (String(item.ownerID) === oldId) upds.ownerID = newId;
-                if (String(item.finisherID) === oldId) upds.finisherID = newId;
-                if (Object.keys(upds).length > 0) await database.ref('shabashki/archive/' + k).update(upds);
-            }
-
-            await database.ref('system_updates/' + oldId).set({
-                action: 'CHANGE_LOCAL_ID',
-                newID: newId,
-                admin_pass: ADMIN_PASS,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
-
-            const savedLogin = currentEditLogin;
-            closeIdModal();
-            showToast(`✏️ ${savedLogin}: ID ${oldId} → ${newId}`);
-        } catch (err) {
-            errEl.textContent = 'Ошибка: ' + err.message;
-        }
-    }
-
-    // ============ СОХРАНЕНИЕ ЛОГИНА ============
-    async function saveNewLogin() {
-        const newLogin = document.getElementById('id-modal-input').value.trim();
-        const errEl = document.getElementById('id-modal-err');
-
-        if (newLogin.length < 6) { errEl.textContent = 'Логин минимум 6 символов'; return; }
-        if (!/^[A-Za-zА-Яа-я0-9]+$/.test(newLogin)) { errEl.textContent = 'Только буквы и цифры'; return; }
-        if (newLogin.toLowerCase() === String(currentEditLogin).toLowerCase()) { errEl.textContent = 'Это текущий логин'; return; }
-
-        const newKey = safeKey(newLogin);
-
-        let conflict = null;
-        users.forEach(u => {
-            if (u._key !== currentEditKey && safeKey(u.login) === newKey) conflict = u.login;
-        });
-        if (conflict) { errEl.textContent = `Логин "${newLogin}" занят`; return; }
-
-        const appsSnap = await database.ref('vm_applications/' + newKey).once('value');
-        if (appsSnap.exists()) { errEl.textContent = 'Логин уже занят (заявка)'; return; }
-
-        errEl.textContent = '⏳ Сохраняю...';
-
-        try {
-            const oldKey = currentEditKey;
-            const oldLogin = currentEditLogin;
-            const userData = users.find(x => x._key === oldKey);
-            if (!userData) { errEl.textContent = 'Пользователь не найден'; return; }
-
-            await database.ref('vm_users/' + newKey).set({
-                id: userData.id,
-                phone: userData.phone,
-                login: newLogin,
-                password: userData.password,
-                submitted_at: userData.submitted_at || userData.timestamp || Date.now(),
-                timestamp: Date.now()
-            });
-
-            await database.ref('vm_users/' + oldKey).remove();
-
-            await database.ref('system_updates/' + userData.id).set({
-                action: 'CHANGE_LOCAL_LOGIN',
-                newLogin: newLogin,
-                oldLogin: oldLogin,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
-
-            closeIdModal();
-            showToast(`📝 Логин "${oldLogin}" → "${newLogin}"`);
-        } catch (err) {
-            errEl.textContent = 'Ошибка: ' + err.message;
-        }
-    }
-
-    document.getElementById('id-modal').addEventListener('click', function(e) {
-        if (e.target === this) closeIdModal();
+        resetRequests.sort(function(a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
+        if ($('resets-count')) $('resets-count').textContent = resetRequests.length;
+        if (adminLoggedIn) renderResets();
     });
 
-    setInterval(() => {
-        if (autoAcceptEnabled && adminLoggedIn) renderApplications();
-    }, 1000);
+    database.ref('settings/auto_accept').on('value', function(snap) {
+        autoAcceptEnabled = snap.val() === true;
+        if ($('auto-accept-toggle')) $('auto-accept-toggle').checked = autoAcceptEnabled;
+        if ($('auto-accept-status')) {
+            $('auto-accept-status').textContent = autoAcceptEnabled ?
+                'Включено — заявки старше 5 мин принимаются автоматически' :
+                'Выключено — принимаю вручную';
+        }
+        if (autoAcceptEnabled) checkAutoAccept();
+    });
+
+    checkApplicationStatus();
+    watchApplicationStatus();
+    checkResetStatus();
+}
+
+// ============ СТАРТ ============
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        attachHandlers();
+        attachFirebaseListeners();
+        setInterval(checkAutoAccept, 30000);
+        setInterval(function() { if (autoAcceptEnabled && adminLoggedIn) renderApplications(); }, 1000);
+    });
+} else {
+    attachHandlers();
+    attachFirebaseListeners();
+    setInterval(checkAutoAccept, 30000);
+    setInterval(function() { if (autoAcceptEnabled && adminLoggedIn) renderApplications(); }, 1000);
+}
 </script>
 
 </body>
