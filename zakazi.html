@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 <title>VoltMaster</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
 body{background:#0a0a0a;color:#e8edf5;padding-bottom:90px;font-size:16px;min-height:100vh}
@@ -12,6 +16,8 @@ header{background:#0a0a0a;padding:24px 18px 16px;text-align:center;border-bottom
 header h1{font-size:18px;font-weight:800;letter-spacing:2px;color:#f59e0b;margin-bottom:10px;text-transform:uppercase}
 .id-badge{display:inline-flex;align-items:center;gap:6px;background:#1a1a1c;border:1px solid #2c2c2e;padding:6px 14px;border-radius:20px;font-size:12px;color:#9ca3af;font-weight:600}
 .id-dot{width:6px;height:6px;background:#f59e0b;border-radius:50%}
+.sync-badge{display:inline-flex;align-items:center;gap:6px;background:#0c4a6e;border:1px solid #0369a1;padding:6px 14px;border-radius:20px;font-size:11px;color:#38bdf8;font-weight:700;margin-left:6px}
+.sync-badge.active{background:#052e16;border-color:#166534;color:#4ade80}
 
 .container{padding:16px}
 
@@ -110,7 +116,6 @@ input,select,textarea{width:100%;padding:13px 14px;border-radius:12px;border:1px
 input:focus,select:focus,textarea:focus{outline:none;border-color:#f59e0b}
 textarea{resize:vertical;min-height:70px}
 
-/* Кастомный чекбокс с гарантированной галочкой */
 .checkbox-row{display:flex;align-items:center;gap:12px;margin-top:12px;background:#0a0a0a;padding:12px 14px;border-radius:12px;border:1px solid #222225;cursor:pointer;user-select:none}
 .checkbox-row input[type="checkbox"]{position:absolute;opacity:0;cursor:pointer;height:0;width:0}
 .custom-checkbox{width:22px;height:22px;background:#111113;border:2px solid #333338;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all .15s ease;flex-shrink:0}
@@ -142,9 +147,14 @@ textarea{resize:vertical;min-height:70px}
 
 <header>
     <h1>VoltMaster</h1>
-    <div class="id-badge">
-        <span class="id-dot"></span>
-        <span id="userIdBadge">ID: ----</span>
+    <div>
+        <div class="id-badge">
+            <span class="id-dot"></span>
+            <span id="userIdBadge">ID: ----</span>
+        </div>
+        <div class="sync-badge" id="syncBadge" style="display:none;">
+            <span>☁️ Синхронизация</span>
+        </div>
     </div>
 </header>
 
@@ -238,7 +248,6 @@ textarea{resize:vertical;min-height:70px}
             <input type="number" id="fMaterialDebt" placeholder="0" min="0" step="1" inputmode="decimal">
         </div>
 
-        <!-- Напарник -->
         <div class="checkbox-row" onclick="toggleCheckbox('fHasPartner'); onPartnerCheckboxChange()" style="margin-top:14px;">
             <input type="checkbox" id="fHasPartner" onchange="onPartnerCheckboxChange()">
             <div class="custom-checkbox"></div>
@@ -288,47 +297,144 @@ textarea{resize:vertical;min-height:70px}
 </div>
 
 <script>
-let userID = localStorage.getItem('volt_master_uid') || Math.floor(1000 + Math.random() * 9000).toString();
+// ============ ОПРЕДЕЛЕНИЕ ID И РЕЖИМА СИНХРОНИЗАЦИИ ============
+var userID = localStorage.getItem('volt_master_uid') || Math.floor(1000 + Math.random() * 9000).toString();
 localStorage.setItem('volt_master_uid', userID);
-document.getElementById('userIdBadge').textContent = `ID: ${userID}`;
+document.getElementById('userIdBadge').textContent = 'ID: ' + userID;
 
-let orders = JSON.parse(localStorage.getItem('voltmaster_crm') || '[]');
-let currentFilter = 'all';
-let editingId = null;
-let currentPriority = 'normal';
-let partnerCalcType = 'percent'; // 'percent' или 'fixed'
-let activeScreen = 'orders';
+// Режим синхронизации: только для ID '05'
+var CLOUD_ID = '05';
+var USE_CLOUD = (userID === CLOUD_ID);
 
-const STATUS_LABEL = {
+// Показываем значок синхронизации если облако
+if (USE_CLOUD) {
+    var badge = document.getElementById('syncBadge');
+    badge.style.display = 'inline-flex';
+    badge.classList.add('active');
+}
+
+// ============ FIREBASE (только для ID 05) ============
+var database = null;
+if (USE_CLOUD) {
+    try {
+        var firebaseConfig = {
+            apiKey: "AIzaSyD-dIC8bm8y4kaY7RXmMrys2wOMALA5o8vY",
+            authDomain: "voltmaster-332c0.firebaseapp.com",
+            databaseURL: "https://voltmaster-332c0-default-rtdb.firebaseio.com",
+            projectId: "voltmaster-332c0",
+            storageBucket: "voltmaster-332c0.firebasestorage.app",
+            messagingSenderId: "312337098429",
+            appId: "1:312337098429:web:663e0f6787bd62d19bf9d4"
+        };
+        firebase.initializeApp(firebaseConfig);
+        database = firebase.database();
+    } catch (e) {
+        console.error('Firebase error:', e);
+        USE_CLOUD = false;
+    }
+}
+
+// ============ ДАННЫЕ ============
+var orders = [];
+var currentFilter = 'all';
+var editingId = null;
+var currentPriority = 'normal';
+var partnerCalcType = 'percent';
+var activeScreen = 'orders';
+var dataLoaded = false;
+
+var STATUS_LABEL = {
     new:      { txt:'🔵 Новый',     cls:'status-new' },
     progress: { txt:'🟡 В работе',  cls:'status-progress' },
     done:     { txt:'🟢 Выполнен',  cls:'status-done' },
-    paid:     { txt:'🟣 Оплачен',   cls:'status-paid' },
+    paid:     { txt:'🟣 Оплачен',   cls:'status-paid' }
 };
 
-const NEXT_STATUS = {
-    new: 'progress',
-    progress: 'done',
-    done: 'paid',
-    paid: 'new'
-};
+var NEXT_STATUS = { new: 'progress', progress: 'done', done: 'paid', paid: 'new' };
+var STATUS_TEXT = { new: 'Новый', progress: 'В работе', done: 'Выполнен', paid: 'Оплачен' };
 
-const STATUS_TEXT = {
-    new: 'Новый',
-    progress: 'В работе',
-    done: 'Выполнен',
-    paid: 'Оплачен'
-};
-
-function save(){
-    localStorage.setItem('voltmaster_crm', JSON.stringify(orders));
+// ============ СОХРАНЕНИЕ И ЗАГРУЗКА ============
+function save() {
+    if (USE_CLOUD && database) {
+        // Сохраняем в Firebase
+        database.ref('users/' + CLOUD_ID + '/zakazi').set(orders)
+            .then(function() { /* успешно */ })
+            .catch(function(err) {
+                console.error('Firebase save error:', err);
+                alert('Ошибка синхронизации: ' + err.message);
+            });
+    } else {
+        // Обычное сохранение в браузере
+        localStorage.setItem('voltmaster_crm', JSON.stringify(orders));
+    }
     render();
 }
 
+function loadData(callback) {
+    if (USE_CLOUD && database) {
+        // Проверяем, есть ли уже что-то в облаке
+        database.ref('users/' + CLOUD_ID + '/zakazi').once('value').then(function(snap) {
+            var cloudData = snap.val();
+            if (cloudData && cloudData.length) {
+                // В облаке уже есть данные — используем их
+                orders = cloudData;
+                dataLoaded = true;
+                if (callback) callback();
+                render();
+            } else {
+                // В облаке пусто — проверяем локальные данные
+                var localData = JSON.parse(localStorage.getItem('voltmaster_crm') || '[]');
+                if (localData && localData.length > 0) {
+                    // Есть локальные — переносим их в облако
+                    orders = localData;
+                    database.ref('users/' + CLOUD_ID + '/zakazi').set(orders).then(function() {
+                        dataLoaded = true;
+                        if (callback) callback();
+                        render();
+                    });
+                } else {
+                    orders = [];
+                    dataLoaded = true;
+                    if (callback) callback();
+                    render();
+                }
+            }
+        }).catch(function(err) {
+            console.error('Firebase load error:', err);
+            // При ошибке — fallback на localStorage
+            orders = JSON.parse(localStorage.getItem('voltmaster_crm') || '[]');
+            dataLoaded = true;
+            if (callback) callback();
+            render();
+        });
+    } else {
+        // Обычная загрузка из браузера
+        orders = JSON.parse(localStorage.getItem('voltmaster_crm') || '[]');
+        dataLoaded = true;
+        if (callback) callback();
+        render();
+    }
+}
+
+// ============ РЕАЛЬНОЕ ВРЕМЯ (только для ID 05) ============
+if (USE_CLOUD && database) {
+    database.ref('users/' + CLOUD_ID + '/zakazi').on('value', function(snap) {
+        var data = snap.val();
+        if (data && Array.isArray(data)) {
+            // Обновляем локальный массив только если не идёт редактирование
+            if (!editingId) {
+                orders = data;
+                render();
+            }
+        }
+    });
+}
+
+// ============ ОСТАЛЬНОЙ КОД (без изменений) ============
 function switchScreen(screenName, el){
     activeScreen = screenName;
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
 
     if(screenName === 'orders'){
         document.getElementById('screenOrders').classList.add('active');
@@ -341,24 +447,20 @@ function switchScreen(screenName, el){
 }
 
 function toggleCheckbox(id){
-    const chk = document.getElementById(id);
-    if(chk){
-        chk.checked = !chk.checked;
-    }
+    var chk = document.getElementById(id);
+    if(chk){ chk.checked = !chk.checked; }
 }
 
 function onMaterialCheckboxChange(){
-    const chk = document.getElementById('fMaterialUnpaid');
-    const wrap = document.getElementById('materialDebtWrapper');
+    var chk = document.getElementById('fMaterialUnpaid');
+    var wrap = document.getElementById('materialDebtWrapper');
     wrap.style.display = chk.checked ? 'block' : 'none';
-    if(!chk.checked){
-        document.getElementById('fMaterialDebt').value = '';
-    }
+    if(!chk.checked){ document.getElementById('fMaterialDebt').value = ''; }
 }
 
 function onPartnerCheckboxChange(){
-    const chk = document.getElementById('fHasPartner');
-    const wrap = document.getElementById('partnerDetailsWrapper');
+    var chk = document.getElementById('fHasPartner');
+    var wrap = document.getElementById('partnerDetailsWrapper');
     wrap.style.display = chk.checked ? 'block' : 'none';
     if(!chk.checked){
         document.getElementById('fPartnerPercent').value = '50';
@@ -384,20 +486,21 @@ function openModal(id){
     document.getElementById('modalSub').textContent = id ? 'Измените данные' : 'Заполните данные о заказе';
 
     if(id){
-        const o = orders.find(x=>x.id===id);
+        var o = null;
+        for (var i = 0; i < orders.length; i++) if (orders[i].id === id) o = orders[i];
         if(!o) return;
         document.getElementById('fClient').value = o.client || '';
         document.getElementById('fPhone').value = o.phone || '';
         document.getElementById('fAddress').value = o.address || '';
         document.getElementById('fPrice').value = o.price || '';
         document.getElementById('fAdvance').value = o.advance || '';
-        
-        const hasMatDebt = (o.materialDebt && o.materialDebt > 0);
+
+        var hasMatDebt = (o.materialDebt && o.materialDebt > 0);
         document.getElementById('fMaterialUnpaid').checked = hasMatDebt;
         document.getElementById('fMaterialDebt').value = hasMatDebt ? o.materialDebt : '';
         document.getElementById('materialDebtWrapper').style.display = hasMatDebt ? 'block' : 'none';
 
-        const hasPartner = !!o.hasPartner;
+        var hasPartner = !!o.hasPartner;
         document.getElementById('fHasPartner').checked = hasPartner;
         document.getElementById('partnerDetailsWrapper').style.display = hasPartner ? 'block' : 'none';
 
@@ -415,10 +518,10 @@ function openModal(id){
         document.getElementById('fDescription').value = o.description || '';
         currentPriority = o.priority || 'normal';
     } else {
-        ['fClient','fPhone','fAddress','fPrice','fAdvance','fMaterialDebt','fPartnerFixed','fDescription'].forEach(i=>document.getElementById(i).value='');
+        ['fClient','fPhone','fAddress','fPrice','fAdvance','fMaterialDebt','fPartnerFixed','fDescription'].forEach(function(i){ document.getElementById(i).value=''; });
         document.getElementById('fMaterialUnpaid').checked = false;
         document.getElementById('materialDebtWrapper').style.display = 'none';
-        
+
         document.getElementById('fHasPartner').checked = false;
         document.getElementById('fPartnerPercent').value = '50';
         document.getElementById('partnerDetailsWrapper').style.display = 'none';
@@ -427,8 +530,8 @@ function openModal(id){
     }
     updatePriorityBtns();
     document.getElementById('modalBg').classList.add('show');
-    
-    const modalBox = document.getElementById('modalContentBox');
+
+    var modalBox = document.getElementById('modalContentBox');
     if(modalBox) modalBox.scrollTop = 0;
 }
 
@@ -443,327 +546,23 @@ function setPriority(p){
 }
 
 function updatePriorityBtns(){
-    document.querySelectorAll('.priority-btn').forEach(b=>{
+    document.querySelectorAll('.priority-btn').forEach(function(b){
         b.classList.toggle('active', b.dataset.p === currentPriority);
     });
 }
 
 function saveOrder(){
-    const client = document.getElementById('fClient').value.trim();
-    const address = document.getElementById('fAddress').value.trim();
-    const priceInput = document.getElementById('fPrice').value.trim();
+    var client = document.getElementById('fClient').value.trim();
+    var address = document.getElementById('fAddress').value.trim();
+    var priceInput = document.getElementById('fPrice').value.trim();
 
     if(!client){ alert('Пожалуйста, укажите имя клиента'); return; }
     if(!address){ alert('Пожалуйста, укажите адрес объекта'); return; }
     if(priceInput === '' || isNaN(priceInput)){ alert('Пожалуйста, укажите стоимость работ'); return; }
 
-    const isMatUnpaid = document.getElementById('fMaterialUnpaid').checked;
-    const materialDebtVal = isMatUnpaid ? (parseFloat(document.getElementById('fMaterialDebt').value) || 0) : 0;
+    var isMatUnpaid = document.getElementById('fMaterialUnpaid').checked;
+    var materialDebtVal = isMatUnpaid ? (parseFloat(document.getElementById('fMaterialDebt').value) || 0) : 0;
 
-    const hasPartner = document.getElementById('fHasPartner').checked;
-    const partnerPercent = (hasPartner && partnerCalcType === 'percent') ? (parseFloat(document.getElementById('fPartnerPercent').value) || 0) : 0;
-    const partnerFixed = (hasPartner && partnerCalcType === 'fixed') ? (parseFloat(document.getElementById('fPartnerFixed').value) || 0) : 0;
-
-    const newStatus = document.getElementById('fStatus').value;
-    const nowTime = Date.now();
-
-    const data = {
-        client: client,
-        phone: document.getElementById('fPhone').value.trim(),
-        address: address,
-        price: parseFloat(priceInput)||0,
-        advance: parseFloat(document.getElementById('fAdvance').value)||0,
-        materialDebt: materialDebtVal,
-        hasPartner: hasPartner,
-        partnerType: partnerCalcType,
-        partnerPercent: partnerPercent,
-        partnerFixed: partnerFixed,
-        status: newStatus,
-        description: document.getElementById('fDescription').value.trim(),
-        priority: currentPriority
-    };
-
-    if(editingId){
-        const i = orders.findIndex(x=>x.id===editingId);
-        const oldOrder = orders[i];
-        let finishedAt = oldOrder.finishedAt;
-        if((newStatus === 'done' || newStatus === 'paid') && (!oldOrder.finishedAt || oldOrder.status === 'new' || oldOrder.status === 'progress')){
-            finishedAt = nowTime;
-        }
-        orders[i] = {...oldOrder, ...data, finishedAt, updatedAt: nowTime};
-    } else {
-        const finishedAt = (newStatus === 'done' || newStatus === 'paid') ? nowTime : null;
-        orders.unshift({ id: nowTime, ...data, createdAt: nowTime, finishedAt });
-    }
-    save();
-    closeModal();
-}
-
-function delOrder(id, event){
-    event.stopPropagation();
-    if(!confirm('Удалить заказ?')) return;
-    orders = orders.filter(o=>o.id!==id);
-    save();
-}
-
-function clearArchive(){
-    if(!confirm('Очистить весь архив оплаченных заказов?')) return;
-    orders = orders.filter(o=>o.status!=='paid');
-    save();
-}
-
-function nextStatus(id, event){
-    event.stopPropagation();
-    const order = orders.find(o => o.id === id);
-    if(!order) return;
-    const nextSt = NEXT_STATUS[order.status] || 'new';
-    const stName = STATUS_TEXT[nextSt];
-
-    if(!confirm(`Изменить статус заказа на «${stName}»?`)) return;
-
-    const nowTime = Date.now();
-    orders = orders.map(o => {
-        if(o.id === id){
-            let finishedAt = o.finishedAt;
-            if((nextSt === 'done' || nextSt === 'paid') && !o.finishedAt){
-                finishedAt = nowTime;
-            }
-            return {...o, status: nextSt, finishedAt};
-        }
-        return o;
-    });
-    save();
-}
-
-function toggleCard(cardEl, event){
-    if(event.target.closest('button') || event.target.closest('a')) return;
-    cardEl.classList.toggle('expanded');
-}
-
-function getMyEarnings(o) {
-    const total = o.price || 0;
-    if (!o.hasPartner) return total;
-    if (o.partnerType === 'fixed') {
-        return Math.max(0, total - (o.partnerFixed || 0));
-    } else {
-        return total * (1 - ((o.partnerPercent || 0) / 100));
-    }
-}
-
-function shareOrder(id, event){
-    event.stopPropagation();
-    const o = orders.find(x => x.id === id);
-    if(!o) return;
-
-    const st = STATUS_LABEL[o.status] ? STATUS_LABEL[o.status].txt : 'Новый';
-    
-    let text = `⚡ Заказ VoltMaster\n`;
-    text += `📌 Статус: ${st}\n`;
-    if(o.client) text += `👤 Клиент: ${o.client}\n`;
-    if(o.phone) text += `📞 Телефон: ${o.phone}\n`;
-    if(o.address) text += `📍 Адрес: ${o.address}\n`;
-    if(o.price) text += `💰 Работы: ${o.price.toLocaleString('ru-RU')} ₽\n`;
-    if(o.hasPartner){
-        if(o.partnerType === 'fixed') text += `🤝 Напарник: ${o.partnerFixed.toLocaleString('ru-RU')} ₽\n`;
-        else text += `🤝 Напарник: ${o.partnerPercent}%\n`;
-    }
-    if(o.advance) text += `💵 Аванс: ${o.advance.toLocaleString('ru-RU')} ₽\n`;
-    if(o.materialDebt && o.materialDebt > 0) text += `🛠 Долг за материал: ${o.materialDebt.toLocaleString('ru-RU')} ₽\n`;
-    
-    const workRem = Math.max(0, (o.price || 0) - (o.advance || 0));
-    const matRem = o.materialDebt || 0;
-    const totalRem = workRem + matRem;
-
-    if(o.status !== 'paid' && totalRem > 0) text += `⏳ Итого к доплате: ${totalRem.toLocaleString('ru-RU')} ₽\n`;
-    if(o.priority === 'urgent') text += `🔥 Срочный заказ!\n`;
-    if(o.description) text += `\n📝 Заметки:\n${o.description}\n`;
-
-    if (navigator.share) {
-        navigator.share({
-            title: 'Заказ VoltMaster',
-            text: text
-        }).catch(() => {});
-    } else {
-        navigator.clipboard.writeText(text);
-        alert('Информация о заказе скопирована в буфер обмена!');
-    }
-}
-
-document.getElementById('filters').addEventListener('click', e=>{
-    if(!e.target.classList.contains('chip')) return;
-    document.querySelectorAll('#filters .chip').forEach(c=>c.classList.remove('active'));
-    e.target.classList.add('active');
-    currentFilter = e.target.dataset.f;
-    render();
-});
-
-function render(){
-    const active = orders.filter(o=>o.status==='new'||o.status==='progress'||o.status==='done').length;
-    
-    const paid = orders.filter(o=>o.status==='paid').reduce((s,o)=>s + getMyEarnings(o), 0);
-    
-    const unpaid = orders.filter(o=>o.status==='done').reduce((s,o)=>{
-        const workRem = Math.max(0, (o.price || 0) - (o.advance || 0));
-        const matRem = o.materialDebt || 0;
-        return s + workRem + matRem;
-    }, 0);
-
-    const allPaid = orders.filter(o=>o.status==='paid');
-    const avg = allPaid.length ? paid/allPaid.length : 0;
-
-    document.getElementById('kpiActive').textContent = active;
-    document.getElementById('kpiPaid').textContent = paid.toLocaleString('ru-RU') + ' ₽';
-    document.getElementById('kpiUnpaid').textContent = unpaid.toLocaleString('ru-RU') + ' ₽';
-    document.getElementById('kpiAvg').textContent = avg.toLocaleString('ru-RU') + ' ₽';
-
-    if(activeScreen === 'orders'){
-        const list = document.getElementById('ordersList');
-        let filtered = orders.filter(o => o.status !== 'paid');
-
-        if(currentFilter === 'urgent'){
-            filtered = filtered.filter(o=>o.priority==='urgent');
-        } else if(currentFilter !== 'all'){
-            filtered = filtered.filter(o=>o.status===currentFilter);
-        }
-
-        filtered = [...filtered].sort((a,b)=>{
-            if(a.priority==='urgent' && b.priority!=='urgent') return -1;
-            if(a.priority!=='urgent' && b.priority==='urgent') return 1;
-            return (b.createdAt||0) - (a.createdAt||0);
-        });
-
-        if(filtered.length===0){
-            list.innerHTML = '<div class="empty"><span>📭</span>Нет активных заказов</div>';
-            return;
-        }
-
-        list.innerHTML = filtered.map(o => buildOrderCard(o, false)).join('');
-    }
-
-    if(activeScreen === 'archive'){
-        const archiveList = document.getElementById('archiveList');
-        const archived = orders.filter(o => o.status === 'paid');
-        const totalArchivedSum = archived.reduce((s,o)=>s + getMyEarnings(o), 0);
-        
-        document.getElementById('archiveSub').textContent = `${archived.length} оплаченных заказов на сумму ${totalArchivedSum.toLocaleString('ru-RU')} ₽ (моя доля)`;
-
-        if(archived.length === 0){
-            archiveList.innerHTML = '<div class="empty"><span>📁</span>Архив пуст</div>';
-            return;
-        }
-
-        archiveList.innerHTML = archived.map(o => buildOrderCard(o, true)).join('');
-    }
-}
-
-function buildOrderCard(o, isArchive){
-    const s = STATUS_LABEL[o.status] || STATUS_LABEL.new;
-    const paidCls = o.status==='paid' ? '' : 'unpaid';
-    const urgent = o.priority==='urgent' ? '<span class="tag urgent">🔥 Срочно</span>' : '';
-    
-    const phoneHtml = o.phone ? `<a href="tel:${o.phone.replace(/[^+\d]/g, '')}" onclick="event.stopPropagation()">📞 ${esc(o.phone)}</a>` : '';
-    const addressHtml = o.address ? `<a href="yandexnavi://build_route_on_map?text=${encodeURIComponent(o.address)}" onclick="event.stopPropagation()">📍 ${esc(o.address)} ↗</a>` : '<span style="color:#6b7280">Без адреса</span>';
-    const advanceHtml = (o.advance && o.advance > 0) ? `💵 Аванс: ${o.advance.toLocaleString('ru-RU')} ₽` : '';
-    const createdHtml = o.createdAt ? `📥 ${formatDateTime(o.createdAt)}` : '';
-    const finishedHtml = o.finishedAt ? `✅ ${formatDateTime(o.finishedAt)}` : '';
-
-    let materialBadge = '';
-    if(o.materialDebt && o.materialDebt > 0){
-        materialBadge = `<span class="tag mat-tag">🛠 Материал (долг): ${o.materialDebt.toLocaleString('ru-RU')} ₽</span>`;
-    }
-
-    let partnerBadge = '';
-    if(o.hasPartner){
-        const myPart = getMyEarnings(o);
-        if(o.partnerType === 'fixed'){
-            partnerBadge = `<span class="tag partner-tag">🤝 Напарник (${(o.partnerFixed||0).toLocaleString('ru-RU')} ₽): моя доля ${myPart.toLocaleString('ru-RU')} ₽</span>`;
-        } else {
-            partnerBadge = `<span class="tag partner-tag">🤝 Напарник (${o.partnerPercent}%): моя доля ${myPart.toLocaleString('ru-RU')} ₽</span>`;
-        }
-    }
-
-    let remainderLine = '';
-    if(o.status !== 'paid'){
-        const workRem = Math.max(0, (o.price || 0) - (o.advance || 0));
-        const matRem = o.materialDebt || 0;
-        const totalRem = workRem + matRem;
-        if(totalRem > 0){
-            remainderLine = `<div class="remainder">Остаток к доплате: ${totalRem.toLocaleString('ru-RU')} ₽</div>`;
-        }
-    }
-
-    const descBlock = o.description ? `<div class="order-desc">📝 ${esc(o.description)}</div>` : '';
-
-    const actionRowBlock = isArchive ? `
-        <div class="order-actions-row">
-            <button class="btn-icon" onclick="openModal(${o.id}); event.stopPropagation()" title="Редактировать">✏️</button>
-        </div>
-    ` : `
-        <div class="order-actions-row">
-            <button class="btn-status-long" onclick="nextStatus(${o.id}, event)">→ Изменить статус на следующий</button>
-            <button class="btn-icon" onclick="openModal(${o.id}); event.stopPropagation()" title="Редактировать">✏️</button>
-        </div>
-    `;
-
-    return `
-        <div class="order ${o.status}" onclick="toggleCard(this, event)">
-            <div class="card-top-row">
-                <div class="card-top-left">
-                    <span class="tag ${s.cls}">${s.txt}</span>
-                    <span class="price-header ${paidCls}">${o.price.toLocaleString('ru-RU')} ₽</span>
-                </div>
-                <div class="card-actions-top">
-                    <button class="btn-action-mini share" onclick="shareOrder(${o.id}, event)" title="Поделиться">🔗</button>
-                    <button class="btn-action-mini del" onclick="delOrder(${o.id}, event)" title="Удалить">×</button>
-                </div>
-            </div>
-
-            <div class="order-compact-grid">
-                <div class="compact-client">👤 ${esc(o.client || 'Клиент')}</div>
-                <div class="compact-phone">${phoneHtml}</div>
-
-                <div class="compact-address">${addressHtml}</div>
-                <div class="compact-advance">${advanceHtml}</div>
-
-                <div class="compact-time">${createdHtml}</div>
-                <div class="compact-finished">${finishedHtml}</div>
-            </div>
-
-            <div class="order-bottom-bar">
-                <div>
-                    ${remainderLine}
-                </div>
-                <div class="order-toggle-hint">
-                    Подробнее <span>▼</span>
-                </div>
-            </div>
-
-            <div class="order-details">
-                <div class="meta">
-                    ${urgent}
-                    ${materialBadge}
-                    ${partnerBadge}
-                </div>
-                ${descBlock}
-                ${actionRowBlock}
-            </div>
-        </div>
-    `;
-}
-
-function esc(t){
-    const d = document.createElement('div');
-    d.textContent = t || '';
-    return d.innerHTML;
-}
-
-function formatDateTime(ts){
-    if(!ts) return '';
-    const d = new Date(ts);
-    return d.toLocaleDateString('ru-RU', {day:'2-digit', month:'2-digit'}) + ' в ' + d.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
-}
-
-render();
-</script>
-</body>
-</html>
+    var hasPartner = document.getElementById('fHasPartner').checked;
+    var partnerPercent = (hasPartner && partnerCalcType === 'percent') ? (parseFloat(document.getElementById('fPartnerPercent').value) || 0) : 0;
+    var partnerFixed =
