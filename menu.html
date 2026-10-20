@@ -127,7 +127,6 @@
             display: none;
         }
 
-        /* --- Экран выкидывания (короткий) --- */
         #kick-screen {
             position: fixed;
             inset: 0;
@@ -160,7 +159,6 @@
 </head>
 <body>
 
-<!-- Короткий экран выкидывания -->
 <div id="kick-screen">
     <div class="kick-icon">🚫</div>
     <h2>Аккаунт удалён</h2>
@@ -234,45 +232,116 @@
     const database = firebase.database();
 
     // ============================================================
-    // ПРОВЕРКА УДАЛЕНИЯ АККАУНТА
-    // Если админ удалил пользователя — сразу выкидываем на index.html
+    // ГЛАВНАЯ ПРОВЕРКА: ЗАРЕГИСТРИРОВАН ЛИ ПОЛЬЗОВАТЕЛЬ?
+    // Если нет — выкидываем на index.html
     // ============================================================
-    (function watchAccountDeletion() {
-        const myLogin = localStorage.getItem('volt_master_login');
+    let userID = localStorage.getItem('volt_master_uid');
+    let myLogin = localStorage.getItem('volt_master_login');
 
-        // Нет логина — пользователь и так не авторизован, ничего не делаем
-        if (!myLogin) return;
-
-        // Приводим логин к тому же виду, что и ключ в Firebase
+    // Если вообще нет данных сессии — на вход
+    if (!userID || !myLogin) {
+        alert('Вы не зарегистрированы. Пожалуйста, войдите.');
+        window.location.replace('index.html');
+    } else {
+        // Проверяем по базе — есть ли такой логин
         const safeLoginKey = String(myLogin).replace(/[.#$\[\]\/]/g, '_').toLowerCase();
-
-        // Следим за записью пользователя в реальном времени
-        database.ref('vm_users/' + safeLoginKey).on('value', snap => {
+        
+        database.ref('vm_users/' + safeLoginKey).once('value').then(snap => {
             if (!snap.exists()) {
-                // --- ПОЛЬЗОВАТЕЛЬ УДАЛЁН ---
-
-                // 1. Очищаем всю сессию
+                // Не найден — стираем сессию и на вход
                 localStorage.removeItem('volt_master_uid');
                 localStorage.removeItem('volt_master_login');
                 localStorage.removeItem('volt_master_logged_in');
+                alert('Ваш аккаунт не найден. Пожалуйста, зарегистрируйтесь или войдите заново.');
+                window.location.replace('index.html');
+            } else {
+                // Всё хорошо — запускаем приложение
+                startApp();
+            }
+        }).catch(err => {
+            console.error('Ошибка проверки:', err);
+            alert('Ошибка соединения. Попробуйте позже.');
+            window.location.replace('index.html');
+        });
+    }
 
-                // 2. Показываем короткое уведомление
+    // ============================================================
+    // ЗАПУСК ПРИЛОЖЕНИЯ (только если пользователь зарегистрирован)
+    // ============================================================
+    function startApp() {
+        // Следим за удалением аккаунта в реальном времени
+        watchAccountDeletion();
+
+        // Устанавливаем ID
+        localStorage.setItem('volt_master_uid', userID);
+
+        // Запускаем всю логику
+        updateHijriDate();
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js?v=10').then(() => console.log("VoltMaster V10 OK"));
+        }
+
+        database.ref('global_message').on('value', snap => {
+            const msg = snap.val();
+            if(msg && localStorage.getItem('last_msg_read') !== msg) {
+                document.getElementById('modal-msg-text').innerText = msg;
+                document.getElementById('global-modal').style.display = 'flex';
+                localStorage.setItem('volt_cached_msg', msg); 
+            } else { 
+                document.getElementById('global-modal').style.display = 'none'; 
+            }
+        });
+
+        // Логи посещений (только для зарегистрированных!)
+        const now = new Date();
+        const dateKey = now.toISOString().split('T')[0];
+        const timeStr = now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+        const visitRef = database.ref(`visits/${dateKey}/ID-${userID}`);
+        
+        visitRef.once('value', snap => {
+            const d = snap.val() || { count: 0, allTimes: "" };
+            visitRef.update({
+                id: userID,
+                count: d.count + 1,
+                lastTime: timeStr,
+                allTimes: d.allTimes ? d.allTimes + ", " + timeStr : timeStr,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        });
+
+        database.ref('registered_users/' + userID).set({ last_active: Date.now() });
+
+        database.ref('registered_users').on('value', snap => {
+            const total = snap.numChildren();
+            document.getElementById('stats-display').innerText = `ID: ${userID} | ВСЕГО: ${total}`;
+            localStorage.setItem('volt_total_users', total);
+        });
+
+        watchShabashki();
+    }
+
+    // ============================================================
+    // ПРОВЕРКА УДАЛЕНИЯ АККАУНТА
+    // ============================================================
+    function watchAccountDeletion() {
+        if (!myLogin) return;
+        const safeLoginKey = String(myLogin).replace(/[.#$\[\]\/]/g, '_').toLowerCase();
+        database.ref('vm_users/' + safeLoginKey).on('value', snap => {
+            if (!snap.exists()) {
+                localStorage.removeItem('volt_master_uid');
+                localStorage.removeItem('volt_master_login');
+                localStorage.removeItem('volt_master_logged_in');
                 document.getElementById('kick-screen').classList.add('active');
-
-                // 3. Через 800 мс — переход на страницу входа
                 setTimeout(() => {
                     window.location.replace('index.html');
                 }, 800);
             }
         });
-    })();
+    }
 
     // ============================================================
-    // ОСТАЛЬНАЯ ЛОГИКА ПРИЛОЖЕНИЯ
+    // ОСТАЛЬНЫЕ ФУНКЦИИ (без изменений)
     // ============================================================
-    let userID = localStorage.getItem('volt_master_uid') || Math.floor(1000 + Math.random() * 9000).toString();
-    localStorage.setItem('volt_master_uid', userID);
-
     function updateHijriDate() {
         const months = [
             "Мухаррам", "Сафар", "Раби аль-авваль", "Раби ас-сани",
@@ -310,50 +379,6 @@
     }
 
     setInterval(updateHijriDate, 60000);
-            
-    function initApp() {
-        updateHijriDate();
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js?v=10').then(() => console.log("VoltMaster V10 OK"));
-        }
-
-        database.ref('global_message').on('value', snap => {
-            const msg = snap.val();
-            if(msg && localStorage.getItem('last_msg_read') !== msg) {
-                document.getElementById('modal-msg-text').innerText = msg;
-                document.getElementById('global-modal').style.display = 'flex';
-                localStorage.setItem('volt_cached_msg', msg); 
-            } else { 
-                document.getElementById('global-modal').style.display = 'none'; 
-            }
-        });
-
-        const now = new Date();
-        const dateKey = now.toISOString().split('T')[0];
-        const timeStr = now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
-        const visitRef = database.ref(`visits/${dateKey}/ID-${userID}`);
-        
-        visitRef.once('value', snap => {
-            const d = snap.val() || { count: 0, allTimes: "" };
-            visitRef.update({
-                id: userID,
-                count: d.count + 1,
-                lastTime: timeStr,
-                allTimes: d.allTimes ? d.allTimes + ", " + timeStr : timeStr,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
-        });
-
-        database.ref('registered_users/' + userID).set({ last_active: Date.now() });
-
-        database.ref('registered_users').on('value', snap => {
-            const total = snap.numChildren();
-            document.getElementById('stats-display').innerText = `ID: ${userID} | ВСЕГО: ${total}`;
-            localStorage.setItem('volt_total_users', total);
-        });
-
-        watchShabashki();
-    }
 
     function closeGlobalModal() {
         localStorage.setItem('last_msg_read', document.getElementById('modal-msg-text').innerText);
@@ -494,8 +519,6 @@
     }
 
     function closetop() { document.getElementById('top-overlay').style.display = 'none'; }
-
-    window.onload = initApp;
 </script>
 <a href="https://chat.whatsapp.com/E10FzUdV9YLHem5KCVAQtQ?mode=hqctcli" 
    class="whatsapp-float" 
